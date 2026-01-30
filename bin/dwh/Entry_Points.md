@@ -238,7 +238,7 @@ error handling and logging.
 
 ```bash
 # SQL scripts - should not be executed directly
-psql -d osm_notes -f sql/dwh/ETL_22_createDWHTables.sql  # WRONG (use ETL.sh instead)
+psql -d osm_notes -f sql/dwh/ETL_20_createDWHTables.sql  # WRONG (use ETL.sh instead)
 ```
 
 ## Workflow Examples

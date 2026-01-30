@@ -310,10 +310,10 @@ declare -r ERROR_INVALID_ARGUMENT=242
 
 #### File Naming Convention
 
-- **Process files**: `processAPINotes_21_createApiTables.sql`
+- **Process files**: `processAPINotes_20_createApiTables.sql`
 - **ETL files**: `ETL_11_checkDWHTables.sql`
-- **Function files**: `functionsProcess_21_createFunctionToGetCountry.sql`
-- **Drop files**: `processAPINotes_12_dropApiTables.sql`
+- **Function files**: `functionsProcess_20_createFunctionToGetCountry.sql`
+- **Drop files**: `processAPINotes_10_dropApiTables.sql`
 
 #### SQL Code Standards
 
@@ -598,9 +598,9 @@ OSM-Notes-Analytics/
 
 Follow the naming pattern: `<Component>_<Phase><Step>_<Description>.sql`
 
-- **ETL scripts**: `ETL_22_createDWHTables.sql`, `ETL_25_populateDimensionTables.sql`
-- **Staging scripts**: `Staging_31_createBaseStagingObjects.sql`, `Staging_61_loadNotes.sql`
-- **Datamart scripts**: `datamartCountries_31_populateDatamartCountriesTable.sql`
+- **ETL scripts**: `ETL_20_createDWHTables.sql`, `ETL_25_populateDimensionTables.sql`
+- **Staging scripts**: `Staging_31_createBaseStagingObjects.sql`, `Staging_60_loadNotes.sql`
+- **Datamart scripts**: `datamartCountries_30_populateDatamartCountriesTable.sql`
 - **Phase numbers**: 1x=validation, 2x=creation, 3x=population, 4x=constraints, 5x=finalization,
   6x=incremental
 

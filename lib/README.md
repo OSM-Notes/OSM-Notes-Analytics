@@ -561,7 +561,7 @@ __logd "Test message"
 
 # Test validation
 source lib/osm-common/validationFunctions.sh
-__validate_sql_structure "sql/dwh/ETL_22_createDWHTables.sql"
+__validate_sql_structure "sql/dwh/ETL_20_createDWHTables.sql"
 
 # Test error handling
 source lib/osm-common/errorHandlingFunctions.sh

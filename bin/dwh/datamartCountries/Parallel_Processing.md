@@ -491,6 +491,6 @@ Parallel processing with work queue is the standard implementation. There is no 
 
 - **Main file:** `bin/dwh/datamartCountries/datamartCountries.sh`
 - **Population SQL:**
-  `sql/dwh/datamartCountries/datamartCountries_31_populateDatamartCountriesTable.sql`
-- **Procedure:** `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`
+  `sql/dwh/datamartCountries/datamartCountries_30_populateDatamartCountriesTable.sql`
+- **Procedure:** `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`
 - **Related:** `bin/dwh/datamartUsers/PARALLEL_PROCESSING.md` (different approach)

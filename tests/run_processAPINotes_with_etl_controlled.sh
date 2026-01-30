@@ -600,7 +600,7 @@ drop_base_tables() {
  if [[ "${tables_exist}" -gt 0 ]]; then
   log_info "Base tables exist, dropping them..."
   # Drop base tables (but keep countries table)
-  ${psql_cmd} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_13_dropBaseTables.sql" > /dev/null 2>&1 || true
+  ${psql_cmd} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_12_dropBaseTables.sql" > /dev/null 2>&1 || true
   # Note: We don't drop countries table to avoid needing to reload them
   log_success "Base tables dropped (countries table preserved)"
  else
@@ -611,7 +611,7 @@ drop_base_tables() {
  # The drop script removes them, but processPlanetNotes.sh --base should recreate them
  # However, to avoid timing issues, we create them explicitly here
  log_info "Ensuring enum types exist before processAPINotes.sh execution..."
- ${psql_cmd} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_enum.sql" > /dev/null 2>&1 || true
+ ${psql_cmd} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_20_createBaseTables_enum.sql" > /dev/null 2>&1 || true
  log_success "Enum types ensured"
 
  # Ensure procedures exist before processAPINotes.sh runs
@@ -633,7 +633,7 @@ drop_base_tables() {
  local TEMP_SQL_FILE
  TEMP_SQL_FILE=$(mktemp)
  # Extract procedures from the original SQL file (lines 188-280 approximately)
- sed -n '188,280p' "${INGESTION_ROOT}/sql/process/processPlanetNotes_22_createBaseTables_tables.sql" > "${TEMP_SQL_FILE}" 2> /dev/null || true
+ sed -n '188,280p' "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_tables.sql" > "${TEMP_SQL_FILE}" 2> /dev/null || true
  # Execute the procedures SQL
  ${psql_cmd} -d "${DBNAME}" -f "${TEMP_SQL_FILE}" > /dev/null 2>&1 || true
  rm -f "${TEMP_SQL_FILE}"

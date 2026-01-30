@@ -432,7 +432,7 @@ drop_base_tables() {
  # This prevents duplicate key errors from residual data
  log_info "Dropping base tables to ensure clean state..."
  # Drop base tables
- ${PSQL_CMD} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_13_dropBaseTables.sql" > /dev/null 2>&1 || true
+ ${PSQL_CMD} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_12_dropBaseTables.sql" > /dev/null 2>&1 || true
  # Drop country tables
  ${PSQL_CMD} -d "${DBNAME}" -c "DROP TABLE IF EXISTS countries CASCADE;" > /dev/null 2>&1 || true
  # Drop any remaining ingestion-related tables
@@ -487,11 +487,11 @@ drop_base_tables() {
  # The drop script removes them, but processPlanetNotes.sh --base should recreate them
  # However, to avoid timing issues, we create them explicitly here
  log_info "Ensuring enum types exist before processAPINotes.sh execution..."
- if [[ -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_enum.sql" ]]; then
-  ${PSQL_CMD} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_enum.sql" > /dev/null 2>&1 || true
+ if [[ -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_20_createBaseTables_enum.sql" ]]; then
+  ${PSQL_CMD} -d "${DBNAME}" -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_20_createBaseTables_enum.sql" > /dev/null 2>&1 || true
   log_success "Enum types ensured"
  else
-  log_error "WARNING: Enum types SQL file not found: ${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_enum.sql"
+  log_error "WARNING: Enum types SQL file not found: ${INGESTION_ROOT}/sql/process/processPlanetNotes_20_createBaseTables_enum.sql"
  fi
 
  # Ensure procedures exist before processAPINotes.sh runs
@@ -511,18 +511,18 @@ drop_base_tables() {
 
  # Create procedures by executing the relevant part of the SQL file
  # We'll use a temporary SQL file with just the procedures
- if [[ -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_22_createBaseTables_tables.sql" ]]; then
+ if [[ -f "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_tables.sql" ]]; then
   local TEMP_SQL_FILE
   TEMP_SQL_FILE=$(mktemp)
   # Extract procedures from the original SQL file (lines 188-280 approximately)
   # This extracts the put_lock and remove_lock procedures
-  sed -n '188,280p' "${INGESTION_ROOT}/sql/process/processPlanetNotes_22_createBaseTables_tables.sql" > "${TEMP_SQL_FILE}" 2> /dev/null || true
+  sed -n '188,280p' "${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_tables.sql" > "${TEMP_SQL_FILE}" 2> /dev/null || true
   # Execute the procedures SQL
   ${PSQL_CMD} -d "${DBNAME}" -f "${TEMP_SQL_FILE}" > /dev/null 2>&1 || true
   rm -f "${TEMP_SQL_FILE}"
   log_success "Lock procedures ensured"
  else
-  log_error "WARNING: Base tables SQL file not found: ${INGESTION_ROOT}/sql/process/processPlanetNotes_22_createBaseTables_tables.sql"
+  log_error "WARNING: Base tables SQL file not found: ${INGESTION_ROOT}/sql/process/processPlanetNotes_21_createBaseTables_tables.sql"
  fi
 
  log_success "Base tables and sequences cleaned"

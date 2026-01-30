@@ -87,35 +87,35 @@ if [[ -z "${PROCESS_TYPE:-}" ]]; then
 fi
 
 # Name of the SQL script that contains the objects to create in the DB.
-declare -r CHECK_OBJECTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_checkDatamartCountriesTables.sql"
+declare -r CHECK_OBJECTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_10_checkDatamartCountriesTables.sql"
 
 # Name of the SQL script that contains the tables to create in the DB.
-declare -r CREATE_TABLES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
+declare -r CREATE_TABLES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
 
 # Name of the SQL script that contains the procedures to create in the DB.
-declare -r CREATE_PROCEDURES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql"
+declare -r CREATE_PROCEDURES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
 
 # Generic script to add years.
-declare -r ADD_YEARS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_21_alterTableAddYears.sql"
+declare -r ADD_YEARS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_23_alterTableAddYears.sql"
 
 # Name of the SQL script that contains the ETL process.
-declare -r POPULATE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_31_populateDatamartCountriesTable.sql"
+declare -r POPULATE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_30_populateDatamartCountriesTable.sql"
 
 # Last year activities script.
 declare -r LAST_YEAR_ACTITIES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamarts_lastYearActivities.sql"
 
 # Performance optimization scripts (applied automatically on setup)
 declare -r OPTIMIZE_INDEXES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_14_optimize_indexes.sql"
-declare -r INCREMENTAL_YEAR_PROCESSING_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_15_incremental_year_processing.sql"
+declare -r INCREMENTAL_YEAR_PROCESSING_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_incremental_year_processing.sql"
 declare -r CONSOLIDATE_METRICS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_17_consolidate_basic_metrics.sql"
-declare -r CONSOLIDATE_RANKINGS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_18_consolidate_user_rankings.sql"
-declare -r CONSOLIDATE_HASHTAGS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_19_consolidate_hashtags.sql"
-declare -r CONSOLIDATE_YEAR_ACTIVITY_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_20_consolidate_year_activity.sql"
+declare -r CONSOLIDATE_RANKINGS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_20_consolidate_user_rankings.sql"
+declare -r CONSOLIDATE_HASHTAGS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_21_consolidate_hashtags.sql"
+declare -r CONSOLIDATE_YEAR_ACTIVITY_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_22_consolidate_year_activity.sql"
 declare -r CONSOLIDATE_DATES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_21_consolidate_dates_metrics.sql"
-declare -r CONSOLIDATE_WORKING_HOURS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_22_consolidate_working_hours.sql"
-declare -r CONSOLIDATE_APPLICATIONS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_23_consolidate_applications.sql"
-declare -r CONSOLIDATE_COMMENTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_24_consolidate_comments.sql"
-declare -r CONSOLIDATE_NOTES_AGE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_25_consolidate_notes_age.sql"
+declare -r CONSOLIDATE_WORKING_HOURS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_24_consolidate_working_hours.sql"
+declare -r CONSOLIDATE_APPLICATIONS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_25_consolidate_applications.sql"
+declare -r CONSOLIDATE_COMMENTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_26_consolidate_comments.sql"
+declare -r CONSOLIDATE_NOTES_AGE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_27_consolidate_notes_age.sql"
 
 ###########
 # FUNCTIONS
@@ -575,6 +575,8 @@ function __processNotesCountriesParallel {
  __logi "Starting ${adjusted_threads} parallel worker threads..."
  for ((thread_num = 1; thread_num <= adjusted_threads; thread_num++)); do
   (
+   # Disable exit on error to handle errors explicitly in this subshell
+   set +e
    local thread_processed=0
    local thread_failed=0
    local country_id

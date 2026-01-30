@@ -255,8 +255,8 @@ flowchart LR
 - **Staging**: `sql/dwh/Staging_31_createBaseStagingObjects.sql`
 - **Staging Functions**: `sql/dwh/Staging_32_createStagingObjects.sql`
 - **Fact Load**: `sql/dwh/Staging_35_initialFactsLoadExecute.sql`
-- **Unify**: `sql/dwh/Staging_51_unify.sql`
-- **Constraints/Triggers**: `sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql`
+- **Unify**: `sql/dwh/Staging_50_unify.sql`
+- **Constraints/Triggers**: `sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql`
 
 ---
 
@@ -338,8 +338,8 @@ flowchart LR
 
 #### SQL Scripts
 
-- **Table Creation**: `sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql`
-- **Procedure**: `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`
+- **Table Creation**: `sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql`
+- **Procedure**: `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`
 - **Population**: `sql/dwh/datamartUsers/datamartUsers_32_populateDatamartUsersTable.sql`
 - **Script**: `bin/dwh/datamartUsers/datamartUsers.sh`
 
@@ -362,10 +362,10 @@ Similar to User Datamart but:
 #### SQL Scripts
 
 - **Table Creation**:
-  `sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql`
-- **Procedure**: `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`
+  `sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql`
+- **Procedure**: `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`
 - **Population**:
-  `sql/dwh/datamartCountries/datamartCountries_31_populateDatamartCountriesTable.sql`
+  `sql/dwh/datamartCountries/datamartCountries_30_populateDatamartCountriesTable.sql`
 - **Script**: `bin/dwh/datamartCountries/datamartCountries.sh`
 
 ---
@@ -443,7 +443,7 @@ Similar to User Datamart but:
 
 #### SQL Scripts
 
-- **Table Creation**: `sql/dwh/ETL_22_createDWHTables.sql`
+- **Table Creation**: `sql/dwh/ETL_20_createDWHTables.sql`
 - **Population**: `sql/dwh/ETL_26_updateDimensionTables.sql`
 
 ---
@@ -469,19 +469,19 @@ Similar to User Datamart but:
    - Source: Manual reference table
    - Target: `dimension_countries.iso_alpha2`, `iso_alpha3`
    - Rule: Lookup from `dwh.iso_country_codes` table
-   - Script: `sql/dwh/ETL_24a_populateISOCodes.sql`
+   - Script: `sql/dwh/ETL_24_populateISOCodes.sql`
 
 4. **Region Assignment**
    - Source: Geographic classification
    - Target: `dimension_countries.region_id` (FK to dimension_regions)
    - Rule: Lookup region based on country
-   - Script: `sql/dwh/ETL_23_getWorldRegion.sql`
+   - Script: `sql/dwh/ETL_22_getWorldRegion.sql`
 
 #### SQL Scripts
 
-- **Table Creation**: `sql/dwh/ETL_22_createDWHTables.sql`
-- **Region Assignment**: `sql/dwh/ETL_23_getWorldRegion.sql`
-- **ISO Codes**: `sql/dwh/ETL_24a_populateISOCodes.sql`
+- **Table Creation**: `sql/dwh/ETL_20_createDWHTables.sql`
+- **Region Assignment**: `sql/dwh/ETL_22_getWorldRegion.sql`
+- **ISO Codes**: `sql/dwh/ETL_24_populateISOCodes.sql`
 - **Population**: `sql/dwh/ETL_25_populateDimensionTables.sql`
 
 ---
@@ -505,7 +505,7 @@ Similar to User Datamart but:
 
 #### SQL Scripts
 
-- **Table Creation**: `sql/dwh/ETL_22_createDWHTables.sql`
+- **Table Creation**: `sql/dwh/ETL_20_createDWHTables.sql`
 - **Population**: `sql/dwh/ETL_25_populateDimensionTables.sql`
 
 ---
@@ -534,7 +534,7 @@ Similar to User Datamart but:
 ### Rule 4: Recent Open Date
 
 - **Rule**: `recent_opened_dimension_id_date` must be NOT NULL
-- **Enforcement**: After unify step (Staging_51_unify.sql)
+- **Enforcement**: After unify step (Staging_50_unify.sql)
 - **Calculation**: Most recent open or reopen date for the note
 
 ### Rule 5: Datamart Incremental Updates

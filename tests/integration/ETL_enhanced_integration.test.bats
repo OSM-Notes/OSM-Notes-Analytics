@@ -77,11 +77,11 @@ teardown() {
 
  # Check key SQL files exist
  [[ -f "${sql_dir}/ETL_11_checkDWHTables.sql" ]]
- [[ -f "${sql_dir}/ETL_22_createDWHTables.sql" ]]
- [[ -f "${sql_dir}/ETL_24_addFunctions.sql" ]]
+ [[ -f "${sql_dir}/ETL_20_createDWHTables.sql" ]]
+ [[ -f "${sql_dir}/ETL_23_addFunctions.sql" ]]
  [[ -f "${sql_dir}/ETL_25_populateDimensionTables.sql" ]]
  [[ -f "${sql_dir}/ETL_26_updateDimensionTables.sql" ]]
- [[ -f "${sql_dir}/ETL_41_addConstraintsIndexesTriggers.sql" ]]
+ [[ -f "${sql_dir}/ETL_40_addConstraintsIndexesTriggers.sql" ]]
  [[ -f "${sql_dir}/Staging_32_createStagingObjects.sql" ]]
  [[ -f "${sql_dir}/Staging_34_initialFactsLoadCreate.sql" ]]
 }
@@ -91,14 +91,14 @@ teardown() {
  local sql_dir="${PROJECT_ROOT}/sql/dwh"
 
  # Check for new dimension tables in DDL
- grep -q "dimension_timezones" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "dimension_timezones not in DDL"
- grep -q "dimension_seasons" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "dimension_seasons not in DDL"
- grep -q "dimension_continents" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "dimension_continents not in DDL"
- grep -q "dimension_application_versions" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "dimension_application_versions not in DDL"
- grep -q "fact_hashtags" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "fact_hashtags not in DDL"
+ grep -q "dimension_timezones" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "dimension_timezones not in DDL"
+ grep -q "dimension_seasons" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "dimension_seasons not in DDL"
+ grep -q "dimension_continents" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "dimension_continents not in DDL"
+ grep -q "dimension_application_versions" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "dimension_application_versions not in DDL"
+ grep -q "fact_hashtags" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "fact_hashtags not in DDL"
 
  # Check for renamed dimension
- grep -q "dimension_time_of_week" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "dimension_time_of_week not in DDL"
+ grep -q "dimension_time_of_week" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "dimension_time_of_week not in DDL"
 }
 
 @test "ETL SCD2 implementation validation" {
@@ -106,9 +106,9 @@ teardown() {
  local sql_dir="${PROJECT_ROOT}/sql/dwh"
 
  # Check for SCD2 columns in DDL
- grep -q "valid_from" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "valid_from not in DDL"
- grep -q "valid_to" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "valid_to not in DDL"
- grep -q "is_current" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "is_current not in DDL"
+ grep -q "valid_from" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "valid_from not in DDL"
+ grep -q "valid_to" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "valid_to not in DDL"
+ grep -q "is_current" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "is_current not in DDL"
 
  # Check for SCD2 logic in update script
  grep -q "is_current.*TRUE" "${sql_dir}/ETL_26_updateDimensionTables.sql" || skip "SCD2 logic not in update script"
@@ -119,10 +119,10 @@ teardown() {
  local sql_dir="${PROJECT_ROOT}/sql/dwh"
 
  # Check for new functions in functions script
- grep -q "get_timezone_id_by_lonlat" "${sql_dir}/ETL_24_addFunctions.sql" || skip "get_timezone_id_by_lonlat not in functions"
- grep -q "get_season_id" "${sql_dir}/ETL_24_addFunctions.sql" || skip "get_season_id not in functions"
- grep -q "get_application_version_id" "${sql_dir}/ETL_24_addFunctions.sql" || skip "get_application_version_id not in functions"
- grep -q "get_local_date_id" "${sql_dir}/ETL_24_addFunctions.sql" || skip "get_local_date_id not in functions"
+ grep -q "get_timezone_id_by_lonlat" "${sql_dir}/ETL_23_addFunctions.sql" || skip "get_timezone_id_by_lonlat not in functions"
+ grep -q "get_season_id" "${sql_dir}/ETL_23_addFunctions.sql" || skip "get_season_id not in functions"
+ grep -q "get_application_version_id" "${sql_dir}/ETL_23_addFunctions.sql" || skip "get_application_version_id not in functions"
+ grep -q "get_local_date_id" "${sql_dir}/ETL_23_addFunctions.sql" || skip "get_local_date_id not in functions"
 }
 
 @test "ETL staging procedures validation" {
@@ -143,10 +143,10 @@ teardown() {
  local datamart_dir="${PROJECT_ROOT}/sql/dwh/datamartUsers"
 
  # Check datamart scripts reference correct dimension names
- grep -q "dimension_time_of_week" "${datamart_dir}/datamartUsers_13_createProcedure.sql" || skip "datamartUsers not updated for dimension_time_of_week"
+ grep -q "dimension_time_of_week" "${datamart_dir}/datamartUsers_12_createProcedure.sql" || skip "datamartUsers not updated for dimension_time_of_week"
 
  local datamart_countries_dir="${PROJECT_ROOT}/sql/dwh/datamartCountries"
- grep -q "dimension_time_of_week" "${datamart_countries_dir}/datamartCountries_13_createProcedure.sql" || skip "datamartCountries not updated for dimension_time_of_week"
+ grep -q "dimension_time_of_week" "${datamart_countries_dir}/datamartCountries_12_createProcedure.sql" || skip "datamartCountries not updated for dimension_time_of_week"
 }
 
 @test "ETL resource monitoring" {
@@ -280,7 +280,7 @@ teardown() {
  local sql_dir="${PROJECT_ROOT}/sql/dwh"
 
  # Check bridge table creation
- grep -q "CREATE TABLE.*fact_hashtags" "${sql_dir}/ETL_22_createDWHTables.sql" || skip "fact_hashtags table not created"
+ grep -q "CREATE TABLE.*fact_hashtags" "${sql_dir}/ETL_20_createDWHTables.sql" || skip "fact_hashtags table not created"
 
  # Check bridge table usage in staging
  grep -q "INSERT INTO.*fact_hashtags" "${sql_dir}/Staging_32_createStagingObjects.sql" || skip "fact_hashtags not used in staging"

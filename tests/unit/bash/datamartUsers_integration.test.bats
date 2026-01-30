@@ -101,14 +101,14 @@ teardown() {
  if [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   # In CI, we might not have a real PostgreSQL server, so skip actual database operations
   # but verify that the SQL files exist and are valid
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql" ]]
 
   # Verify SQL files contain valid SQL syntax (basic check)
-  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
   [[ "${status}" -eq 0 ]]
 
-  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql"
+  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
   [[ "${status}" -eq 0 ]]
 
   echo "Skipping actual database operations in CI environment - SQL files validated"
@@ -121,14 +121,24 @@ teardown() {
  run psql -d postgres -c "CREATE DATABASE ${TEST_DBNAME};" 2> /dev/null || true
  # Note: CREATE DATABASE might fail if database already exists, which is OK
 
+ # Drop existing schema/tables if they exist (clean slate for test)
+ if [[ -n "${TEST_DBHOST}" ]]; then
+  # Remote connection
+  # shellcheck disable=SC2154,SC2153
+  psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -c "DROP SCHEMA IF EXISTS dwh CASCADE;" > /dev/null 2>&1 || true
+ else
+  # Local connection
+  psql -d "${TEST_DBNAME}" -c "DROP SCHEMA IF EXISTS dwh CASCADE;" > /dev/null 2>&1 || true
+ fi
+
  # Clean up any existing datamart objects first
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154,SC2153
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_dropDatamartObjects.sql"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_00_dropDatamartObjects.sql"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_dropDatamartObjects.sql"
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_00_dropDatamartObjects.sql"
  fi
  # Note: Drop script might fail if objects don't exist, which is OK
 
@@ -136,10 +146,10 @@ teardown() {
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154,SC2153
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
  fi
  [[ "${status}" -eq 0 ]]
 
@@ -147,21 +157,21 @@ teardown() {
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154,SC2153
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql"
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
  fi
  [[ "${status}" -eq 0 ]]
 
- # Verify table exists
+ # Verify table exists (PostgreSQL converts unquoted identifiers to lowercase)
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154,SC2153
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'datamart_users';"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dwh' AND LOWER(table_name) = 'datamartusers';"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'datamart_users';"
+  run psql -d "${TEST_DBNAME}" -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'dwh' AND LOWER(table_name) = 'datamartusers';"
  fi
  [[ "${status}" -eq 0 ]]
  [[ "${output}" =~ ^[0-9]+$ ]] || echo "Expected numeric count, got: ${output}"
@@ -177,13 +187,13 @@ teardown() {
 # Test that all SQL files are valid
 @test "datamartUsers SQL files should be valid" {
  local SQL_FILES=(
-  "sql/dwh/datamartUsers/datamartUsers_11_checkDatamartUsersTables.sql"
-  "sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql"
-  "sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql"
-  "sql/dwh/datamartUsers/datamartUsers_21_alterTableAddYears.sql"
-  "sql/dwh/datamartUsers/datamartUsers_31_populateOldUsers.sql"
-  "sql/dwh/datamartUsers/datamartUsers_32_populateDatamartUsersTable.sql"
-  "sql/dwh/datamartUsers/datamartUsers_dropDatamartObjects.sql"
+  "sql/dwh/datamartUsers/datamartUsers_10_checkDatamartUsersTables.sql"
+  "sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
+  "sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
+  "sql/dwh/datamartUsers/datamartUsers_20_alterTableAddYears.sql"
+  "sql/dwh/datamartUsers/datamartUsers_30_populateOldUsers.sql"
+  "sql/dwh/datamartUsers/datamartUsers_31_populateDatamartUsersTable.sql"
+  "sql/dwh/datamartUsers/datamartUsers_00_dropDatamartObjects.sql"
  )
 
  for SQL_FILE in "${SQL_FILES[@]}"; do

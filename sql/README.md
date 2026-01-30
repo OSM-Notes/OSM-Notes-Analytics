@@ -18,20 +18,20 @@ sql/
     ├── Staging_*.sql                     # Staging area scripts
     ├── datamarts_lastYearActivities.sql  # Last year activity aggregation
     ├── datamartCountries/                # Country datamart SQL
-    │   ├── datamartCountries_11_checkDatamartCountriesTables.sql
-    │   ├── datamartCountries_12_createDatamarCountriesTable.sql
-    │   ├── datamartCountries_13_createProcedure.sql
+    │   ├── datamartCountries_10_checkDatamartCountriesTables.sql
+    │   ├── datamartCountries_11_createDatamarCountriesTable.sql
+    │   ├── datamartCountries_12_createProcedure.sql
     │   ├── datamartCountries_21_alterTableAddYears.sql
-    │   ├── datamartCountries_31_populateDatamartCountriesTable.sql
-    │   └── datamartCountries_dropDatamartObjects.sql
+    │   ├── datamartCountries_30_populateDatamartCountriesTable.sql
+    │   └── datamartCountries_00_dropDatamartObjects.sql
     └── datamartUsers/                    # User datamart SQL
-        ├── datamartUsers_11_checkDatamartUsersTables.sql
-        ├── datamartUsers_12_createDatamartUsersTable.sql
-        ├── datamartUsers_13_createProcedure.sql
+        ├── datamartUsers_10_checkDatamartUsersTables.sql
+        ├── datamartUsers_11_createDatamartUsersTable.sql
+        ├── datamartUsers_12_createProcedure.sql
         ├── datamartUsers_21_alterTableAddYears.sql
         ├── datamartUsers_31_populateOldUsers.sql
         ├── datamartUsers_32_populateDatamartUsersTable.sql
-        └── datamartUsers_dropDatamartObjects.sql
+        └── datamartUsers_00_dropDatamartObjects.sql
 ```
 
 ## Naming Convention
@@ -56,9 +56,9 @@ SQL scripts follow a structured naming pattern:
 **Examples:**
 
 - `ETL_11_checkDWHTables.sql` - Check if DWH tables exist
-- `ETL_22_createDWHTables.sql` - Create DWH dimension and fact tables
+- `ETL_20_createDWHTables.sql` - Create DWH dimension and fact tables
 - `Staging_31_createBaseStagingObjects.sql` - Create staging objects
-- `datamartCountries_31_populateDatamartCountriesTable.sql` - Populate country datamart
+- `datamartCountries_30_populateDatamartCountriesTable.sql` - Populate country datamart
 
 ## Main ETL Scripts
 
@@ -110,7 +110,7 @@ SQL scripts follow a structured naming pattern:
 
 ### Phase 2: Object Creation (2x)
 
-#### ETL_22_createDWHTables.sql
+#### ETL_20_createDWHTables.sql
 
 **Purpose:** Creates the complete [star schema structure](../docs/DWH_Star_Schema_ERD.md).
 
@@ -148,7 +148,7 @@ SQL scripts follow a structured naming pattern:
 - Optimized data types
 - Basic constraints (enhanced in Phase 4)
 
-#### ETL_23_getWorldRegion.sql
+#### ETL_22_getWorldRegion.sql
 
 **Purpose:** Populates world regions for countries.
 
@@ -160,7 +160,7 @@ SQL scripts follow a structured naming pattern:
 
 **Data Source:** Predefined regional classifications
 
-#### ETL_24_addFunctions.sql
+#### ETL_23_addFunctions.sql
 
 **Purpose:** Creates utility functions for ETL processing.
 
@@ -171,7 +171,7 @@ SQL scripts follow a structured naming pattern:
 - Data validation functions
 - Helper utilities
 
-#### ETL_24a_populateISOCodes.sql
+#### ETL_24_populateISOCodes.sql
 
 **Purpose:** Creates and populates ISO country codes reference table.
 
@@ -279,7 +279,7 @@ enrichment data.
 
 ### Phase 4: Constraints and Indexes (4x)
 
-#### ETL_41_addConstraintsIndexesTriggers.sql
+#### ETL_40_addConstraintsIndexesTriggers.sql
 
 **Purpose:** Adds referential integrity, indexes, and triggers to
 [fact table](../docs/DWH_Star_Schema_Data_Dictionary.md#table-dwhfacts).
@@ -305,7 +305,7 @@ enrichment data.
 
 ### Phase 5: Finalization (5x)
 
-#### Staging_51_unify.sql
+#### Staging_50_unify.sql
 
 **Purpose:** Unifies facts across years and computes cross-year metrics.
 
@@ -320,7 +320,7 @@ enrichment data.
 
 ### Phase 6: Incremental Updates (6x)
 
-#### Staging_61_loadNotes.sql
+#### Staging_60_loadNotes.sql
 
 **Purpose:** Loads new notes incrementally (for scheduled updates).
 
@@ -339,11 +339,11 @@ enrichment data.
 
 Location: `sql/dwh/datamartCountries/`
 
-#### datamartCountries_11_checkDatamartCountriesTables.sql
+#### datamartCountries_10_checkDatamartCountriesTables.sql
 
 Validates that country datamart prerequisites exist.
 
-#### datamartCountries_12_createDatamarCountriesTable.sql
+#### datamartCountries_11_createDatamarCountriesTable.sql
 
 Creates `dwh.datamartCountries` table with:
 
@@ -353,7 +353,7 @@ Creates `dwh.datamartCountries` table with:
 - Rankings and leaderboards
 - Activity patterns
 
-#### datamartCountries_13_createProcedure.sql
+#### datamartCountries_12_createProcedure.sql
 
 Creates stored procedure to populate the country datamart.
 
@@ -365,7 +365,7 @@ Dynamically adds columns for new years as time passes.
 
 **Example:** Adds `history_2026_open` column in 2026
 
-#### datamartCountries_31_populateDatamartCountriesTable.sql
+#### datamartCountries_30_populateDatamartCountriesTable.sql
 
 Main population script that:
 
@@ -377,7 +377,7 @@ Main population script that:
 
 **Execution Time:** ~20 minutes
 
-#### datamartCountries_dropDatamartObjects.sql
+#### datamartCountries_00_dropDatamartObjects.sql
 
 Cleanup script to remove all country datamart objects.
 
@@ -385,11 +385,11 @@ Cleanup script to remove all country datamart objects.
 
 Location: `sql/dwh/datamartUsers/`
 
-#### datamartUsers_11_checkDatamartUsersTables.sql
+#### datamartUsers_10_checkDatamartUsersTables.sql
 
 Validates user datamart prerequisites.
 
-#### datamartUsers_12_createDatamartUsersTable.sql
+#### datamartUsers_11_createDatamartUsersTable.sql
 
 Creates `dwh.datamartUsers` table with:
 
@@ -399,7 +399,7 @@ Creates `dwh.datamartUsers` table with:
 - Country rankings
 - Activity classifications
 
-#### datamartUsers_13_createProcedure.sql
+#### datamartUsers_12_createProcedure.sql
 
 Creates procedures for incremental user datamart updates.
 
@@ -554,7 +554,7 @@ done
 
 ```bash
 # Test single script
-psql -d dwh -f sql/dwh/ETL_22_createDWHTables.sql
+psql -d dwh -f sql/dwh/ETL_20_createDWHTables.sql
 
 # Check for errors
 echo $?  # Should be 0

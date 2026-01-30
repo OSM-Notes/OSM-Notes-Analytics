@@ -368,7 +368,7 @@ flowchart TD
 - **Input**: Fact rows
 - **Output**: `dwh.facts` table (partitioned)
 - **Partitioning**: By year for performance
-- **Scripts**: `sql/dwh/Staging_51_unify.sql`, `ETL_41_addConstraintsIndexesTriggers.sql`
+- **Scripts**: `sql/dwh/Staging_50_unify.sql`, `ETL_40_addConstraintsIndexesTriggers.sql`
 
 ### Process 6: Generate Datamarts
 

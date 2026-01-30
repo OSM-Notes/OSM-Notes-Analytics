@@ -100,9 +100,9 @@ EOF
 
 # Test SQL files exist and are valid
 @test "Required SQL files should exist" {
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]
   [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_11_checkDWHTables.sql" ]]
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_51_unify.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_50_unify.sql" ]]
 }
 
 # Test dimension functions work correctly

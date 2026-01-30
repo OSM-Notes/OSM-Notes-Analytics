@@ -100,14 +100,14 @@ teardown() {
  if [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   # In CI, we might not have a real PostgreSQL server, so skip actual database operations
   # but verify that the SQL files exist and are valid
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql" ]]
 
   # Verify SQL files contain valid SQL syntax (basic check)
-  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
   [[ "${status}" -eq 0 ]]
 
-  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
+  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP\|ALTER" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
   [[ "${status}" -eq 0 ]]
 
   echo "Skipping actual database operations in CI environment - SQL files validated"
@@ -120,15 +120,25 @@ teardown() {
  run psql -d postgres -c "CREATE DATABASE ${TEST_DBNAME};" 2> /dev/null || true
  # Note: CREATE DATABASE might fail if database already exists, which is OK
 
+ # Drop existing schema/tables if they exist (clean slate for test)
+ if [[ -n "${TEST_DBHOST}" ]]; then
+  # Remote connection
+  # shellcheck disable=SC2154,SC2153
+  psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -c "DROP SCHEMA IF EXISTS dwh CASCADE;" > /dev/null 2>&1 || true
+ else
+  # Local connection
+  psql -d "${TEST_DBNAME}" -c "DROP SCHEMA IF EXISTS dwh CASCADE;" > /dev/null 2>&1 || true
+ fi
+
  # Create base tables
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154
   # shellcheck disable=SC2154,SC2153
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
  fi
  [[ "${status}" -eq 0 ]]
 
@@ -136,10 +146,10 @@ teardown() {
  if [[ -n "${TEST_DBHOST}" ]]; then
   # Remote connection
   # shellcheck disable=SC2154
-  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
+  run psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT}" -U "${TEST_DBUSER}" -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
  else
   # Local connection
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
  fi
  [[ "${status}" -eq 0 ]]
 
@@ -166,12 +176,12 @@ teardown() {
 # Test that all SQL files are valid
 @test "datamartCountries SQL files should be valid" {
  local SQL_FILES=(
-  "sql/dwh/datamartCountries/datamartCountries_11_checkDatamartCountriesTables.sql"
-  "sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
-  "sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql"
-  "sql/dwh/datamartCountries/datamartCountries_21_alterTableAddYears.sql"
-  "sql/dwh/datamartCountries/datamartCountries_31_populateDatamartCountriesTable.sql"
-  "sql/dwh/datamartCountries/datamartCountries_dropDatamartObjects.sql"
+  "sql/dwh/datamartCountries/datamartCountries_10_checkDatamartCountriesTables.sql"
+  "sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
+  "sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
+  "sql/dwh/datamartCountries/datamartCountries_23_alterTableAddYears.sql"
+  "sql/dwh/datamartCountries/datamartCountries_30_populateDatamartCountriesTable.sql"
+  "sql/dwh/datamartCountries/datamartCountries_00_dropDatamartObjects.sql"
  )
 
  for SQL_FILE in "${SQL_FILES[@]}"; do

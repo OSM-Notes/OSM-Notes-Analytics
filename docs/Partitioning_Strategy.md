@@ -58,8 +58,8 @@ Partitions are created automatically during the ETL process:
 
 The ETL automatically detects first execution and executes these steps:
 
-1. `ETL_22_createDWHTables.sql` - Creates main partitioned table
-2. `ETL_22a_createFactPartitions.sql` - Creates partitions from 2013 to current_year + 1
+1. `ETL_20_createDWHTables.sql` - Creates main partitioned table
+2. `ETL_21_createFactPartitions.sql` - Creates partitions from 2013 to current_year + 1
 3. Loads data directly into partitions
 
 ### Incremental Executions (Auto-detected)
@@ -128,7 +128,7 @@ If for some reason you need to create partitions manually:
 #### Method 1: Re-run partition script (Recommended)
 
 ```bash
-psql -d notes -f sql/dwh/ETL_22a_createFactPartitions.sql
+psql -d notes -f sql/dwh/ETL_21_createFactPartitions.sql
 ```
 
 This script is idempotent and only creates missing partitions.

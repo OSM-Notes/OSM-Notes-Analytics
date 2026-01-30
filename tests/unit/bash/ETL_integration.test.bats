@@ -71,11 +71,11 @@ load ../../test_helper
  if [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   # In CI, we might not have a real PostgreSQL server, so skip actual database operations
   # but verify that the SQL files exist and are valid
-  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]
   [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_32_createStagingObjects.sql" ]]
 
   # Verify SQL files contain valid SQL syntax (basic check)
-  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+  run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
   [[ "${status}" -eq 0 ]]
 
   run grep -q "CREATE\|INSERT\|UPDATE\|SELECT\|DROP" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_32_createStagingObjects.sql"
@@ -107,11 +107,16 @@ load ../../test_helper
   skip "Database connection unavailable"
  fi
 
+ # Drop existing schema/tables if they exist (clean slate for test)
+ echo "Cleaning up existing schema..."
+ bash -c "unset PGUSER PGPASSWORD; psql -d ${TEST_DBNAME} -c 'DROP SCHEMA IF EXISTS dwh CASCADE;'" > /dev/null 2>&1 || true
+ bash -c "unset PGUSER PGPASSWORD; psql -d ${TEST_DBNAME} -c 'DROP SCHEMA IF EXISTS staging CASCADE;'" > /dev/null 2>&1 || true
+
  # Create basic DWH tables
- echo "Testing ETL_22_createDWHTables.sql..."
-  run bash -c "unset PGUSER PGPASSWORD; psql -d ${TEST_DBNAME} -f ${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
- echo "ETL_22 status: ${status}"
- echo "ETL_22 output: ${output}"
+ echo "Testing ETL_20_createDWHTables.sql..."
+  run bash -c "unset PGUSER PGPASSWORD; psql -d ${TEST_DBNAME} -f ${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
+ echo "ETL_20 status: ${status}"
+ echo "ETL_20 output: ${output}"
  [[ "${status}" -eq 0 ]]
 
  # Create base staging objects (including schema)
@@ -147,20 +152,20 @@ load ../../test_helper
   "sql/dwh/ETL_11_checkDWHTables.sql"
   "sql/dwh/ETL_12_removeDatamartObjects.sql"
   "sql/dwh/ETL_13_removeDWHObjects.sql"
-  "sql/dwh/ETL_22_createDWHTables.sql"
-  "sql/dwh/ETL_23_getWorldRegion.sql"
-  "sql/dwh/ETL_24_addFunctions.sql"
+  "sql/dwh/ETL_20_createDWHTables.sql"
+  "sql/dwh/ETL_22_getWorldRegion.sql"
+  "sql/dwh/ETL_23_addFunctions.sql"
   "sql/dwh/ETL_25_populateDimensionTables.sql"
   "sql/dwh/ETL_26_updateDimensionTables.sql"
-  "sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql"
+  "sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql"
   "sql/dwh/Staging_31_createBaseStagingObjects.sql"
   "sql/dwh/Staging_32_createStagingObjects.sql"
   "sql/dwh/Staging_33_initialFactsBaseObjects.sql"
   "sql/dwh/Staging_34_initialFactsLoadCreate.sql"
   "sql/dwh/Staging_35_initialFactsLoadExecute.sql"
   "sql/dwh/Staging_36_initialFactsLoadDrop.sql"
-  "sql/dwh/Staging_51_unify.sql"
-  "sql/dwh/Staging_61_loadNotes.sql"
+  "sql/dwh/Staging_50_unify.sql"
+  "sql/dwh/Staging_60_loadNotes.sql"
  )
 
  for SQL_FILE in "${SQL_FILES[@]}"; do

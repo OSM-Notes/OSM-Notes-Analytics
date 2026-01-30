@@ -340,7 +340,7 @@ sequenceDiagram
     participant DWH as DWH Schema
 
     ETL->>DB: Check base tables exist
-    ETL->>SQL: Execute ETL_22_createDWHTables.sql
+    ETL->>SQL: Execute ETL_20_createDWHTables.sql
     SQL->>DWH: Create star schema
     ETL->>SQL: Execute ETL_25_populateDimensionTables.sql
     SQL->>DWH: Populate dimensions
@@ -349,9 +349,9 @@ sequenceDiagram
     ETL->>SQL: Execute Staging_35_initialFactsLoadExecute.sql (parallel by year)
     SQL->>Staging: Load facts per year
     SQL->>DWH: Copy from staging to facts
-    ETL->>SQL: Execute Staging_51_unify.sql
+    ETL->>SQL: Execute Staging_50_unify.sql
     SQL->>DWH: Unify and calculate cross-year metrics
-    ETL->>SQL: Execute ETL_41_addConstraintsIndexesTriggers.sql
+    ETL->>SQL: Execute ETL_40_addConstraintsIndexesTriggers.sql
     SQL->>DWH: Add indexes and constraints
 ```
 
@@ -365,7 +365,7 @@ sequenceDiagram
     participant DM as Datamart Table
 
     Script->>DWH: Check facts table exists
-    Script->>SQL: Execute datamartUsers_12_createDatamartUsersTable.sql
+    Script->>SQL: Execute datamartUsers_11_createDatamartUsersTable.sql
     SQL->>DM: Create datamartusers table
     Script->>SQL: Execute datamartUsers_32_populateDatamartUsersTable.sql
     SQL->>DWH: Read facts + dimensions

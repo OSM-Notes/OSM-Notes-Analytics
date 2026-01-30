@@ -74,13 +74,13 @@ if [[ -z "${PROCESS_TYPE:-}" ]]; then
 fi
 
 # Name of the SQL script that contains the objects to create in the DB.
-declare -r CHECK_OBJECTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_checkTables.sql"
+declare -r CHECK_OBJECTS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_10_checkTables.sql"
 
 # Name of the SQL script that contains the tables to create in the DB.
-declare -r CREATE_TABLES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql"
+declare -r CREATE_TABLES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql"
 
 # Name of the SQL script that contains the ETL process.
-declare -r POPULATE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_31_populate.sql"
+declare -r POPULATE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_30_populate.sql"
 
 ###########
 # FUNCTIONS

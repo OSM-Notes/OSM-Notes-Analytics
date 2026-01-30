@@ -778,18 +778,18 @@ teardown() {
  run psql -d postgres -c "CREATE DATABASE ${TEST_DBNAME};" 2> /dev/null || true
 
  # Set up base tables
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" 2> /dev/null || true
  fi
 
  # Create datamart countries table
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql" 2> /dev/null || true
  fi
 
  # Create procedure
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql" 2> /dev/null || true
  fi
 
  # Insert test data: create some countries with modified flag
@@ -833,18 +833,18 @@ teardown() {
  run psql -d postgres -c "CREATE DATABASE ${TEST_DBNAME};" 2> /dev/null || true
 
  # Set up base tables
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" 2> /dev/null || true
  fi
 
  # Create datamart users table
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql" 2> /dev/null || true
  fi
 
  # Create procedure
- if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql" ]]; then
-  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql" 2> /dev/null || true
+ if [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql" ]]; then
+  run psql -d "${TEST_DBNAME}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql" 2> /dev/null || true
  fi
 
  # Insert test data: create some users with modified flag

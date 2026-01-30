@@ -184,15 +184,15 @@ declare -r POSTGRES_12_DROP_DATAMART_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/E
 declare -r POSTGRES_13_DROP_DWH_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_13_removeDWHObjects.sql"
 
 # Create DWH tables.
-declare -r POSTGRES_22_CREATE_DWH_TABLES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_createDWHTables.sql"
+declare -r POSTGRES_22_CREATE_DWH_TABLES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
 # Create fact partitions.
-declare -r POSTGRES_22A_CREATE_FACT_PARTITIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22a_createFactPartitions.sql"
+declare -r POSTGRES_22A_CREATE_FACT_PARTITIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_21_createFactPartitions.sql"
 # Populates regions per country.
-declare -r POSTGRES_23_GET_WORLD_REGIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_23_getWorldRegion.sql"
+declare -r POSTGRES_23_GET_WORLD_REGIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_22_getWorldRegion.sql"
 # Add functions.
-declare -r POSTGRES_24_ADD_FUNCTIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_24_addFunctions.sql"
+declare -r POSTGRES_24_ADD_FUNCTIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_23_addFunctions.sql"
 # Populate ISO country codes.
-declare -r POSTGRES_24A_POPULATE_ISO_CODES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_24a_populateISOCodes.sql"
+declare -r POSTGRES_24A_POPULATE_ISO_CODES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_24_populateISOCodes.sql"
 # Populate dimension tables.
 declare -r POSTGRES_25_POPULATE_DIMENSIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_25_populateDimensionTables.sql"
 # Update dimension tables.
@@ -207,19 +207,19 @@ declare -r POSTGRES_31_CREATE_BASE_STAGING_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql
 declare -r POSTGRES_32_CREATE_STAGING_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_32_createStagingObjects.sql"
 # Create initial facts base objects.
 declare -r POSTGRES_33_CREATE_FACTS_BASE_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_33_initialFactsBaseObjects.sql"
-declare -r POSTGRES_33_CREATE_FACTS_BASE_OBJECTS_SIMPLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_33_initialFactsBaseObjects_Simple.sql"
+declare -r POSTGRES_33_CREATE_FACTS_BASE_OBJECTS_SIMPLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_33a_initialFactsBaseObjects_Simple.sql"
 # Create initial facts load.
 declare -r POSTGRES_34_CREATE_FACTS_YEAR_LOAD="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_34_initialFactsLoadCreate.sql"
 # Execute initial facts load.
 declare -r POSTGRES_35_EXECUTE_FACTS_YEAR_LOAD="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35_initialFactsLoadExecute.sql"
-declare -r POSTGRES_35_EXECUTE_FACTS_YEAR_LOAD_SIMPLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35_initialFactsLoadExecute_Simple.sql"
-declare -r POSTGRES_35_EXECUTE_FACTS_YEAR_LOAD_PHASE2="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35_initialFactsLoadExecute_Phase2.sql"
-declare -r POSTGRES_35B_UPDATE_CLOSED_DIMENSION_ID_DATE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35b_updateClosedDimensionIdDate.sql"
-declare -r POSTGRES_34_INITIAL_FACTS_LOAD_PARALLEL="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_34_initialFactsLoadCreate_Parallel.sql"
+declare -r POSTGRES_35_EXECUTE_FACTS_YEAR_LOAD_SIMPLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35a_initialFactsLoadExecute_Simple.sql"
+declare -r POSTGRES_35_EXECUTE_FACTS_YEAR_LOAD_PHASE2="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35b_initialFactsLoadExecute_Phase2.sql"
+declare -r POSTGRES_35B_UPDATE_CLOSED_DIMENSION_ID_DATE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_35c_updateClosedDimensionIdDate.sql"
+declare -r POSTGRES_34_INITIAL_FACTS_LOAD_PARALLEL="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_34a_initialFactsLoadCreate_Parallel.sql"
 # Drop initial facts load.
 declare -r POSTGRES_36_DROP_FACTS_YEAR_LOAD="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_36_initialFactsLoadDrop.sql"
 # Add constraints, indexes and triggers.
-declare -r POSTGRES_41_ADD_CONSTRAINTS_INDEXES_TRIGGERS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql"
+declare -r POSTGRES_41_ADD_CONSTRAINTS_INDEXES_TRIGGERS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql"
 # Create automation detection system.
 declare -r POSTGRES_50_CREATE_AUTOMATION_DETECTION="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_50_createAutomationDetection.sql"
 # Create experience levels system.
@@ -233,7 +233,7 @@ declare -r POSTGRES_53A_ENHANCE_DATAMARTS_HASHTAGS="${SCRIPT_BASE_DIRECTORY}/sql
 # Create specialized hashtag indexes.
 declare -r POSTGRES_53B_CREATE_HASHTAG_INDEXES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/improvements/13_create_hashtag_indexes.sql"
 # Unify facts.
-declare -r POSTGRES_54_UNIFY_FACTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_51_unify.sql"
+declare -r POSTGRES_54_UNIFY_FACTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_50_unify.sql"
 # Create note current status table and procedures (ETL-003, ETL-004)
 declare -r POSTGRES_55_CREATE_NOTE_CURRENT_STATUS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_55_createNoteCurrentStatus.sql"
 declare -r POSTGRES_56_GENERATE_ETL_REPORT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_56_generateETLReport.sql"
@@ -243,7 +243,7 @@ declare -r POSTGRES_57_VALIDATE_ETL_INTEGRITY="${SCRIPT_BASE_DIRECTORY}/sql/dwh/
 declare -r POSTGRES_63_COMPLETE_HASHTAG_ANALYSIS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamarts/63_completeHashtagAnalysis.sql"
 
 # Load notes staging.
-declare -r POSTGRES_61_LOAD_NOTES_STAGING="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_61_loadNotes.sql"
+declare -r POSTGRES_61_LOAD_NOTES_STAGING="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_60_loadNotes.sql"
 
 # Setup Foreign Data Wrappers for incremental processing.
 declare -r POSTGRES_60_SETUP_FDW="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_60_setupFDW.sql"
@@ -257,7 +257,7 @@ declare -r DATAMART_COUNTRIES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartC
 declare -r DATAMART_USERS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartUsers/datamartUsers.sh"
 declare -r DATAMART_GLOBAL_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartGlobal/datamartGlobal.sh"
 # Create datamart performance log table.
-declare -r POSTGRES_DATAMART_PERFORMANCE_CREATE_TABLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartPerformance/datamartPerformance_11_createTable.sql"
+declare -r POSTGRES_DATAMART_PERFORMANCE_CREATE_TABLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartPerformance/datamartPerformance_10_createTable.sql"
 # Create logs table for debugging (only needed when Ingestion and Analytics databases are different).
 declare -r POSTGRES_CREATE_LOGS_TABLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_54_createLogsTable.sql"
 

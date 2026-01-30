@@ -540,7 +540,7 @@ batch_size=1000
 
 - **Main file:** `bin/dwh/datamartUsers/datamartUsers.sh`
 - **Population SQL:** `sql/dwh/datamartUsers/datamartUsers_32_populateDatamartUsersTable.sql`
-- **Procedure:** `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`
+- **Procedure:** `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`
 
 ## Version History
 

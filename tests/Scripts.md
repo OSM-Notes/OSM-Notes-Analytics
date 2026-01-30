@@ -79,7 +79,7 @@ bash tests/run_dwh_tests.sh
 **Purpose**: Populates test database with mock data **What it does**:
 
 1. Generates mock staging data
-2. Creates DWH schema using ETL_22_createDWHTables.sql
+2. Creates DWH schema using ETL_20_createDWHTables.sql
 3. Populates dimensions (users, countries, applications)
 4. Inserts facts from staging data
 5. Updates datamarts
@@ -109,7 +109,7 @@ User runs: bash tests/run_all_tests.sh
          │
          ├─→ run_mock_etl.sh (data setup)
          │    ├─→ generate_mock_staging_data.sql
-         │    ├─→ ETL_22_createDWHTables.sql
+         │    ├─→ ETL_20_createDWHTables.sql
          │    └─→ Populate dimensions & facts
          │
          └─→ Execute BATS tests

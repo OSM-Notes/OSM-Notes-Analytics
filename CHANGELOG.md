@@ -407,10 +407,10 @@ All notable changes to this project will be documented in this file.
 
 ### Files Modified
 
-- `sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql`
-- `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`
-- `sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql`
-- `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`
+- `sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql`
+- `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`
+- `sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql`
+- `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`
 - `tests/unit/bash/datamart_high_priority_metrics.test.bats` (new)
 - `docs/Dashboard_Analysis.md`
 - `docs/Metric_Definitions.md`

@@ -55,15 +55,15 @@ flowchart TD
 
 Key scripts:
 
-- `sql/dwh/ETL_22_createDWHTables.sql`
-- `sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql`
+- `sql/dwh/ETL_20_createDWHTables.sql`
+- `sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql`
 - `sql/dwh/ETL_25_populateDimensionTables.sql`
 - `sql/dwh/ETL_26_updateDimensionTables.sql`
 - `sql/dwh/Staging_31_createBaseStagingObjects.sql`
 - `sql/dwh/Staging_32_createStagingObjects.sql`
 - `sql/dwh/Staging_34_initialFactsLoadCreate.sql`
 - `sql/dwh/Staging_35_initialFactsLoadExecute.sql`
-- `sql/dwh/Staging_51_unify.sql`
+- `sql/dwh/Staging_50_unify.sql`
 
 ### Schema Overview
 

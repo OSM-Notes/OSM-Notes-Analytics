@@ -71,7 +71,7 @@ CREATE TABLE dwh.facts (
 -- ETL.sh > __initialFacts
 --
 -- IMPORTANT: dwh.facts is PARTITIONED by action_at (year).
--- Partitions are created by ETL_22a_createFactPartitions.sql
+-- Partitions are created by ETL_21_createFactPartitions.sql
 -- To add a new year partition, simply run that script again.
 COMMENT ON TABLE dwh.facts IS
   'Facts table (partitioned by action_at year), center of the star schema';

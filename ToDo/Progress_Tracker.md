@@ -95,7 +95,7 @@
 - Problem: Procedure used `opened_dimension_id_country` which doesn't exist in dwh.facts table
 - Solution: Changed to use `dimension_id_country` with `action_comment = 'opened'` filter
 - Files modified:
-  - sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql (lines 993, 1003, 1015, 1027)
+  - sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql (lines 993, 1003, 1015, 1027)
 - Affected calculations: applications_used, most_used_application_id, mobile_apps_count,
   desktop_apps_count
 - Created verification script: sql/dwh/improvements/verify_datamart_calculations.sql

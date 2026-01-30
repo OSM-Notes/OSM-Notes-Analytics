@@ -24,10 +24,10 @@ setup() {
 }
 
 # Test that datamartCountries procedure can be created without syntax errors
-@test "datamartCountries_13_createProcedure.sql should create procedure without syntax errors" {
+@test "datamartCountries_12_createProcedure.sql should create procedure without syntax errors" {
  skip_if_no_db_connection
  local dbname="${TEST_DBNAME:-${DBNAME}}"
- local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql"
+ local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
 
  # Skip if file doesn't exist
  [[ -f "${sql_file}" ]] || skip "SQL file not found: ${sql_file}"
@@ -101,10 +101,10 @@ EOF
 }
 
 # Test that datamartUsers procedure can be created without syntax errors
-@test "datamartUsers_13_createProcedure.sql should create procedure without syntax errors" {
+@test "datamartUsers_12_createProcedure.sql should create procedure without syntax errors" {
  skip_if_no_db_connection
  local dbname="${TEST_DBNAME:-${DBNAME}}"
- local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql"
+ local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
 
  # Skip if file doesn't exist
  [[ -f "${sql_file}" ]] || skip "SQL file not found: ${sql_file}"
@@ -201,7 +201,7 @@ EOF
  [[ "${status}" -eq 0 ]]
 
  # Load the procedure
- local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql"
+ local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
  [[ -f "${sql_file}" ]] || skip "SQL file not found: ${sql_file}"
 
  run psql -d "${dbname}" -v ON_ERROR_STOP=1 -f "${sql_file}" 2>&1

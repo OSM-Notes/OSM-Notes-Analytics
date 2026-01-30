@@ -104,7 +104,7 @@ awk '
   /COMMENT[[:space:]]+ON[[:space:]]+TYPE[[:space:]]+note_event_enum/ {skip1=1; next}
   skip1 {skip1=0; next}
   {print}
-' "${PROJECT_ROOT}/sql/dwh/ETL_22_createDWHTables.sql" > "${TMP_DDL}"
+' "${PROJECT_ROOT}/sql/dwh/ETL_20_createDWHTables.sql" > "${TMP_DDL}"
 # Execute SQL, ignoring errors about existing objects (tables may already exist from previous runs)
 set +e
 SQL_OUTPUT=$("${psql_cmd[@]}" -f "${TMP_DDL}" 2>&1)
@@ -121,7 +121,7 @@ if [[ ${SQL_EXIT_CODE} -ne 0 ]]; then
   REAL_ERRORS=$(echo "${FILTERED_OUTPUT}" | grep -vE "(CREATE SCHEMA|COMMENT|^$)" | grep -E "^ERROR:" || true)
   if [[ -n "${REAL_ERRORS}" ]]; then
    echo "[MOCK-ETL] ERROR: Failed to apply base DWH DDL" >&2
-   echo "[MOCK-ETL] Check the SQL file: ${PROJECT_ROOT}/sql/dwh/ETL_22_createDWHTables.sql" >&2
+   echo "[MOCK-ETL] Check the SQL file: ${PROJECT_ROOT}/sql/dwh/ETL_20_createDWHTables.sql" >&2
    echo "${FILTERED_OUTPUT}" >&2
    rm -f "${TMP_DDL}"
    exit 1
@@ -142,7 +142,7 @@ elif [[ "${HAS_PKS}" == "t" ]]; then
 fi
 
 if [[ "${MODE}" == "ALL" ]]; then
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/ETL_24_addFunctions.sql"
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/ETL_23_addFunctions.sql"
 else
  TMP_FUNCS_DDL="$(mktemp)"
  if [[ "${MODE}" == "NO_PK" ]]; then
@@ -155,7 +155,7 @@ else
       skipidx && /;[[:space:]]*$/ {skipidx=0; next}
       skipidx {next}
       {print}
-    ' "${PROJECT_ROOT}/sql/dwh/ETL_24_addFunctions.sql" > "${TMP_FUNCS_DDL}"
+    ' "${PROJECT_ROOT}/sql/dwh/ETL_23_addFunctions.sql" > "${TMP_FUNCS_DDL}"
  else
   awk '
       BEGIN {skip=0; skip2=0; skipidx=0}
@@ -169,7 +169,7 @@ else
       skipidx && /;[[:space:]]*$/ {skipidx=0; next}
       skipidx {next}
       {print}
-    ' "${PROJECT_ROOT}/sql/dwh/ETL_24_addFunctions.sql" > "${TMP_FUNCS_DDL}"
+    ' "${PROJECT_ROOT}/sql/dwh/ETL_23_addFunctions.sql" > "${TMP_FUNCS_DDL}"
  fi
  "${psql_cmd[@]}" -f "${TMP_FUNCS_DDL}"
  rm -f "${TMP_FUNCS_DDL}"
@@ -189,11 +189,11 @@ if [[ "${HAS_FACT_FK}" == "t" || "${HAS_FACT_IDX}" == "t" ]]; then
     /Skipping primary key \(partitioned table\)/ { print "SELECT /* Notes-ETL */ clock_timestamp() AS Processing,"; print $0; next }
     s2 { next }
     { print }
-  ' "${PROJECT_ROOT}/sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql" > "${TMP_41_DDL}"
+  ' "${PROJECT_ROOT}/sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql" > "${TMP_41_DDL}"
  "${psql_cmd[@]}" -f "${TMP_41_DDL}"
  rm -f "${TMP_41_DDL}"
 else
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/ETL_41_addConstraintsIndexesTriggers.sql"
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql"
 fi
 
 echo "[MOCK-ETL] Creating datamart tables..."
@@ -219,12 +219,12 @@ if [[ "${HAS_PK_DC}" == "t" ]]; then
    skip && /;[[:space:]]*$/ {skip=0; next}
    skip {next}
    {print}
- ' "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql" > "${TMP_DC12_DDL}"
+ ' "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql" > "${TMP_DC12_DDL}"
  "${psql_cmd[@]}" -f "${TMP_DC12_DDL}"
  rm -f "${TMP_DC12_DDL}"
 else
  # Table doesn't exist: create it with full script (includes new columns)
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_12_createDatamarCountriesTable.sql"
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_11_createDatamarCountriesTable.sql"
 fi
 
 # datamartUsers: create table, then add new columns before executing full script
@@ -256,11 +256,11 @@ if [[ "${HAS_PK_DU}" == "t" || "${HAS_PK_BADGES}" == "t" || "${HAS_PK_BADGE_USER
    skip && /;[[:space:]]*$/ { skip=0; next }
    skip { next }
    { print }
- ' "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql" > "${TMP_DU12_DDL}"
+ ' "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql" > "${TMP_DU12_DDL}"
  "${psql_cmd[@]}" -f "${TMP_DU12_DDL}"
  rm -f "${TMP_DU12_DDL}"
 else
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_12_createDatamartUsersTable.sql"
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
 fi
 
 # Ensure new temporal resolution JSON columns exist (idempotent)
@@ -284,8 +284,8 @@ fi
 "${psql_cmd[@]}" -c "ALTER TABLE dwh.datamartUsers ADD COLUMN IF NOT EXISTS period_of_day VARCHAR(16);"
 
 # Create global datamart if script exists (best effort)
-if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" ]]; then
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" || true
+if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" ]]; then
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" || true
 fi
 
 echo "[MOCK-ETL] Loading sample test data..."
@@ -298,11 +298,11 @@ echo "[MOCK-ETL] Ensuring dimension flags are set for recalculation..."
 echo "[MOCK-ETL] Creating/refreshing datamart procedures (best effort) ..."
 # Create procedures if needed; rely on existing files
 # IMPORTANT: Procedures must be created AFTER columns are added, as they reference the new columns
-if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql" ]]; then
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql"
+if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql" ]]; then
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
 fi
-if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql" ]]; then
- "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql"
+if [[ -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql" ]]; then
+ "${psql_cmd[@]}" -f "${PROJECT_ROOT}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
 fi
 
 echo "[MOCK-ETL] Populating datamartCountries..."

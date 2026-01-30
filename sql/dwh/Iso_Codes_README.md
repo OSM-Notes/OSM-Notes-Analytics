@@ -21,7 +21,7 @@ CREATE TABLE dwh.iso_country_codes (
 
 ## How It Works
 
-1. **Initial Load**: Script `ETL_24a_populateISOCodes.sql` creates and populates the table
+1. **Initial Load**: Script `ETL_24_populateISOCodes.sql` creates and populates the table
 2. **Country Insert**: When new countries are added to `dimension_countries`, ISO codes are looked
    up via LEFT JOIN
 3. **Country Update**: When running ETL updates, new ISO codes are added if available
@@ -31,7 +31,7 @@ CREATE TABLE dwh.iso_country_codes (
 
 ### Option 1: Edit the SQL File (Recommended)
 
-Edit `sql/dwh/ETL_24a_populateISOCodes.sql` and add new rows to the INSERT statement:
+Edit `sql/dwh/ETL_24_populateISOCodes.sql` and add new rows to the INSERT statement:
 
 ```sql
 INSERT INTO dwh.iso_country_codes (osm_country_id, iso_alpha2, iso_alpha3, country_name_en)
@@ -47,7 +47,7 @@ VALUES
 Then run:
 
 ```bash
-psql -d osm_notes -f sql/dwh/ETL_24a_populateISOCodes.sql
+psql -d osm_notes -f sql/dwh/ETL_24_populateISOCodes.sql
 ```
 
 The script uses `ON CONFLICT DO UPDATE`, so you can run it multiple times safely.

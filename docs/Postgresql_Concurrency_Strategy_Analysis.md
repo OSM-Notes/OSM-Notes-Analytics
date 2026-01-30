@@ -63,11 +63,11 @@ each process in `pg_stat_activity`.
 - `sql/dwh/Staging_32_createStagingObjects.sql`: Queries `note_comments`, `notes`,
   `note_comments_text`, `countries`, `users`
 - `sql/dwh/Staging_34_initialFactsLoadCreate.sql`: Queries the same tables
-- `sql/dwh/Staging_35_initialFactsLoadExecute_Simple.sql`: Queries the same tables
-- `sql/dwh/Staging_61_loadNotes.sql`: Queries `note_comments`
-- `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`: Queries `note_comments`,
+- `sql/dwh/Staging_35a_initialFactsLoadExecute_Simple.sql`: Queries the same tables
+- `sql/dwh/Staging_60_loadNotes.sql`: Queries `note_comments`
+- `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`: Queries `note_comments`,
   `note_comments_text`
-- `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`: Queries `note_comments`,
+- `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`: Queries `note_comments`,
   `note_comments_text`
 
 **Stored procedures that query**:
@@ -80,7 +80,7 @@ each process in `pg_stat_activity`.
 **Implementation completed**:
 
 1. **Direct SQL scripts**: ✅ Implemented
-   - `sql/dwh/Staging_61_loadNotes.sql`: SELECT queries to `note_comments` are now wrapped in
+   - `sql/dwh/Staging_60_loadNotes.sql`: SELECT queries to `note_comments` are now wrapped in
      `BEGIN READ ONLY; ... COMMIT;` blocks
 
 2. **Stored procedures**: ⚠️ Limited by design
@@ -189,11 +189,11 @@ function __psql_with_appname {
    - Lines: 356-477 (approximately)
    - Add: `SET TRANSACTION READ ONLY;` for read queries
 
-3. **`sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`**
+3. **`sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`**
    - Procedure: `dwh.update_datamart_country()`
    - Add: `SET TRANSACTION READ ONLY;` for SELECT queries
 
-4. **`sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`**
+4. **`sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`**
    - Procedure: `dwh.update_datamart_user()`
    - Add: `SET TRANSACTION READ ONLY;` for SELECT queries
 
@@ -204,7 +204,7 @@ transaction, but SELECT queries within them can be executed in READ ONLY sub-tra
 
 **Files to modify**:
 
-1. **`sql/dwh/Staging_61_loadNotes.sql`**
+1. **`sql/dwh/Staging_60_loadNotes.sql`**
    - Lines 8-12 and 22-26: SELECT queries to `note_comments`
    - Wrap in: `BEGIN READ ONLY; ... COMMIT;`
 
@@ -304,10 +304,10 @@ When `DBNAME_INGESTION == DBNAME_DWH`:
 
 - `sql/dwh/Staging_32_createStagingObjects.sql`: Procedures `process_notes_at_date` and
   `process_notes_actions_into_dwh`
-- `sql/dwh/Staging_61_loadNotes.sql`: SELECT queries
-- `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`: Procedure
+- `sql/dwh/Staging_60_loadNotes.sql`: SELECT queries
+- `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`: Procedure
   `update_datamart_country`
-- `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`: Procedure `update_datamart_user`
+- `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`: Procedure `update_datamart_user`
 
 ### Configuration Files
 
@@ -346,12 +346,12 @@ The project now implements PostgreSQL concurrency strategies:
 
 - `etc/properties.sh`: Added timeout configuration variables
 - `bin/dwh/ETL.sh`: Modified `__psql_with_appname` function to support timeouts
-- `sql/dwh/Staging_61_loadNotes.sql`: Added READ ONLY transactions for SELECT queries
+- `sql/dwh/Staging_60_loadNotes.sql`: Added READ ONLY transactions for SELECT queries
 - `sql/dwh/Staging_32_createStagingObjects.sql`: Added comments documenting queries to ingestion
   tables
-- `sql/dwh/datamartCountries/datamartCountries_13_createProcedure.sql`: Added comments documenting
+- `sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql`: Added comments documenting
   queries to ingestion tables
-- `sql/dwh/datamartUsers/datamartUsers_13_createProcedure.sql`: Added comments documenting queries
+- `sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql`: Added comments documenting queries
   to ingestion tables
 
 **Expected benefits**:

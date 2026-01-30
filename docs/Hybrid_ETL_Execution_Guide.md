@@ -182,7 +182,7 @@ flowchart LR
      - `tests/setup_hybrid_mock_environment.sh`
      - `tests/mock_commands/` directory
      - `etc/properties_test.sh`
-     - `sql/process/processPlanetNotes_13_dropBaseTables.sql`
+     - `sql/process/processPlanetNotes_12_dropBaseTables.sql`
 
 2. **OSM-Notes-Analytics Repository:**
    - Must contain:

@@ -46,7 +46,7 @@ setup() {
 
  # Create datamartGlobal table if it doesn't exist
  if ! psql -d "${dbname}" -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='dwh' AND table_name='datamartglobal';" | grep -q 1; then
-  psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+  psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
  fi
 
  # Ensure max_date_global_processed table exists
@@ -106,7 +106,7 @@ teardown() {
 
  # Create table
  run psql -d "${dbname}" -v ON_ERROR_STOP=1 \
-  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql"
+  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql"
 
  [[ "${status}" -eq 0 ]]
 
@@ -129,7 +129,7 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table if not exists
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Check for key columns
  run psql -d "${dbname}" -t -c "
@@ -161,7 +161,7 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table if not exists
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Check record count
  run psql -d "${dbname}" -Atq -c "
@@ -181,7 +181,7 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table if not exists
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Check dimension_global_id value
  run psql -d "${dbname}" -Atq -c "
@@ -201,11 +201,11 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table if not exists
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Execute population script (will run even if no data)
  run psql -d "${dbname}" -v ON_ERROR_STOP=1 \
-  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_31_populate.sql" 2>&1 || true
+  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_30_populate.sql" 2>&1 || true
 
  # Should execute without critical errors (may have warnings about no data)
  [[ "${status}" -eq 0 ]] || echo "Population script should handle empty database"
@@ -218,7 +218,7 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table if not exists
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Export to JSON
  run psql -d "${dbname}" -Atq -c "
@@ -238,12 +238,24 @@ teardown() {
   skip_if_no_db_connection
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
- # Create table first
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1
+ # Create table first and verify it was created
+ run psql -d "${dbname}" -v ON_ERROR_STOP=1 \
+  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql"
+ [[ "${status}" -eq 0 ]] || echo "Failed to create datamartGlobal table"
+
+ # Verify table exists before running check script
+ run psql -d "${dbname}" -Atq -c "
+  SELECT COUNT(*)
+  FROM information_schema.tables
+  WHERE table_schema = 'dwh'
+    AND LOWER(table_name) = 'datamartglobal'
+ "
+ [[ "${status}" -eq 0 ]]
+ [[ $(echo "${output}" | tr -d ' ') -eq 1 ]] || echo "Table should exist before check"
 
  # Check tables script should pass
  run psql -d "${dbname}" -v ON_ERROR_STOP=1 \
-  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_checkTables.sql"
+  -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_10_checkTables.sql"
 
  [[ "${status}" -eq 0 ]]
 }
@@ -255,7 +267,7 @@ teardown() {
  local dbname="${TEST_DBNAME:-${DBNAME}}"
 
  # Create table first
- psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_12_createTable.sql" > /dev/null 2>&1 || true
+ psql -d "${dbname}" -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartGlobal/datamartGlobal_11_createTable.sql" > /dev/null 2>&1 || true
 
  # Check table exists
  run psql -d "${dbname}" -Atq -c "

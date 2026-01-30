@@ -6,7 +6,7 @@
 -- This script creates specialized indexes to optimize the exportClosedNotesByCountry.sql query.
 -- These indexes target the specific query patterns used in CSV export.
 --
--- IMPORTANT: Run this script after ETL_41_addConstraintsIndexesTriggers.sql
+-- IMPORTANT: Run this script after ETL_40_addConstraintsIndexesTriggers.sql
 -- These indexes are complementary to existing indexes and focus on export-specific patterns.
 
 -- Index 1: Optimize latest_closes CTE
@@ -73,8 +73,8 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT
-    schemaname||'.'||indexrelname AS index_name,
-    schemaname||'.'||relname AS table_name,
+    schemaname || '.' || indexrelname AS index_name,
+    schemaname || '.' || relname AS table_name,
     idx_scan AS index_scans,
     idx_tup_read AS tuples_read,
     idx_tup_fetch AS tuples_fetched
@@ -90,8 +90,8 @@ COMMENT ON FUNCTION dwh.monitor_export_index_usage() IS
 -- Create a view for easy monitoring
 CREATE OR REPLACE VIEW dwh.v_export_index_performance AS
 SELECT
-  schemaname||'.'||indexrelname AS index_name,
-  schemaname||'.'||relname AS table_name,
+  schemaname || '.' || indexrelname AS index_name,
+  schemaname || '.' || relname AS table_name,
   idx_scan AS index_scans,
   idx_tup_read AS tuples_read,
   idx_tup_fetch AS tuples_fetched,
