@@ -41,4 +41,4 @@ Each ADR follows this structure:
 
 - [ADR GitHub](https://adr.github.io/)
 - [Michael Nygard's Article](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions)
-- [OSM-Notes-Common ADR Template](../../OSM-Notes-Common/docs/adr/Template.md)
+- [OSM-Notes-Common ADR Template](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/adr/Template.md)
