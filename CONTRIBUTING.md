@@ -335,12 +335,6 @@ sudo apt-get install shellcheck shfmt bats
 
 # Install database tools
 sudo apt-get install postgresql
-
-# Install XML processing tools
-sudo apt-get install libxml2-utils xsltproc xmlstarlet
-
-# Install geographic tools
-sudo apt-get install gdal-bin ogr2ogr
 ```
 
 ### 2. Project Structure Understanding
@@ -415,27 +409,24 @@ tests covering all system components, including DWH functionality.
 - **Configuration**: Validation of properties files and SQL syntax
 - **Database**: PostgreSQL extension checks
 
-### DWH Enhanced Testing Requirements
+### DWH Testing Requirements
 
 When contributing to DWH features, you must include tests for:
 
-#### New Dimensions
+#### Dimensions
 
 - **`dimension_timezones`**: Timezone support testing
 - **`dimension_seasons`**: Seasonal analysis testing
 - **`dimension_continents`**: Continental grouping testing
 - **`dimension_application_versions`**: Application version testing
 - **`fact_hashtags`**: Bridge table testing
-
-#### Enhanced Dimensions
-
-- **`dimension_time_of_week`**: Renamed dimension with enhanced attributes
+- **`dimension_time_of_week`**: Time-of-week attributes testing
 - **`dimension_users`**: SCD2 implementation testing
 - **`dimension_countries`**: ISO codes testing
-- **`dimension_days`**: Enhanced date attributes testing
-- **`dimension_applications`**: Enhanced attributes testing
+- **`dimension_days`**: Date attributes testing
+- **`dimension_applications`**: Application attributes testing
 
-#### New Functions
+#### Functions
 
 - **`get_timezone_id_by_lonlat()`**: Timezone calculation testing
 - **`get_season_id()`**: Season calculation testing
@@ -443,10 +434,10 @@ When contributing to DWH features, you must include tests for:
 - **`get_local_date_id()`**: Local date calculation testing
 - **`get_local_hour_of_week_id()`**: Local hour calculation testing
 
-#### Enhanced ETL
+#### ETL Components
 
 - **Staging Procedures**: New columns, SCD2, bridge tables
-- **Datamart Compatibility**: Integration with new dimensions
+- **Datamart Compatibility**: Integration with dimensions
 - **Documentation**: Consistency with implementation
 
 ### Running Tests
@@ -888,17 +879,19 @@ test(api): add integration tests for new endpoints
 
 #### Database Setup
 
-For local testing, you need PostgreSQL:
+For local testing, you need PostgreSQL with PostGIS:
 
 ```bash
-# Create test database
-createdb dwh
-psql -d dwh -c "CREATE EXTENSION btree_gist;"
+# Create test database (name matches tests/properties.sh default)
+createdb osm_notes_analytics_test
+psql -d osm_notes_analytics_test -c "CREATE EXTENSION postgis;"
+psql -d osm_notes_analytics_test -c "CREATE EXTENSION btree_gist;"
 
-# Configure connection in tests/properties.sh
-DBNAME="dwh"
-DB_USER="your_username"
+# Configure in tests/properties.sh or export (optional, these are the defaults)
+export TEST_DBNAME="osm_notes_analytics_test"
 ```
+
+See [tests/README.md](tests/README.md) for complete test setup instructions.
 
 ### Local Configuration
 
