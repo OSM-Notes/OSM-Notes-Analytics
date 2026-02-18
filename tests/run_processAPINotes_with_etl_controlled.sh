@@ -75,7 +75,7 @@ backup_databases() {
  # Load DBNAME from ingestion properties to get ingestion database name
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh"
- local INGESTION_DBNAME="${DBNAME:-osm_notes_ingestion_test}"
+ local INGESTION_DBNAME="${DBNAME:-notes_ingestion_test}"
  local backup_name
  backup_name="step_${step}_$(date +%Y%m%d_%H%M%S)"
  local backup_path="${BACKUP_DIR}/${backup_name}"
@@ -86,7 +86,7 @@ backup_databases() {
  # Load database connection parameters
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh" 2> /dev/null || true
- local INGESTION_DBNAME="${DBNAME:-osm_notes_ingestion_test}"
+ local INGESTION_DBNAME="${DBNAME:-notes_ingestion_test}"
 
  local PSQL_CMD="psql"
  if [[ -n "${DB_HOST:-}" ]]; then
@@ -162,7 +162,7 @@ restore_databases() {
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh" 2> /dev/null || true
  # Use the actual test database name for hybrid test (not production name from properties.sh)
- local INGESTION_DBNAME="osm_notes_ingestion_test"
+ local INGESTION_DBNAME="notes_ingestion_test"
 
  local PSQL_CMD="psql"
  if [[ -n "${DB_HOST:-}" ]]; then
@@ -761,7 +761,7 @@ run_etl() {
  # Load DBNAME from ingestion properties to get ingestion database name
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh"
- local INGESTION_DBNAME="${DBNAME:-osm_notes_ingestion_test}"
+ local INGESTION_DBNAME="${DBNAME:-notes_ingestion_test}"
 
  # Export database configuration for ETL
  # In hybrid test mode with separate databases:

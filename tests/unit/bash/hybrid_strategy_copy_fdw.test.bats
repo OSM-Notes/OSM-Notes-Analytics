@@ -397,8 +397,8 @@ EOF
   export DBNAME_DWH=\"${TEST_ANALYTICS_DB}\"
   unset DB_USER_INGESTION DB_USER_DWH DB_USER
   # Simulate the FDW check logic from ETL.sh
-  ingestion_db=\"\${DBNAME_INGESTION:-\${DBNAME:-osm_notes}}\"
-  analytics_db=\"\${DBNAME_DWH:-\${DBNAME:-osm_notes}}\"
+  ingestion_db=\"\${DBNAME_INGESTION:-\${DBNAME:-notes}}\"
+  analytics_db=\"\${DBNAME_DWH:-\${DBNAME:-notes_dwh}}\"
   if [[ \"\${ingestion_db}\" != \"\${analytics_db}\" ]]; then
    echo 'FDW would be configured'
    exit 1

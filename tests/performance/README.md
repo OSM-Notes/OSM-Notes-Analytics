@@ -56,10 +56,10 @@ Comprehensive benchmark for trigger performance:
 
 ```bash
 # Run against production database
-psql -d osm_notes -f tests/performance/benchmark_trigger_performance.sql
+psql -d notes_dwh -f tests/performance/benchmark_trigger_performance.sql
 
 # Or run with output to file
-psql -d osm_notes -f tests/performance/benchmark_trigger_performance.sql > benchmark_results.txt
+psql -d notes_dwh -f tests/performance/benchmark_trigger_performance.sql > benchmark_results.txt
 ```
 
 **Output includes:**
@@ -120,7 +120,7 @@ Based on testing environment:
 
 ```bash
 # Connect to database
-psql -d osm_notes
+psql -d notes_dwh
 
 # Check trigger is enabled
 SELECT * FROM information_schema.triggers
@@ -132,10 +132,10 @@ WHERE trigger_name = 'calculate_note_activity_metrics_trigger';
 ```bash
 # Complete benchmark suite
 cd tests/performance
-psql -d osm_notes -f benchmark_trigger_performance.sql
+psql -d notes_dwh -f benchmark_trigger_performance.sql
 
 # Or run specific test
-psql -d osm_notes -c "
+psql -d notes_dwh -c "
   EXPLAIN ANALYZE
   INSERT INTO dwh.facts (...)
   VALUES (...);

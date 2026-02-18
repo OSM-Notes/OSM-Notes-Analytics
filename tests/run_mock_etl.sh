@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # Minimal mock ETL to prepare local test DB with required schemas/tables and sample data
-# Uses local peer authentication (no password). Target DB defaults to 'osm_notes'.
+# Uses local peer authentication (no password). Target DB defaults to 'notes_dwh'.
 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DBNAME="${TEST_DBNAME:-${DBNAME:-osm_notes}}"
+DBNAME="${TEST_DBNAME:-${DBNAME:-notes_dwh}}"
 
 # Configure PostgreSQL connection parameters from environment variables
 # This allows the script to work in both local (peer auth) and CI/CD (password auth) environments

@@ -94,7 +94,7 @@ Environment variables:
   Note: DB_USER is NOT used in this project (it's only valid in OSM-Notes-Ingestion project)
 
 Note: This script uses TWO separate databases:
-  - Ingestion DB: Uses DBNAME from properties.sh (default: osm_notes)
+  - Ingestion DB: Uses DBNAME from properties.sh (default: notes)
   - Analytics DB: osm_notes_analytics_remote_test (created automatically)
 
 This configuration enables testing of Foreign Data Wrappers (FDW) functionality.
@@ -1076,7 +1076,7 @@ run_etl() {
  # Load DBNAME from ingestion properties to get ingestion database name
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh"
- local INGESTION_DBNAME="${DBNAME:-osm_notes}"
+ local INGESTION_DBNAME="${DBNAME:-notes}"
 
  # Export database configuration for ETL
  # In hybrid test mode with separate databases:
@@ -1446,7 +1446,7 @@ main() {
  # Load DBNAME from ingestion properties to ensure we use the correct database
  # shellcheck disable=SC1090
  source "${INGESTION_ROOT}/etc/properties.sh"
- local INGESTION_DBNAME="${DBNAME:-osm_notes}"
+ local INGESTION_DBNAME="${DBNAME:-notes}"
 
  # Ensure required extensions are installed in ingestion database
  # These are required by processAPINotes.sh (from OSM-Notes-Ingestion system)

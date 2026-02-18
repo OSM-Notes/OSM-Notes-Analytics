@@ -26,7 +26,7 @@ This document describes the test scripts in the `tests/` directory.
 **Usage**:
 
 ```bash
-export TEST_DBNAME="osm_notes_test"
+export TEST_DBNAME="osm_notes_analytics_test"
 bash tests/run_all_tests.sh
 ```
 
@@ -66,7 +66,7 @@ bash tests/run_quality_tests.sh
 **Requires**: PostgreSQL database, BATS **Usage**:
 
 ```bash
-export TEST_DBNAME="osm_notes_test"
+export TEST_DBNAME="osm_notes_analytics_test"
 bash tests/run_dwh_tests.sh
 ```
 
@@ -87,7 +87,7 @@ bash tests/run_dwh_tests.sh
 **Requires**: PostgreSQL database **Usage**:
 
 ```bash
-export TEST_DBNAME="osm_notes_test"
+export TEST_DBNAME="osm_notes_analytics_test"
 bash tests/run_mock_etl.sh
 ```
 
@@ -142,11 +142,11 @@ bash tests/run_all_tests.sh
 bash tests/run_quality_tests.sh
 
 # Run only DWH tests (slow, needs DB)
-export TEST_DBNAME="osm_notes_test"
+export TEST_DBNAME="osm_notes_analytics_test"
 bash tests/run_dwh_tests.sh
 
 # Just populate test data
-export TEST_DBNAME="osm_notes_test"
+export TEST_DBNAME="osm_notes_analytics_test"
 bash tests/run_mock_etl.sh
 ```
 

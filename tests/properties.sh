@@ -30,7 +30,7 @@ elif [[ -f "/app/bin/dwh/ETL.sh" ]]; then
  if [[ "${TEST_DEBUG:-}" == "true" ]]; then
   echo "DEBUG: Detected Docker environment" >&2
  fi
- export TEST_DBNAME="osm_notes_test"
+ export TEST_DBNAME="osm_notes_analytics_test"
  export TEST_DBUSER="testuser"
  export TEST_DBPASSWORD="testpass"
  export TEST_DBHOST="postgres"
