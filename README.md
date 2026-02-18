@@ -188,10 +188,11 @@ For complete installation instructions, see
 
 ## Database Architecture
 
-This system uses a **shared database** approach with separate schemas:
+This system uses a **shared database** approach with separate schemas.
+When using separate databases: `notes` (ingestion) and `notes_dwh` (analytics).
 
 ```text
-Database: osm_notes
+Database: notes_dwh          # Or "notes" when same DB for ingestion+DWH
 ├── Schema: public          # Base tables (managed by Ingestion repo)
 │   ├── notes
 │   ├── note_comments
@@ -300,8 +301,8 @@ PostgreSQL 12.x or higher
 **Troubleshooting:**
 
 - If connection fails, check PostgreSQL is running: `sudo systemctl status postgresql`
-- Verify database exists: `psql -l | grep osm_notes`
-- Check user permissions: `psql -d osm_notes -c "SELECT current_user;"`
+- Verify database exists: `psql -l | grep notes_dwh`
+- Check user permissions: `psql -d notes_dwh -c "SELECT current_user;"`
 
 ### Step 3: Verify Base Tables
 
@@ -314,13 +315,13 @@ Check that base tables exist and have data:
 
 ```bash
 # Check notes table
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
+psql -d "${DBNAME:-notes}" -c "SELECT COUNT(*) FROM notes;"
 
 # Check note_comments table
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM note_comments;"
+psql -d "${DBNAME:-notes}" -c "SELECT COUNT(*) FROM note_comments;"
 
 # Check note_comments_text table
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM note_comments_text;"
+psql -d "${DBNAME:-notes}" -c "SELECT COUNT(*) FROM note_comments_text;"
 ```
 
 **Expected output:**
@@ -455,7 +456,7 @@ Check that the data warehouse was created:
 
 ```bash
 # Check schema exists
-psql -d "${DBNAME:-osm_notes}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
 ```
 
 **Expected output:**
@@ -469,7 +470,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT schema_name FROM information_schema.sc
 
 ```bash
 # Check tables exist (should show many tables)
-psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' ORDER BY tablename;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' ORDER BY tablename;"
 ```
 
 **Expected output:**
@@ -490,9 +491,9 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE scheman
 
 ```bash
 # Check fact counts (should be > 0)
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_countries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.dimension_users;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.dimension_countries;"
 ```
 
 **Expected output:**
@@ -527,7 +528,7 @@ The datamarts aggregate data for quick access and are automatically populated af
 
 ```bash
 # Check datamart tables exist
-psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
 ```
 
 **Expected output:**
@@ -589,7 +590,7 @@ cd bin/dwh/datamartCountries
 
 ```bash
 # Check datamart tables exist
-psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
 ```
 
 **Expected output:**
@@ -605,8 +606,8 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE scheman
 
 ```bash
 # Check counts (should be > 0)
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 ```
 
 **Expected output:**
@@ -620,7 +621,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 ```bash
 # View sample user data
-psql -d "${DBNAME:-osm_notes}" -c "SELECT user_id, username, history_whole_open, history_whole_closed FROM dwh.datamartusers LIMIT 5;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT user_id, username, history_whole_open, history_whole_closed FROM dwh.datamartusers LIMIT 5;"
 ```
 
 **Expected output:**
@@ -636,7 +637,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT user_id, username, history_whole_open,
 
 ```bash
 # View sample country data
-psql -d "${DBNAME:-osm_notes}" -c "SELECT country_id, country_name_en, history_whole_open, history_whole_closed FROM dwh.datamartcountries LIMIT 5;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT country_id, country_name_en, history_whole_open, history_whole_closed FROM dwh.datamartcountries LIMIT 5;"
 ```
 
 **Expected output:**
@@ -775,18 +776,11 @@ For ongoing updates, run these in sequence:
 ```bash
 # 1. Update base data (your OSM notes import process)
 
-# 2. Update DWH
+# 2. Update DWH (ETL automatically updates datamarts at the end)
 cd bin/dwh
 ./ETL.sh
 
-# 3. Update datamarts
-cd datamartUsers
-./datamartUsers.sh
-cd ../datamartCountries
-./datamartCountries.sh
-
-# 4. Export JSON (optional)
-cd ..
+# 3. Export JSON (optional)
 ./exportDatamartsToJSON.sh
 
 # Note: The export script validates all JSON files before moving them to the final destination.
@@ -795,52 +789,17 @@ cd ..
 
 ## Scheduling with Cron
 
+The ETL process **automatically updates datamarts** (datamartCountries, datamartUsers, datamartGlobal)
+at the end of each run. Separate cron jobs for datamarts are **not needed**.
+
 For automated analytics updates:
 
 ```bash
-# Update ETL every hour (after ingestion completes)
-0 * * * * ~/OSM-Notes-Analytics/bin/dwh/ETL.sh
+# Option A: ETL only (if you don't need JSON export to GitHub Pages)
+*/15 * * * * ~/OSM-Notes-Analytics/bin/dwh/ETL.sh
 
-# Update country datamart daily
-0 2 * * * ~/OSM-Notes-Analytics/bin/dwh/datamartCountries/datamartCountries.sh
-
-# Update user datamart daily (processes 500 users per run)
-30 2 * * * ~/OSM-Notes-Analytics/bin/dwh/datamartUsers/datamartUsers.sh
-
-# Export to JSON and push to GitHub Pages (every 15 minutes, after datamarts update)
-# This script exports JSON files and automatically deploys them to GitHub Pages
-45 2 * * * ~/OSM-Notes-Analytics/bin/dwh/exportAndPushJSONToGitHub.sh
-```
-
-### Complete Workflow with JSON Export
-
-For a complete automated pipeline that includes JSON export with validation:
-
-```bash
-# Create wrapper script: /opt/osm-analytics/update-and-export.sh
-#!/bin/bash
-cd /opt/osm-analytics/OSM-Notes-Analytics
-
-# ETL incremental update
-./bin/dwh/ETL.sh || exit 1
-
-# Update datamarts
-./bin/dwh/datamartUsers/datamartUsers.sh || exit 1
-./bin/dwh/datamartCountries/datamartCountries.sh || exit 1
-
-# Export to JSON and push to GitHub Pages
-# The script exports JSON files and automatically deploys them to GitHub Pages
-./bin/dwh/exportAndPushJSONToGitHub.sh || exit 1
-
-# If we get here, all files are valid and exported
-echo "SUCCESS: All exports validated and moved to destination"
-```
-
-Then schedule this wrapper:
-
-```bash
-# Run complete pipeline every 15 minutes
-*/15 * * * * /opt/osm-analytics/update-and-export.sh >> /var/log/osm-analytics.log 2>&1
+# Option B: ETL + export to GitHub Pages (runs export only if ETL succeeds)
+*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-analytics.log 2>&1
 ```
 
 **Key features of JSON export:**
@@ -983,7 +942,7 @@ The `dwh.facts` table is **partitioned by year** using the `action_at` column:
   - Faster VACUUM and maintenance operations per partition
 - **Easy archival**: Old year partitions can be detached/archived independently
 
-See `docs/Partitioning_Strategy.md` for complete details.
+See [Partitioning Strategy](docs/Partitioning_Strategy.md) for complete details.
 
 ### Initial Load Times
 
@@ -1141,7 +1100,7 @@ Check that:
 Check for orphaned facts (example query):
 
 ```bash
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.facts f
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.facts f
 LEFT JOIN dwh.dimension_countries c ON f.dimension_id_country = c.dimension_country_id
 WHERE c.dimension_country_id IS NULL;"
 ```
@@ -1402,34 +1361,4 @@ When setting up the complete ecosystem, install projects in this order:
 - Check the documentation in the `docs/` directory
 - Review logs for error messages
 
-## Recent Enhancements (October 2025)
-
-The following major enhancements have been implemented:
-
-### Datamart Enhancements
-
-- **21 new metrics** added to both `datamartCountries` and `datamartUsers`
-- **Resolution tracking**: Days to resolution, resolution rates
-- **Application analytics**: Mobile vs desktop usage, most popular apps
-- **Content quality**: Comment analysis, URL/mention detection
-- **Community health**: Active notes, backlog, temporal patterns
-- **88+ new automated tests** added to validate all new metrics
-
-### Enhanced Dimensions
-
-- **Automation detection**: Identifies bot/automated notes vs human
-- **Experience levels**: Classifies users from newcomer to legendary
-- **Note activity metrics**: Tracks accumulated comments and reopenings
-- **Hashtag bridge table**: Supports unlimited hashtags per note
-
-### Performance
-
-- **Partitioned facts table**: 10-50x faster date-based queries
-- **Specialized indexes**: Optimized for common query patterns
-- **Automated maintenance**: VACUUM and ANALYZE on partitions
-
-See `docs/Dashboard_Analysis.md` for complete details on available metrics.
-
-## Version
-
-Current Version: 2025-10-26
+See [CHANGELOG](CHANGELOG.md) for release history and recent enhancements.
