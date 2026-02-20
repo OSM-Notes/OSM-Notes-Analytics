@@ -8,7 +8,7 @@
 # - Parallel processing with work queue (nproc-1 threads) for dynamic load balancing
 # - Better CPU utilization: fast users don't leave threads idle
 # - Atomic transactions ensure data consistency
-# - Processes MAX_USERS_PER_CYCLE users per cycle (default: 1000) to allow ETL
+# - Processes MAX_USERS_PER_CYCLE users per cycle (default: 5000) to allow ETL
 #   to complete quickly and update data promptly
 #
 # To follow the progress you can execute:
@@ -136,7 +136,7 @@ function __show_help {
  echo "  - High-activity users (>100 actions) prioritized"
  echo "  - Parallel processing with work queue (nproc-1 threads)"
  echo "  - Dynamic load balancing for optimal CPU utilization"
- echo "  - Processes MAX_USERS_PER_CYCLE users per cycle (default: 1000)"
+ echo "  - Processes MAX_USERS_PER_CYCLE users per cycle (default: 5000)"
  echo "  - Allows ETL to complete quickly and update data promptly"
  echo
  echo "Documentation: See PARALLEL_PROCESSING.md for detailed information"
@@ -483,6 +483,47 @@ function __processNotesUser {
  fi
  __logi "Using ${adjusted_threads} parallel threads (nproc-1: ${MAX_THREADS} - 1)"
 
+ # Get total modified users count first (needed for catch-up limit decision)
+ local total_modified_users
+ set +e
+ total_modified_users=$(__psql_with_appname -d "${DBNAME_DWH}" -Atq -c "
+  SELECT COUNT(DISTINCT f.action_dimension_id_user)
+  FROM dwh.facts f
+   JOIN dwh.dimension_users u
+   ON (f.action_dimension_id_user = u.dimension_user_id)
+  WHERE u.modified = TRUE
+ ")
+ local query_ret=${?}
+ set -e
+ if [[ ${query_ret} -ne 0 ]] || [[ -z "${total_modified_users}" ]]; then
+  total_modified_users="0"
+ fi
+
+ # Base limit per cycle (normal operation); allow ETL to complete in time (e.g. 15 min)
+ local max_users_per_cycle="${MAX_USERS_PER_CYCLE:-5000}"
+ local effective_limit="${max_users_per_cycle}"
+ local catchup_threshold="${CATCHUP_THRESHOLD:-10000}"
+
+ # Catch-up mode: when backlog is large (e.g. 500K historical), process more per cycle
+ if [[ "${total_modified_users}" -ge "${catchup_threshold}" ]]; then
+  if [[ -n "${MAX_USERS_PER_CYCLE_CATCHUP:-}" ]] && [[ "${MAX_USERS_PER_CYCLE_CATCHUP}" -gt 0 ]]; then
+   if [[ "${MAX_USERS_PER_CYCLE_CATCHUP}" -lt "${total_modified_users}" ]]; then
+    effective_limit="${MAX_USERS_PER_CYCLE_CATCHUP}"
+   else
+    effective_limit="${total_modified_users}"
+   fi
+   __logi "Catch-up mode: backlog ${total_modified_users} >= ${catchup_threshold}, using MAX_USERS_PER_CYCLE_CATCHUP=${effective_limit}"
+  elif [[ -n "${CATCHUP_MULTIPLIER:-}" ]] && [[ "${CATCHUP_MULTIPLIER}" -gt 0 ]]; then
+   local catchup_cap=$((max_users_per_cycle * CATCHUP_MULTIPLIER))
+   if [[ "${catchup_cap}" -lt "${total_modified_users}" ]]; then
+    effective_limit="${catchup_cap}"
+   else
+    effective_limit="${total_modified_users}"
+   fi
+   __logi "Catch-up mode: backlog ${total_modified_users} >= ${catchup_threshold}, using ${max_users_per_cycle}*${CATCHUP_MULTIPLIER}=${effective_limit}"
+  fi
+ fi
+
  # Get list of modified users to process with intelligent prioritization
  # DM-005: Prioritize users by relevance using refined criteria:
  # 1. Users with recent activity (last 7 days) - CRITICAL priority
@@ -492,14 +533,9 @@ function __processNotesUser {
  # 5. Users with moderate activity (10-100 actions) - LOW priority
  # 6. Inactive users (<10 actions or >2 years inactive) - LOWEST priority
  #
- # IMPORTANT: Process only MAX_USERS_PER_CYCLE users per cycle to allow ETL
- # to complete quickly and update data promptly. This ensures:
- # - Most active users are processed first (prioritized)
- # - ETL can free up resources for incremental updates
- # - Less active users are processed in subsequent cycles
- # - System remains responsive for ongoing data updates
- local max_users_per_cycle="${MAX_USERS_PER_CYCLE:-1000}"
- __logi "Fetching modified users with intelligent prioritization (max ${max_users_per_cycle} per cycle)..."
+ # IMPORTANT: Process only effective_limit users per cycle (normal: MAX_USERS_PER_CYCLE;
+ # catch-up: higher when backlog >= CATCHUP_THRESHOLD) so ETL can complete and backlog drains.
+ __logi "Fetching modified users with intelligent prioritization (max ${effective_limit} per cycle)..."
  local user_ids
  user_ids=$(__psql_with_appname -d "${DBNAME_DWH}" -Atq -c "
   SELECT /* Notes-datamartUsers-parallel */
@@ -523,32 +559,17 @@ function __processNotesUser {
    COUNT(*) DESC,
    -- Priority 4: Most recent activity first
    MAX(f.action_at) DESC NULLS LAST
-  LIMIT ${max_users_per_cycle}
+  LIMIT ${effective_limit}
  ")
 
  local total_users
  total_users=$(echo "${user_ids}" | grep -c . || echo "0")
  total_users=$(echo "${total_users}" | tr -d '[:space:]') # Remove all whitespace including newlines
  total_users=$((total_users))                             # Ensure numeric
- local total_modified_users
- # Get total modified users count (invoke separately to avoid shellcheck SC2310 warning)
- set +e
- total_modified_users=$(__psql_with_appname -d "${DBNAME_DWH}" -Atq -c "
-  SELECT COUNT(DISTINCT f.action_dimension_id_user)
-  FROM dwh.facts f
-   JOIN dwh.dimension_users u
-   ON (f.action_dimension_id_user = u.dimension_user_id)
-  WHERE u.modified = TRUE
- ")
- local query_ret=${?}
- set -e
- if [[ ${query_ret} -ne 0 ]] || [[ -z "${total_modified_users}" ]]; then
-  total_modified_users="0"
- fi
 
- if [[ "${total_modified_users}" -gt "${max_users_per_cycle}" ]]; then
+ if [[ "${total_modified_users}" -gt "${effective_limit}" ]]; then
   __logi "Found ${total_users} users to process this cycle (prioritized by relevance)"
-  __logi "Total modified users: ${total_modified_users} (will process ${max_users_per_cycle} per cycle)"
+  __logi "Total modified users: ${total_modified_users} (will process ${effective_limit} per cycle)"
  else
   __logi "Found ${total_users} users to process (prioritized by relevance)"
  fi
@@ -709,7 +730,7 @@ function __processNotesUser {
  if [[ ${total_failed} -eq 0 ]]; then
   __logi "SUCCESS: Datamart users population completed successfully"
   __logi "Processed ${actually_processed} users in parallel (${total_users} this cycle)"
-  if [[ "${total_modified_users:-0}" -gt "${max_users_per_cycle}" ]]; then
+  if [[ "${total_modified_users:-0}" -gt "${effective_limit}" ]]; then
    local remaining=$((total_modified_users - actually_processed))
    __logi "Remaining modified users: ${remaining} (will be processed in next cycle)"
   fi
