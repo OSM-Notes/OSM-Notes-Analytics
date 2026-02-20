@@ -246,7 +246,7 @@ will be removed.
 **Features:**
 
 - Aggregates note statistics by user
-- Processes incrementally (500 users per run)
+- Processes incrementally (MAX_USERS_PER_CYCLE per run, default 1000; ~5000 fit in 15 min on typical prod)
 - Computes yearly historical data
 - Generates country rankings per user
 - Tracks contribution patterns
@@ -254,8 +254,8 @@ will be removed.
 
 **Execution time:**
 
-- Per run: 5-10 minutes (500 users)
-- Full initial load: ~5 days (incremental approach)
+- Per run: ~3–5 minutes for 1000 users on typical production; ~5000 users fit in a 15-minute ETL window
+- Full initial load: incremental over multiple ETL cycles (use catch-up mode for large backlogs)
 
 **Prerequisites:**
 
@@ -414,8 +414,8 @@ cp etc/etl.properties.example etc/etl.properties
 nano etc/etl.properties
 
 # 3. Verify base tables exist (from OSM-Notes-Ingestion)
-psql -d osm_notes -c "SELECT COUNT(*) FROM notes;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM note_comments;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM notes;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM note_comments;"
 
 # 4. Run initial ETL (creates DWH, populates facts/dimensions, updates datamarts)
 ./bin/dwh/ETL.sh
@@ -423,9 +423,9 @@ psql -d osm_notes -c "SELECT COUNT(*) FROM note_comments;"
 # Note: ETL.sh automatically updates datamarts, so steps 5-6 are optional
 
 # 5. Verify DWH creation
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.facts;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 
 # 6. (Optional) Manually update datamarts if needed
 ./bin/dwh/datamartCountries/datamartCountries.sh
@@ -443,8 +443,8 @@ psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 ```bash
 # Crontab example (add with: crontab -e):
 
-# Incremental ETL every hour (automatically updates datamarts)
-0 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh >> /var/log/osm-analytics-etl.log 2>&1
+# Incremental ETL every 15 minutes (automatically updates datamarts)
+*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh >> /var/log/osm-analytics-etl.log 2>&1
 
 # Export to JSON and push to GitHub Pages (after datamarts update)
 45 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-analytics-export.log 2>&1
@@ -650,8 +650,8 @@ ETL_BATCH_SIZE=5000  # Increase for better throughput
 
 ```bash
 # After initial load
-psql -d osm_notes -c "VACUUM ANALYZE dwh.facts;"
-psql -d osm_notes -c "REINDEX TABLE dwh.facts;"
+psql -d notes_dwh -c "VACUUM ANALYZE dwh.facts;"
+psql -d notes_dwh -c "REINDEX TABLE dwh.facts;"
 ```
 
 ## Troubleshooting
@@ -664,10 +664,10 @@ psql -d osm_notes -c "REINDEX TABLE dwh.facts;"
 
 ```bash
 # Verify base tables exist
-psql -d osm_notes -c "SELECT COUNT(*) FROM notes;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM note_comments;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM users;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM countries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM notes;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM note_comments;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM users;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM countries;"
 
 # If tables are empty or don't exist, run OSM-Notes-Ingestion first
 # See: https://github.com/OSM-Notes/OSM-Notes-Ingestion
@@ -737,12 +737,12 @@ export ETL_MAX_PARALLEL_JOBS=8
 export ETL_BATCH_SIZE=5000
 
 # Check if base tables have indexes
-psql -d osm_notes -c "\d notes"
-psql -d osm_notes -c "\d note_comments"
+psql -d notes_dwh -c "\d notes"
+psql -d notes_dwh -c "\d note_comments"
 
 # Run VACUUM ANALYZE on base tables
-psql -d osm_notes -c "VACUUM ANALYZE notes;"
-psql -d osm_notes -c "VACUUM ANALYZE note_comments;"
+psql -d notes_dwh -c "VACUUM ANALYZE notes;"
+psql -d notes_dwh -c "VACUUM ANALYZE note_comments;"
 ```
 
 ### "Datamart not fully populated"
@@ -753,8 +753,8 @@ psql -d osm_notes -c "VACUUM ANALYZE note_comments;"
 
 ```bash
 # Check datamart counts
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 
 # Re-run datamart scripts
 ./bin/dwh/datamartCountries/datamartCountries.sh
@@ -776,8 +776,8 @@ done
 
 ```bash
 # Verify datamarts have data
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 # If counts are 0, re-run datamart population
 ./bin/dwh/datamartCountries/datamartCountries.sh
@@ -799,7 +799,7 @@ export LOG_LEVEL=DEBUG
 
 ```bash
 # Test connection
-psql -d osm_notes -c "SELECT version();"
+psql -d notes_dwh -c "SELECT version();"
 
 # Verify database name in properties
 cat etc/properties.sh | grep DBNAME
@@ -808,7 +808,7 @@ cat etc/properties.sh | grep DBNAME
 sudo systemctl status postgresql
 
 # Verify user permissions
-psql -d osm_notes -c "SELECT current_user;"
+psql -d notes_dwh -c "SELECT current_user;"
 ```
 
 ### "Profile not found"
@@ -819,10 +819,10 @@ psql -d osm_notes -c "SELECT current_user;"
 
 ```bash
 # Check if user exists in datamart
-psql -d osm_notes -c "SELECT username FROM dwh.datamartusers WHERE username = 'AngocA';"
+psql -d notes_dwh -c "SELECT username FROM dwh.datamartusers WHERE username = 'AngocA';"
 
 # Check if country exists
-psql -d osm_notes -c "SELECT country_name_en FROM dwh.datamartcountries WHERE country_name_en = 'Colombia';"
+psql -d notes_dwh -c "SELECT country_name_en FROM dwh.datamartcountries WHERE country_name_en = 'Colombia';"
 
 # Use exact name as stored in database
 # For countries, try both English and Spanish names
