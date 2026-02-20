@@ -623,7 +623,7 @@ Check for locks:
 ```sql
 SELECT pid, usename, query, state
 FROM pg_stat_activity
-WHERE datname = 'osm_notes' AND state != 'idle';
+WHERE datname = 'notes_dwh' AND state != 'idle';
 ```
 
 Kill blocking queries:
@@ -637,7 +637,7 @@ SELECT pg_terminate_backend(pid);
 1. **Always backup before major changes:**
 
    ```bash
-   pg_dump -d osm_notes -n dwh > dwh_backup.sql
+   pg_dump -d notes_dwh -n dwh > dwh_backup.sql
    ```
 
 1. **Test scripts in development database first**

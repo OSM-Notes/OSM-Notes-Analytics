@@ -47,7 +47,7 @@ VALUES
 Then run:
 
 ```bash
-psql -d osm_notes -f sql/dwh/ETL_24_populateISOCodes.sql
+psql -d notes_dwh -f sql/dwh/ETL_24_populateISOCodes.sql
 ```
 
 The script uses `ON CONFLICT DO UPDATE`, so you can run it multiple times safely.

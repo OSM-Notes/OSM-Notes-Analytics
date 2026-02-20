@@ -82,7 +82,7 @@ __set_log_file "/path/to/logfile.log"
 ```text
 2025-10-14 10:30:15 [INFO] ETL.sh: Starting ETL process
 2025-10-14 10:30:16 [DEBUG] ETL.sh: Loading configuration from etc/properties.sh
-2025-10-14 10:30:20 [INFO] ETL.sh: Connected to database: osm_notes
+2025-10-14 10:30:20 [INFO] ETL.sh: Connected to database: notes_dwh
 2025-10-14 10:30:25 [WARN] ETL.sh: Large dataset detected, parallel processing recommended
 2025-10-14 10:45:32 [ERROR] ETL.sh: Failed to load staging table for year 2015
 2025-10-14 10:45:33 [INFO] ETL.sh: Retrying operation (attempt 2/3)

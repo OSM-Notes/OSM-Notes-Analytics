@@ -21,7 +21,7 @@ fi
 CREATE_TABLE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartPerformance/datamartPerformance_11_createTable.sql"
 
 # Database name (default from properties or environment)
-DBNAME="${DBNAME_DWH:-${DBNAME:-osm_notes}}"
+DBNAME="${DBNAME_DWH:-${DBNAME:-notes_dwh}}"
 
 echo "Creating datamart performance log table..."
 echo "Database: ${DBNAME}"
