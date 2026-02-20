@@ -7,7 +7,7 @@
 # Version: 2026-01-15
 # Note: This script now uses SELECT * to dynamically export all columns,
 # including any new year-based columns added to the datamart tables.
-# For users, it also includes contributor_type_name via JOIN with contributor_types table.
+# For users, it also includes contributor_type_name and contributor_type_name_en via JOIN with contributor_types table.
 #
 # Directory Structure:
 #   - Users are organized in subdirectories using hexadecimal hash (3 levels)
@@ -323,7 +323,8 @@ SQL_USERS
       FROM (
         SELECT
           du.*,
-          ct.contributor_type_name
+          ct.contributor_type_name,
+          ct.contributor_type_name_en
         FROM dwh.datamartusers_export du
         LEFT JOIN dwh.contributor_types ct
           ON du.id_contributor_type = ct.contributor_type_id
@@ -338,7 +339,8 @@ SQL_USERS
       FROM (
         SELECT
           du.*,
-          ct.contributor_type_name
+          ct.contributor_type_name,
+          ct.contributor_type_name_en
         FROM dwh.datamartusers du
         LEFT JOIN dwh.contributor_types ct
           ON du.id_contributor_type = ct.contributor_type_id
@@ -386,6 +388,7 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
       du.username,
       du.id_contributor_type,
       ct.contributor_type_name,
+      ct.contributor_type_name_en,
       du.date_starting_creating_notes,
       du.history_whole_open,
       du.history_whole_closed,

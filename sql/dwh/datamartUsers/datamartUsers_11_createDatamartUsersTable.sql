@@ -62,22 +62,22 @@ CREATE TABLE IF NOT EXISTS dwh.datamartUsers (
  ranking_countries_opening_2013 JSON,
  ranking_countries_closing_2013 JSON,
  json_exported BOOLEAN DEFAULT FALSE,
- avg_days_to_resolution DECIMAL(10,2),
- median_days_to_resolution DECIMAL(10,2),
+ avg_days_to_resolution DECIMAL(10, 2),
+ median_days_to_resolution DECIMAL(10, 2),
  notes_resolved_count INTEGER,
  notes_still_open_count INTEGER,
  notes_opened_but_not_closed_by_user INTEGER,
- resolution_rate DECIMAL(5,2),
+ resolution_rate DECIMAL(5, 2),
  applications_used JSON,
  most_used_application_id INTEGER,
  mobile_apps_count INTEGER,
  desktop_apps_count INTEGER,
- avg_comment_length DECIMAL(10,2),
+ avg_comment_length DECIMAL(10, 2),
  comments_with_url_count INTEGER,
- comments_with_url_pct DECIMAL(5,2),
+ comments_with_url_pct DECIMAL(5, 2),
  comments_with_mention_count INTEGER,
- comments_with_mention_pct DECIMAL(5,2),
- avg_comments_per_note DECIMAL(10,2),
+ comments_with_mention_pct DECIMAL(5, 2),
+ avg_comments_per_note DECIMAL(10, 2),
  active_notes_count INTEGER,
  notes_backlog_size INTEGER,
  notes_age_distribution JSON,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS dwh.datamartUsers (
   resolution_hashtag_count INTEGER DEFAULT 0,
   application_usage_trends JSON,
   version_adoption_rates JSON,
-  user_response_time DECIMAL(10,2),
+  user_response_time DECIMAL(10, 2),
   days_since_last_action INTEGER,
   collaboration_patterns JSON,
   -- Enhanced date columns from dimension_days
@@ -299,11 +299,13 @@ COMMENT ON COLUMN dwh.badges_per_users.comment IS 'Comment about the grant';
 
 CREATE TABLE IF NOT EXISTS dwh.contributor_types (
  contributor_type_id SERIAL,
- contributor_type_name VARCHAR(64) NOT NULL
+ contributor_type_name VARCHAR(64) NOT NULL,
+ contributor_type_name_en VARCHAR(64) NULL
 );
+COMMENT ON COLUMN dwh.contributor_types.contributor_type_name_en IS 'English display name for contributor type';
 
 CREATE TABLE IF NOT EXISTS dwh.max_date_users_processed (
-  date date NOT NULL
+  date DATE NOT NULL
 );
 COMMENT ON TABLE dwh.max_date_users_processed IS
   'Max date for users processed, to move the activities';
@@ -348,32 +350,36 @@ ALTER TABLE dwh.badges_per_users
 INSERT INTO dwh.badges (badge_name) VALUES
  ('Test');
 
--- Contributor types.
-INSERT INTO dwh.contributor_types (contributor_type_name) VALUES
- ('Normal Notero'), -- 1
- ('Just starting notero'), --2
- ('Newbie Notero'), -- 3
- ('All-time notero'), -- 4
- ('Hit-and-run notero'), -- 5
- ('Junior notero'), -- 6
- ('Inactive notero'), -- 7
- ('Retired notero'), -- 8
- ('Forgotten notero'), -- 9
- ('Exporadic notero'), -- 10
- ('Start closing notero'), -- 11
- ('Casual notero'), -- 12
- ('Power closing notero'), -- 13
- ('Power notero'), -- 14
- ('Crazy closing notero'), -- 15
- ('Crazy notero'), -- 16
- ('Addicted closing notero'), -- 17
- ('Addicted notero'), -- 18
- ('Epic closing notero'), -- 19
- ('Epic notero'), -- 20
- ('Bot closing notero'), -- 21
- ('Robot notero'), -- 22
- ('OoM Exception notero') -- 23
- ;
+-- Contributor types (name: original/legacy; name_en: English for UI/export).
+ALTER TABLE dwh.contributor_types ADD COLUMN IF NOT EXISTS contributor_type_name_en VARCHAR(64) NULL;
+
+INSERT INTO dwh.contributor_types (contributor_type_id, contributor_type_name, contributor_type_name_en) VALUES
+ (1, 'Normal Notero', 'Normal contributor'),
+ (2, 'Just starting notero', 'Just starting'),
+ (3, 'Newbie Notero', 'Newbie contributor'),
+ (4, 'All-time notero', 'All-time contributor'),
+ (5, 'Hit-and-run notero', 'Hit and run'),
+ (6, 'Junior notero', 'Junior contributor'),
+ (7, 'Inactive notero', 'Inactive contributor'),
+ (8, 'Retired notero', 'Retired contributor'),
+ (9, 'Forgotten notero', 'Forgotten contributor'),
+ (10, 'Exporadic notero', 'Sporadic contributor'),
+ (11, 'Start closing notero', 'Start closing'),
+ (12, 'Casual notero', 'Casual contributor'),
+ (13, 'Power closing notero', 'Power closer'),
+ (14, 'Power notero', 'Power contributor'),
+ (15, 'Crazy closing notero', 'Crazy closer'),
+ (16, 'Crazy notero', 'Crazy contributor'),
+ (17, 'Addicted closing notero', 'Addicted closer'),
+ (18, 'Addicted notero', 'Addicted contributor'),
+ (19, 'Epic closing notero', 'Epic closer'),
+ (20, 'Epic notero', 'Epic contributor'),
+ (21, 'Bot closing notero', 'Bot closer'),
+ (22, 'Robot notero', 'Robot contributor'),
+ (23, 'OoM Exception notero', 'OoM Exception contributor')
+ON CONFLICT (contributor_type_id) DO UPDATE SET
+ contributor_type_name = EXCLUDED.contributor_type_name,
+ contributor_type_name_en = EXCLUDED.contributor_type_name_en;
 
 -- Processes all users.
 UPDATE dwh.dimension_users
