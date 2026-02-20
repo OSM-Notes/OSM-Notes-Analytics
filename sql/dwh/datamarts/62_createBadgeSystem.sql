@@ -4,14 +4,13 @@
 -- Author: Andres Gomez (AngocA)
 -- Version: 2025-12-27
 
--- First, populate badges table with meaningful badges
--- Clear existing badges except Test (for backward compatibility)
-DELETE FROM dwh.badges WHERE badge_name != 'Test';
-
--- Insert badge definitions
-INSERT INTO dwh.badges (badge_name, description) VALUES
+-- Populate badges table: insert only badges that do not exist (safe for existing
+-- installations where badges_per_users references badge_id; no DELETE to avoid FK violation).
+INSERT INTO dwh.badges (badge_name, description)
+SELECT v.badge_name, v.description
+FROM (VALUES
   -- Milestone badges
-  ('First Note', 'Opened your first note'),
+  ('First Note'::VARCHAR(64), 'Opened your first note'::TEXT),
   ('First Close', 'Closed your first note'),
   ('First Comment', 'Made your first comment'),
   ('10 Notes Opened', 'Opened 10 notes'),
@@ -27,13 +26,11 @@ INSERT INTO dwh.badges (badge_name, description) VALUES
   ('100 Comments', 'Made 100 comments'),
   ('500 Comments', 'Made 500 comments'),
   ('1000 Comments', 'Made 1,000 comments'),
-
   -- Activity badges
   ('Daily Contributor', 'Opened or closed notes on 7 consecutive days'),
   ('Weekly Contributor', 'Opened or closed notes for 4 consecutive weeks'),
   ('Monthly Contributor', 'Opened or closed notes for 3 consecutive months'),
   ('Consistent Helper', 'Closed notes for 30 consecutive days'),
-
   -- Achievement badges
   ('Speed Demon', 'Closed a note within 1 hour of opening'),
   ('Problem Solver', 'Closed 10 notes with explanatory comments'),
@@ -42,7 +39,6 @@ INSERT INTO dwh.badges (badge_name, description) VALUES
   ('Hashtag Enthusiast', 'Used hashtags in 50+ notes'),
   ('Mobile User', 'Opened 100+ notes using mobile apps'),
   ('Desktop Power User', 'Opened 100+ notes using desktop apps'),
-
   -- Special badges
   ('Early Adopter', 'Opened notes in 2013 (first year of OSM Notes)'),
   ('Long Time Helper', 'Active for 5+ years'),
@@ -51,27 +47,25 @@ INSERT INTO dwh.badges (badge_name, description) VALUES
   ('Comment King', 'Made 100+ comments in a single year'),
   ('Perfect Week', 'Opened or closed notes every day for a week'),
   ('Perfect Month', 'Opened or closed notes every day for a month'),
-
   -- Quality badges
   ('Quality Contributor', 'Average comment length > 50 characters'),
   ('Detail Oriented', 'Average comment length > 200 characters'),
   ('Collaborative', 'Used mentions in 20+ comments'),
   ('Resourceful', 'Included URLs in 20+ comments'),
-
   -- Extreme badges
   ('Note Master', 'Opened 5,000+ notes'),
   ('Resolution Legend', 'Closed 5,000+ notes'),
   ('Comment Legend', 'Made 5,000+ comments'),
   ('All Around Helper', 'Opened 1,000+, closed 1,000+, and commented 1,000+ times'),
-
-  -- Motivation badges (resolve more, resolve well, global, growth)
+  -- Motivation badges
   ('Global Resolver', 'Closed notes in 5+ countries'),
   ('First Responder', 'First to comment on 25+ notes'),
   ('Solid Closer', 'Closed 50+ notes that were never reopened'),
   ('Rising Resolver', 'Closed more notes this year than last year (min 10 this year)'),
   ('Local Hero', '80%+ of your closes in one country (min 50 closes)'),
   ('Closing Streak', 'Closed at least 1 note on 7 consecutive days')
-ON CONFLICT DO NOTHING;
+) AS v(badge_name, description)
+WHERE NOT EXISTS (SELECT 1 FROM dwh.badges b WHERE b.badge_name = v.badge_name);
 
 -- Function to assign badges to a user based on their metrics
 CREATE OR REPLACE FUNCTION dwh.assign_badges_to_user(p_dimension_user_id INTEGER)
