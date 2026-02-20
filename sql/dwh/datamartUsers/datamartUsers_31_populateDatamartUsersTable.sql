@@ -18,6 +18,8 @@ DECLARE
  r RECORD;
  max_date DATE;
 BEGIN
+ -- DM-004: Assign badges to all users based on datamart metrics
+ CALL dwh.assign_badges_to_all_users();
 END
 $$;
 

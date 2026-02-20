@@ -101,6 +101,9 @@ declare -r POSTGRES_13_CREATE_PROCEDURES_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/
 # Last year activities script.
 declare -r POSTGRES_14_LAST_YEAR_ACTITIES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamarts_lastYearActivities.sql"
 
+# Badge system: definitions and assign_badges_to_user / assign_badges_to_all_users (DM-004).
+declare -r POSTGRES_15_BADGE_SYSTEM_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamarts/62_createBadgeSystem.sql"
+
 # Generic script to add years.
 declare -r POSTGRES_21_ADD_YEARS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_20_alterTableAddYears.sql"
 
@@ -186,6 +189,7 @@ function __checkPrereqs {
   "${POSTGRES_12_CREATE_TABLES_FILE}"
   "${POSTGRES_13_CREATE_PROCEDURES_FILE}"
   "${POSTGRES_14_LAST_YEAR_ACTITIES_SCRIPT}"
+  "${POSTGRES_15_BADGE_SYSTEM_FILE}"
   "${POSTGRES_21_ADD_YEARS_SCRIPT}"
   "${POSTGRES_31_POPULATE_OLD_USERS_FILE}"
   "${POSTGRES_32_POPULATE_FILE}"
@@ -253,6 +257,16 @@ function __checkBaseTables {
   set -e
   if [[ "${view_ret}" -ne 0 ]]; then
    __loge "Failed to create export view, but continuing..."
+  fi
+ fi
+ # Apply badge system (DM-004): populate badges and create assign_badges_to_user / assign_badges_to_all_users
+ if [[ -f "${POSTGRES_15_BADGE_SYSTEM_FILE}" ]]; then
+  set +e
+  __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 -f "${POSTGRES_15_BADGE_SYSTEM_FILE}"
+  local badge_ret=${?}
+  set -e
+  if [[ "${badge_ret}" -ne 0 ]]; then
+   __loge "Failed to apply badge system, but continuing..."
   fi
  fi
  __log_finish

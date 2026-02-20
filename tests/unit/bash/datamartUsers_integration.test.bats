@@ -190,6 +190,7 @@ teardown() {
   "sql/dwh/datamartUsers/datamartUsers_10_checkDatamartUsersTables.sql"
   "sql/dwh/datamartUsers/datamartUsers_11_createDatamartUsersTable.sql"
   "sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
+  "sql/dwh/datamarts/62_createBadgeSystem.sql"
   "sql/dwh/datamartUsers/datamartUsers_20_alterTableAddYears.sql"
   "sql/dwh/datamartUsers/datamartUsers_30_populateOldUsers.sql"
   "sql/dwh/datamartUsers/datamartUsers_31_populateDatamartUsersTable.sql"
