@@ -8,7 +8,7 @@
 # - Parallel processing with work queue (nproc-1 threads) for dynamic load balancing
 # - Better CPU utilization: fast users don't leave threads idle
 # - Atomic transactions ensure data consistency
-# - Processes MAX_USERS_PER_CYCLE users per cycle (default: 5000) to allow ETL
+# - Processes MAX_USERS_PER_CYCLE users per cycle (default: 4000) to allow ETL
 #   to complete quickly and update data promptly
 #
 # To follow the progress you can execute:
@@ -139,7 +139,7 @@ function __show_help {
  echo "  - High-activity users (>100 actions) prioritized"
  echo "  - Parallel processing with work queue (nproc-1 threads)"
  echo "  - Dynamic load balancing for optimal CPU utilization"
- echo "  - Processes MAX_USERS_PER_CYCLE users per cycle (default: 5000)"
+ echo "  - Processes MAX_USERS_PER_CYCLE users per cycle (default: 4000)"
  echo "  - Allows ETL to complete quickly and update data promptly"
  echo
  echo "Documentation: See PARALLEL_PROCESSING.md for detailed information"
@@ -514,7 +514,7 @@ function __processNotesUser {
  fi
 
  # Base limit per cycle (normal operation); allow ETL to complete in time (e.g. 15 min)
- local max_users_per_cycle="${MAX_USERS_PER_CYCLE:-5000}"
+ local max_users_per_cycle="${MAX_USERS_PER_CYCLE:-4000}"
  local effective_limit="${max_users_per_cycle}"
  local catchup_threshold="${CATCHUP_THRESHOLD:-10000}"
 

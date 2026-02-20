@@ -56,7 +56,7 @@ These are the **only scripts** that should be executed directly:
    - **Purpose**: Populates the user-level datamart with pre-computed analytics
    - **When**: After ETL completes (automatically called by ETL.sh, or manually for updates)
 - **Execution time**:
-    - Per run: ~3–5 minutes for 1000 users on typical prod; ~5000 users fit in 15 min
+    - Per run: ~3–5 minutes for 1000 users on typical prod; ~4000 users fit in 15 min
     - Full initial load: incremental over cycles (use catch-up for large backlogs)
    - **Prerequisites**: ETL must be completed, DWH fact and dimension tables must exist
    - **Output**: Populates `dwh.datamartUsers` table

@@ -1,5 +1,5 @@
 -- Populates the user datamart with aggregated statistics.
--- Processes a limited batch of users per run (SQL default 500; shell uses MAX_USERS_PER_CYCLE, default 5000).
+-- Processes a limited batch of users per run (SQL default 500; shell uses MAX_USERS_PER_CYCLE, default 4000).
 --
 -- DM-005: Implements intelligent prioritization:
 -- - Users with recent activity (last 7/30/90 days) processed first
@@ -15,7 +15,7 @@
 -- DM-004: Badges are assigned only for the users updated in this run (see loop below),
 -- to avoid costly full scan every cycle when most users have no changes.
 -- Note: When datamartUsers.sh runs, it uses the shell path (parallel workers) with
--- MAX_USERS_PER_CYCLE (default 5000) and assigns badges there per user; this SQL
+-- MAX_USERS_PER_CYCLE (default 4000) and assigns badges there per user; this SQL
 -- block applies when this script is run directly (e.g. single-thread) with LIMIT below.
 
 DO /* Notes-datamartUsers-processRecentUsers */
