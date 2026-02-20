@@ -1,5 +1,5 @@
 -- Populates the user datamart with aggregated statistics.
--- Processes 500 users incrementally to avoid database overload.
+-- Processes a limited batch of users per run (SQL default 500; shell uses MAX_USERS_PER_CYCLE, default 5000).
 --
 -- DM-005: Implements intelligent prioritization:
 -- - Users with recent activity (last 7/30/90 days) processed first
@@ -12,16 +12,11 @@
 -- Author: Andres Gomez (AngocA)
 -- Version: 2025-12-27
 
-DO /* Notes-datamartUsers-badges */
-$$
-DECLARE
- r RECORD;
- max_date DATE;
-BEGIN
- -- DM-004: Assign badges to all users based on datamart metrics
- CALL dwh.assign_badges_to_all_users();
-END
-$$;
+-- DM-004: Badges are assigned only for the users updated in this run (see loop below),
+-- to avoid costly full scan every cycle when most users have no changes.
+-- Note: When datamartUsers.sh runs, it uses the shell path (parallel workers) with
+-- MAX_USERS_PER_CYCLE (default 5000) and assigns badges there per user; this SQL
+-- block applies when this script is run directly (e.g. single-thread) with LIMIT below.
 
 DO /* Notes-datamartUsers-processRecentUsers */
 $$
@@ -89,6 +84,8 @@ BEGIN
    UPDATE dwh.dimension_users
     SET modified = FALSE
     WHERE dimension_user_id = r.dimension_user_id;
+   -- DM-004: Assign badges only for this user (just updated); avoids full scan every run
+   PERFORM dwh.assign_badges_to_user(r.dimension_user_id);
   EXCEPTION WHEN OTHERS THEN
    RAISE WARNING 'Failed to process user %: %', r.dimension_user_id, SQLERRM;
    -- Continue with next user instead of failing entire batch

@@ -687,6 +687,8 @@ function __processNotesUser {
        UPDATE dwh.dimension_users
         SET modified = FALSE
         WHERE dimension_user_id = ${user_id};
+       -- DM-004: Assign badges only for this user (just updated); avoids full scan every run
+       SELECT dwh.assign_badges_to_user(${user_id});
       COMMIT;
     " 2>&1; then
      thread_failed=$((thread_failed + 1))
