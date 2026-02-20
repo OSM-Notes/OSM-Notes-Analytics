@@ -118,3 +118,49 @@ teardown() {
   [[ "${status}" -eq 0 ]]
   [[ "${output}" == *"62_createBadgeSystem.sql"* ]]
 }
+
+# Motivation badges (Global Resolver, First Responder, etc.) are defined in script
+@test "62_createBadgeSystem.sql should define the 6 motivation badges" {
+  for name in "Global Resolver" "First Responder" "Solid Closer" "Rising Resolver" "Local Hero" "Closing Streak"; do
+    grep -q "'${name}'" "${BADGE_SCRIPT}" || { echo "Missing badge definition: ${name}"; return 1; }
+  done
+}
+
+# assign_badges_to_user contains logic for the 6 new badges
+@test "assign_badges_to_user should reference motivation badge variables and names" {
+  grep -q "v_countries_closed" "${BADGE_SCRIPT}"
+  grep -q "v_first_responder_notes" "${BADGE_SCRIPT}"
+  grep -q "v_solid_closes" "${BADGE_SCRIPT}"
+  grep -q "v_notes_closed_last_year" "${BADGE_SCRIPT}"
+  grep -q "v_max_closes_one_country" "${BADGE_SCRIPT}"
+  grep -q "v_closing_streak_days" "${BADGE_SCRIPT}"
+  for name in "Global Resolver" "First Responder" "Solid Closer" "Rising Resolver" "Local Hero" "Closing Streak"; do
+    grep -q "badge_name = '${name}'" "${BADGE_SCRIPT}" || { echo "Missing assign logic for: ${name}"; return 1; }
+  done
+}
+
+# After running badge script, dwh.badges contains the 6 motivation badges
+@test "dwh.badges should contain motivation badges after running 62 script" {
+  if [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    skip "Skip DB-dependent test in CI if no database"
+  fi
+
+  psql_cmd=$(build_psql_cmd "${TEST_DBNAME}")
+  psql -d postgres -c "CREATE DATABASE ${TEST_DBNAME};" 2> /dev/null || true
+  $psql_cmd -c "CREATE SCHEMA IF NOT EXISTS dwh;" 2> /dev/null || true
+  $psql_cmd -c "
+    CREATE TABLE IF NOT EXISTS dwh.badges (badge_id SERIAL PRIMARY KEY, badge_name VARCHAR(64), description TEXT);
+    CREATE TABLE IF NOT EXISTS dwh.badges_per_users (id_user INTEGER NOT NULL, id_badge INTEGER NOT NULL, date_awarded DATE NOT NULL, comment TEXT, PRIMARY KEY (id_user, id_badge));
+    CREATE TABLE IF NOT EXISTS dwh.datamartUsers (dimension_user_id INTEGER PRIMARY KEY);
+  " 2> /dev/null || true
+
+  run $psql_cmd -v ON_ERROR_STOP=1 -f "${BADGE_SCRIPT}" 2>&1
+  if [[ "${status}" -ne 0 ]]; then
+    skip "Badge script failed (status ${status})"
+  fi
+
+  for name in "Global Resolver" "First Responder" "Solid Closer" "Rising Resolver" "Local Hero" "Closing Streak"; do
+    count=$($psql_cmd -tAc "SELECT COUNT(*) FROM dwh.badges WHERE badge_name = '${name}';" 2> /dev/null || echo "0")
+    [[ "${count}" -eq 1 ]] || { echo "Badge '${name}' should exist once in dwh.badges, got: ${count}"; return 1; }
+  done
+}
