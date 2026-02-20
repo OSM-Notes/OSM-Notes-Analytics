@@ -405,7 +405,7 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    DB[PostgreSQL Database: osm_notes]
+    DB[PostgreSQL Database: notes_dwh]
 
     subgraph Public["Schema: public<br/>managed by OSM-Notes-Ingestion"]
         NOTES[notes]

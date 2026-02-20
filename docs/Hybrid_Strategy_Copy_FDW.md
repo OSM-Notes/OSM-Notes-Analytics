@@ -85,14 +85,14 @@ status: "active"
 
 ```bash
 # Separate databases
-DBNAME_INGESTION="osm_notes"
+DBNAME_INGESTION="notes"
 DBNAME_DWH="notes_dwh"
 DB_USER_INGESTION="ingestion_user"
 DB_USER_DWH="analytics_user"
 
 # FDW configuration (required for incremental when databases are different)
 FDW_INGESTION_HOST="localhost"
-FDW_INGESTION_DBNAME="osm_notes"
+FDW_INGESTION_DBNAME="notes"
 FDW_INGESTION_PORT="5432"
 FDW_INGESTION_USER="analytics_readonly"
 FDW_INGESTION_PASSWORD=""  # Use .pgpass or environment variable
@@ -103,11 +103,11 @@ FDW_INGESTION_PASSWORD=""  # Use .pgpass or environment variable
 ```bash
 # Same database for both Ingestion and Analytics
 # Option 2a: Use recommended variables (set to same value)
-DBNAME_INGESTION="osm_notes"
-DBNAME_DWH="osm_notes"
+DBNAME_INGESTION="notes_dwh"
+DBNAME_DWH="notes_dwh"
 
 # Option 2b: Use legacy DBNAME (for backward compatibility)
-DBNAME="osm_notes"
+DBNAME="notes_dwh"
 # When DBNAME_INGESTION and DBNAME_DWH are not set, DBNAME is used for both
 
 # FDW configuration is not needed (will be skipped automatically)

@@ -414,8 +414,8 @@ nano etc/properties.sh  # Edit with your credentials
 
 ```bash
 # Check base tables exist (from Ingestion)
-psql -d osm_notes -c "SELECT COUNT(*) FROM notes;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM note_comments;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM notes;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM note_comments;"
 
 # If empty, run OSM-Notes-Ingestion first
 ```
@@ -453,11 +453,11 @@ See [Cron Setup Guide](Cron_Setup.md) for detailed cron configuration.
 
 ```bash
 # Check ETL ran successfully
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.facts;"
 
 # Check datamarts populated
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 # Check JSON files created
 ls -lh output/json/users/ | head -10
@@ -556,7 +556,7 @@ sequenceDiagram
 # bin/dwh/health_check.sh
 
 # Check database connectivity
-psql -d osm_notes -c "SELECT 1;" || echo "ERROR: Database connection failed"
+psql -d notes_dwh -c "SELECT 1;" || echo "ERROR: Database connection failed"
 
 # Check ETL ran recently (within last hour)
 LAST_ETL=$(find /tmp/ETL_* -name "ETL.log" -mmin -60 | head -1)
@@ -565,7 +565,7 @@ if [ -z "$LAST_ETL" ]; then
 fi
 
 # Check datamarts have data
-USER_COUNT=$(psql -d osm_notes -t -c "SELECT COUNT(*) FROM dwh.datamartusers;")
+USER_COUNT=$(psql -d notes_dwh -t -c "SELECT COUNT(*) FROM dwh.datamartusers;")
 if [ "$USER_COUNT" -eq 0 ]; then
   echo "ERROR: User datamart is empty"
 fi
@@ -620,10 +620,10 @@ fi
 
 ```bash
 # Daily full backup of DWH schema
-0 1 * * * pg_dump -U postgres -d osm_notes -n dwh > /backups/dwh_$(date +\%Y\%m\%d).sql
+0 1 * * * pg_dump -U postgres -d notes_dwh -n dwh > /backups/dwh_$(date +\%Y\%m\%d).sql
 
 # Weekly full database backup
-0 2 * * 0 pg_dump -U postgres -d osm_notes > /backups/full_$(date +\%Y\%m\%d).sql
+0 2 * * 0 pg_dump -U postgres -d notes_dwh > /backups/full_$(date +\%Y\%m\%d).sql
 
 # Keep last 30 days
 0 3 * * * find /backups/*.sql -mtime +30 -delete

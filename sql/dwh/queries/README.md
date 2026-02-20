@@ -50,7 +50,7 @@ SELECT * FROM dwh.get_user_contribution_summary();
 Run the SQL file to create the view and function:
 
 ```bash
-psql -d osm_notes_analytics -f sql/dwh/queries/DOC_001_user_contribution_stats.sql
+psql -d notes_dwh -f sql/dwh/queries/DOC_001_user_contribution_stats.sql
 ```
 
 **Output Example**:

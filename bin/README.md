@@ -246,7 +246,7 @@ will be removed.
 **Features:**
 
 - Aggregates note statistics by user
-- Processes incrementally (MAX_USERS_PER_CYCLE per run, default 1000; ~5000 fit in 15 min on typical prod)
+- Processes incrementally (MAX_USERS_PER_CYCLE per run, default 5000; fits in 15 min on typical prod)
 - Computes yearly historical data
 - Generates country rankings per user
 - Tracks contribution patterns
@@ -453,7 +453,7 @@ psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 # Update country datamart daily at 2 AM
 # 0 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartCountries/datamartCountries.sh >> /var/log/osm-analytics-datamart-countries.log 2>&1
 
-# Update user datamart daily at 2:30 AM (processes 500 users per run)
+# Update user datamart daily at 2:30 AM (processes MAX_USERS_PER_CYCLE per run, default 5000)
 # 30 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartUsers/datamartUsers.sh >> /var/log/osm-analytics-datamart-users.log 2>&1
 ```
 
@@ -760,7 +760,7 @@ psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 ./bin/dwh/datamartCountries/datamartCountries.sh
 ./bin/dwh/datamartUsers/datamartUsers.sh
 
-# For users datamart, run multiple times (processes 500 users per run)
+# For users datamart, run multiple times (processes MAX_USERS_PER_CYCLE per run, default 5000)
 # Keep running until it says "0 users processed"
 while true; do
   ./bin/dwh/datamartUsers/datamartUsers.sh

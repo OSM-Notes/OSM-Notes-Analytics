@@ -225,9 +225,9 @@ The scripts use and set these environment variables:
      `INGESTION_ROOT/etc/properties.sh` (which is now the test properties)
    - It exports database variables for the ETL:
      ```bash
-     export DBNAME="${DBNAME:-osm_notes}"           # Legacy: used when both DBs are same
-     export DBNAME_INGESTION="${DBNAME:-osm_notes}"  # Ingestion database
-     export DBNAME_DWH="${DBNAME:-osm_notes}"        # Analytics/DWH database
+     export DBNAME="${DBNAME:-notes_dwh}"           # Legacy: used when both DBs are same
+     export DBNAME_INGESTION="${DBNAME:-notes_dwh}"  # Ingestion database
+     export DBNAME_DWH="${DBNAME:-notes_dwh}"        # Analytics/DWH database
      ```
    - In hybrid test mode, both use the same database, so all three variables are set to the same
      value
@@ -270,7 +270,7 @@ pattern:
 
 ```bash
 if [[ -z "${DBNAME:-}" ]]; then
- declare -r DBNAME="${DBNAME:-osm_notes}"
+ declare -r DBNAME="${DBNAME:-notes_dwh}"
 fi
 ```
 

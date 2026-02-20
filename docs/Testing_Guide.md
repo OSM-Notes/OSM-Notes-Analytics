@@ -240,7 +240,7 @@ graph TD
 
 ```bash
 # Configure test database
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 
 # Run DWH tests
 ./tests/run_dwh_tests.sh
@@ -329,17 +329,17 @@ bats tests/unit/bash/datamart*.test.bats
 
 ```bash
 # Create test database
-createdb osm_notes_test
-psql -d osm_notes_test -c "CREATE EXTENSION postgis;"
+createdb osm_notes_analytics_test
+psql -d osm_notes_analytics_test -c "CREATE EXTENSION postgis;"
 
 # Configure in tests/properties.sh or export
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ```
 
 **Usage**:
 
 ```bash
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ./tests/run_dwh_tests.sh
 ```
 
@@ -360,7 +360,7 @@ export DBNAME="osm_notes_test"
 **Usage**:
 
 ```bash
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ./tests/run_all_tests.sh
 ```
 
@@ -536,11 +536,11 @@ Test output is typically displayed in the terminal. For CI/CD, logs are captured
 
 ```bash
 # Create test database
-createdb osm_notes_test
-psql -d osm_notes_test -c "CREATE EXTENSION postgis;"
+createdb osm_notes_analytics_test
+psql -d osm_notes_analytics_test -c "CREATE EXTENSION postgis;"
 
 # Configure in tests/properties.sh or export
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ```
 
 ### BATS Not Found
@@ -574,7 +574,7 @@ chmod +x tests/unit/bash/*.bats
 
 ```bash
 # Verify database exists and is accessible
-psql -d osm_notes_test -c "SELECT version();"
+psql -d osm_notes_analytics_test -c "SELECT version();"
 
 # Check configuration
 cat tests/properties.sh
@@ -597,7 +597,7 @@ psql -d "${DBNAME}" -c "SELECT 1;"
 
 ```bash
 # Reload test data
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ./tests/run_mock_etl.sh
 
 # Or manually load
@@ -792,7 +792,7 @@ The OSM-Notes-Analytics test suite provides comprehensive coverage with **197+ t
 ./tests/run_quality_tests.sh
 
 # DWH tests (requires DB)
-export DBNAME="osm_notes_test"
+export DBNAME="osm_notes_analytics_test"
 ./tests/run_dwh_tests.sh
 
 # Single test file

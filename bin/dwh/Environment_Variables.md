@@ -52,7 +52,7 @@ These variables are used across **all scripts** and should be standardized:
 - **Usage**: Specify the Ingestion database when it differs from Analytics database
 - **Example**:
   ```bash
-  export DBNAME_INGESTION=osm_notes
+  export DBNAME_INGESTION=notes
   export DBNAME_DWH=notes_dwh
   ./bin/dwh/ETL.sh
   ```
@@ -65,7 +65,7 @@ These variables are used across **all scripts** and should be standardized:
 - **Usage**: Specify the Analytics database when it differs from Ingestion database
 - **Example**:
   ```bash
-  export DBNAME_INGESTION=osm_notes
+  export DBNAME_INGESTION=notes
   export DBNAME_DWH=notes_dwh
   ./bin/dwh/ETL.sh
   ```
@@ -79,7 +79,7 @@ These variables are used across **all scripts** and should be standardized:
   `DBNAME_INGESTION` or `DBNAME_DWH` are not set.
 - **Example**:
   ```bash
-  export DBNAME=osm_notes_test
+  export DBNAME=osm_notes_analytics_test
   ./bin/dwh/ETL.sh
   ```
 
@@ -397,7 +397,7 @@ export ETL_VALIDATE_INTEGRITY=true
 ### Testing
 
 ```bash
-export DBNAME=osm_notes_test
+export DBNAME=osm_notes_analytics_test
 export LOG_LEVEL=INFO
 export CLEAN=true
 export ETL_TEST_MODE=true
@@ -471,9 +471,9 @@ Example:
 # etc/properties.sh sets DBNAME=notes
 # etc/etl.properties sets ETL_BATCH_SIZE=1000
 # Environment variable overrides:
-export DBNAME=osm_notes_test
+export DBNAME=osm_notes_analytics_test
 export ETL_BATCH_SIZE=5000
-# Result: DBNAME=osm_notes_test, ETL_BATCH_SIZE=5000
+# Result: DBNAME=osm_notes_analytics_test, ETL_BATCH_SIZE=5000
 ```
 
 ## See Also

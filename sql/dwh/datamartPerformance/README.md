@@ -19,7 +19,7 @@ The performance monitoring system:
 Run the table creation script:
 
 ```bash
-psql -d "${DBNAME:-osm_notes}" -f sql/dwh/datamartPerformance/datamartPerformance_11_createTable.sql
+psql -d "${DBNAME:-notes_dwh}" -f sql/dwh/datamartPerformance/datamartPerformance_11_createTable.sql
 ```
 
 Or include it in your ETL setup process.
@@ -199,7 +199,7 @@ If logging is creating too many entries:
 bats tests/unit/bash/datamart_performance_monitoring.test.bats
 
 # Run with database configured
-export DBNAME=osm_notes
+export DBNAME=notes_dwh
 bats tests/unit/bash/datamart_performance_monitoring.test.bats
 ```
 

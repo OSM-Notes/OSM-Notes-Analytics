@@ -55,9 +55,9 @@ These are the **only scripts** that should be executed directly:
    - **Usage**: `./bin/dwh/datamartUsers/datamartUsers.sh`
    - **Purpose**: Populates the user-level datamart with pre-computed analytics
    - **When**: After ETL completes (automatically called by ETL.sh, or manually for updates)
-   - **Execution time**:
-     - Per run: 5-10 minutes (processes 500 users per run)
-     - Full initial load: ~5 days (incremental approach, run multiple times)
+- **Execution time**:
+    - Per run: ~3–5 minutes for 1000 users on typical prod; ~5000 users fit in 15 min
+    - Full initial load: incremental over cycles (use catch-up for large backlogs)
    - **Prerequisites**: ETL must be completed, DWH fact and dimension tables must exist
    - **Output**: Populates `dwh.datamartUsers` table
    - **Note**: Designed to run incrementally. Schedule to run regularly until all users are
@@ -238,7 +238,7 @@ error handling and logging.
 
 ```bash
 # SQL scripts - should not be executed directly
-psql -d osm_notes -f sql/dwh/ETL_20_createDWHTables.sql  # WRONG (use ETL.sh instead)
+psql -d notes_dwh -f sql/dwh/ETL_20_createDWHTables.sql  # WRONG (use ETL.sh instead)
 ```
 
 ## Workflow Examples
@@ -250,8 +250,8 @@ psql -d osm_notes -f sql/dwh/ETL_20_createDWHTables.sql  # WRONG (use ETL.sh ins
 ./bin/dwh/ETL.sh
 
 # 2. Verify datamarts are populated
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
-psql -d osm_notes -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 
 # 3. Generate a test profile
 ./bin/dwh/profile.sh --user AngocA

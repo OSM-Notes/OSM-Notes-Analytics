@@ -461,7 +461,7 @@ psql -d $DBNAME -c "VACUUM ANALYZE dwh.facts"
 psql -d $DBNAME -c "SELECT * FROM pg_stat_user_indexes WHERE schemaname = 'dwh'"
 
 # Review disk usage
-psql -d $DBNAME -c "SELECT pg_size_pretty(pg_database_size('osm_notes'))"
+psql -d $DBNAME -c "SELECT pg_size_pretty(pg_database_size('notes_dwh'))"
 ```
 
 ---

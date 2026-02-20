@@ -23,12 +23,12 @@ OSM-Notes-Analytics system. Problems are organized by category for easy navigati
 ## Database Configuration
 
 **Note:** For DWH operations, use `DBNAME_INGESTION` and `DBNAME_DWH` variables. The examples in
-this guide use `${DBNAME:-osm_notes}` as a fallback for simplicity, but in production you should use
+this guide uses `${DBNAME:-notes_dwh}` as a fallback for simplicity, but in production you should use
 the specific variables:
 
 ```bash
 # Recommended configuration
-export DBNAME_INGESTION="osm_notes"
+export DBNAME_INGESTION="notes"
 export DBNAME_DWH="notes_dwh"
 
 # For commands checking Ingestion tables, use DBNAME_INGESTION or DBNAME
@@ -72,19 +72,19 @@ echo "ETL log: $LATEST_ETL"
 echo "Datamart log: $LATEST_DATAMART"
 
 # Check database connection
-psql -d "${DBNAME:-osm_notes}" -c "SELECT version();"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT version();"
 
 # Check DWH schema exists
-psql -d "${DBNAME:-osm_notes}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
 
 # Check base tables (from ingestion)
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM note_comments;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM notes;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM note_comments;"
 
 # Check DWH tables
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 # Check disk space
 df -h
@@ -109,10 +109,10 @@ free -h
 
 ```bash
 # Check if schema exists
-psql -d "${DBNAME:-osm_notes}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'dwh';"
 
 # Check if ETL has been run
-psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' LIMIT 1;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' LIMIT 1;"
 ```
 
 **Solutions:**
@@ -125,7 +125,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE scheman
 
 2. **Verify base tables exist first:**
    ```bash
-   psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
+   psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM notes;"
    # If empty or doesn't exist, run OSM-Notes-Ingestion first
    ```
 
@@ -144,11 +144,11 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE scheman
 ./bin/dwh/ETL.sh --help
 
 # Check base tables exist
-psql -d "${DBNAME:-osm_notes}" -c "\dt notes"
-psql -d "${DBNAME:-osm_notes}" -c "\dt note_comments"
+psql -d "${DBNAME:-notes_dwh}" -c "\dt notes"
+psql -d "${DBNAME:-notes_dwh}" -c "\dt note_comments"
 
 # Check database connection
-psql -d "${DBNAME:-osm_notes}" -c "SELECT 1;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT 1;"
 
 # Check configuration files
 ls -la etc/properties.sh
@@ -161,8 +161,8 @@ ls -la etc/etl.properties
 
    ```bash
    # Base tables must be populated by OSM-Notes-Ingestion
-   psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
-   psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM note_comments;"
+   psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM notes;"
+   psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM note_comments;"
 
    # If empty, run ingestion system first
    # See: https://github.com/OSM-Notes/OSM-Notes-Ingestion
@@ -204,13 +204,13 @@ df -h
 # Check database activity
 # All scripts now use descriptive application names for better identification
 # This makes it easy to identify which script is running each query
-psql -d "${DBNAME:-osm_notes}" -c "SELECT pid, application_name, state, query FROM pg_stat_activity WHERE application_name IN ('ETL', 'datamartUsers', 'datamartCountries', 'datamartGlobal') OR application_name LIKE 'ETL-year-%' OR application_name LIKE 'datamartUsers-%';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT pid, application_name, state, query FROM pg_stat_activity WHERE application_name IN ('ETL', 'datamartUsers', 'datamartCountries', 'datamartGlobal') OR application_name LIKE 'ETL-year-%' OR application_name LIKE 'datamartUsers-%';"
 
 # Monitor specific ETL year processes
-psql -d "${DBNAME:-osm_notes}" -c "SELECT pid, application_name, state, now() - state_change AS duration, query FROM pg_stat_activity WHERE application_name LIKE 'ETL-year-%' ORDER BY application_name;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT pid, application_name, state, now() - state_change AS duration, query FROM pg_stat_activity WHERE application_name LIKE 'ETL-year-%' ORDER BY application_name;"
 
 # Monitor datamart user processing
-psql -d "${DBNAME:-osm_notes}" -c "SELECT pid, application_name, state, now() - state_change AS duration, query FROM pg_stat_activity WHERE application_name LIKE 'datamartUsers-%' ORDER BY application_name;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT pid, application_name, state, now() - state_change AS duration, query FROM pg_stat_activity WHERE application_name LIKE 'datamartUsers-%' ORDER BY application_name;"
 ```
 
 **Solutions:**
@@ -240,16 +240,16 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT pid, application_name, state, now() - 
 
    ```bash
    # Run VACUUM ANALYZE on base tables
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE notes;"
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE note_comments;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE notes;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE note_comments;"
    ```
 
 4. **Check for missing indexes:**
 
    ```bash
    # Verify indexes exist on base tables
-   psql -d "${DBNAME:-osm_notes}" -c "\d notes"
-   psql -d "${DBNAME:-osm_notes}" -c "\d note_comments"
+   psql -d "${DBNAME:-notes_dwh}" -c "\d notes"
+   psql -d "${DBNAME:-notes_dwh}" -c "\d note_comments"
    ```
 
 5. **Run ETL for updates (auto-detects mode):**
@@ -329,7 +329,7 @@ tail -100 "$LATEST_ETL/ETL.log"
 grep -i "error\|fatal\|failed" "$LATEST_ETL/ETL.log" | tail -20
 
 # Check database state
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
 ```
 
 **Solutions:**
@@ -381,13 +381,13 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
 sudo systemctl status postgresql
 
 # Test connection
-psql -d "${DBNAME:-osm_notes}" -c "SELECT 1;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT 1;"
 
 # Check credentials
 cat etc/properties.sh | grep -E "DBNAME|DB_USER"
 
 # Verify database exists
-psql -l | grep "${DBNAME:-osm_notes}"
+psql -l | grep "${DBNAME:-notes_dwh}"
 ```
 
 **Solutions:**
@@ -409,8 +409,8 @@ psql -l | grep "${DBNAME:-osm_notes}"
 
 3. **Create database if missing:**
    ```bash
-   createdb "${DBNAME:-osm_notes}"
-   psql -d "${DBNAME:-osm_notes}" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+   createdb "${DBNAME:-notes_dwh}"
+   psql -d "${DBNAME:-notes_dwh}" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
    ```
 
 ### Problem: Database Out of Space
@@ -428,10 +428,10 @@ psql -l | grep "${DBNAME:-osm_notes}"
 df -h
 
 # Check database size
-psql -d "${DBNAME:-osm_notes}" -c "SELECT pg_size_pretty(pg_database_size('${DBNAME:-osm_notes}'));"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT pg_size_pretty(pg_database_size('${DBNAME:-notes_dwh}'));"
 
 # Check table sizes
-psql -d "${DBNAME:-osm_notes}" -c "
+psql -d "${DBNAME:-notes_dwh}" -c "
 SELECT
   schemaname,
   tablename,
@@ -458,15 +458,15 @@ du -sh /tmp/ETL_* 2>/dev/null
 2. **Vacuum database:**
 
    ```bash
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE dwh.facts;"
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE dwh.datamartusers;"
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE dwh.datamartcountries;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE dwh.facts;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE dwh.datamartusers;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE dwh.datamartcountries;"
    ```
 
 3. **Archive old partitions:**
    ```bash
    # Detach old year partitions if needed
-   psql -d "${DBNAME:-osm_notes}" -c "ALTER TABLE dwh.facts DETACH PARTITION dwh.facts_2013;"
+   psql -d "${DBNAME:-notes_dwh}" -c "ALTER TABLE dwh.facts DETACH PARTITION dwh.facts_2013;"
    ```
 
 ---
@@ -485,10 +485,10 @@ du -sh /tmp/ETL_* 2>/dev/null
 
 ```bash
 # Check if datamart tables exist
-psql -d "${DBNAME:-osm_notes}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'dwh' AND tablename LIKE 'datamart%';"
 
 # Check if ETL has completed
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
 ```
 
 **Solutions:**
@@ -518,15 +518,15 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
 
 ```bash
 # Check datamart counts
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 # Check dimension counts
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_countries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.dimension_users;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.dimension_countries;"
 
 # Check for users that need processing
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users WHERE modified = TRUE;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.dimension_users WHERE modified = TRUE;"
 ```
 
 **Solutions:**
@@ -539,7 +539,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users WHER
      ./bin/dwh/datamartUsers/datamartUsers.sh
      sleep 5
      # Check if done
-     COUNT=$(psql -d "${DBNAME:-osm_notes}" -t -c "SELECT COUNT(*) FROM dwh.dimension_users WHERE modified = TRUE;")
+     COUNT=$(psql -d "${DBNAME:-notes_dwh}" -t -c "SELECT COUNT(*) FROM dwh.dimension_users WHERE modified = TRUE;")
      if [[ "$COUNT" -eq 0 ]]; then
        echo "All users processed"
        break
@@ -557,7 +557,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users WHER
 3. **Check ETL completed:**
    ```bash
    # Ensure ETL has processed all facts
-   psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
+   psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
    ```
 
 ---
@@ -576,13 +576,13 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.dimension_users WHER
 
 ```bash
 # Analyze query performance
-psql -d "${DBNAME:-osm_notes}" -c "EXPLAIN ANALYZE SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "EXPLAIN ANALYZE SELECT COUNT(*) FROM dwh.facts;"
 
 # Check table statistics
-psql -d "${DBNAME:-osm_notes}" -c "SELECT schemaname, tablename, last_analyze FROM pg_stat_user_tables WHERE schemaname = 'dwh';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT schemaname, tablename, last_analyze FROM pg_stat_user_tables WHERE schemaname = 'dwh';"
 
 # Check index usage
-psql -d "${DBNAME:-osm_notes}" -c "SELECT schemaname, tablename, indexname, idx_scan FROM pg_stat_user_indexes WHERE schemaname = 'dwh' ORDER BY idx_scan;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT schemaname, tablename, indexname, idx_scan FROM pg_stat_user_indexes WHERE schemaname = 'dwh' ORDER BY idx_scan;"
 ```
 
 **Solutions:**
@@ -590,21 +590,21 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT schemaname, tablename, indexname, idx_
 1. **Update statistics:**
 
    ```bash
-   psql -d "${DBNAME:-osm_notes}" -c "ANALYZE dwh.facts;"
-   psql -d "${DBNAME:-osm_notes}" -c "ANALYZE dwh.datamartusers;"
-   psql -d "${DBNAME:-osm_notes}" -c "ANALYZE dwh.datamartcountries;"
+   psql -d "${DBNAME:-notes_dwh}" -c "ANALYZE dwh.facts;"
+   psql -d "${DBNAME:-notes_dwh}" -c "ANALYZE dwh.datamartusers;"
+   psql -d "${DBNAME:-notes_dwh}" -c "ANALYZE dwh.datamartcountries;"
    ```
 
 2. **Vacuum tables:**
 
    ```bash
-   psql -d "${DBNAME:-osm_notes}" -c "VACUUM ANALYZE dwh.facts;"
+   psql -d "${DBNAME:-notes_dwh}" -c "VACUUM ANALYZE dwh.facts;"
    ```
 
 3. **Check partition pruning:**
    ```bash
    # Ensure queries filter by year for partition pruning
-   psql -d "${DBNAME:-osm_notes}" -c "EXPLAIN SELECT * FROM dwh.facts WHERE action_at >= '2024-01-01' AND action_at < '2025-01-01';"
+   psql -d "${DBNAME:-notes_dwh}" -c "EXPLAIN SELECT * FROM dwh.facts WHERE action_at >= '2024-01-01' AND action_at < '2025-01-01';"
    ```
 
 ### Problem: Out of Memory
@@ -661,8 +661,8 @@ cat etc/etl.properties | grep -E "ETL_MAX_PARALLEL_JOBS|ETL_BATCH_SIZE"
 
 ```bash
 # Check datamart counts
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartcountries;"
 
 # Check output directory
 ls -lh ./output/json/
@@ -749,13 +749,13 @@ ajv --version
 
 ```bash
 # Check if user exists in datamart
-psql -d "${DBNAME:-osm_notes}" -c "SELECT username FROM dwh.datamartusers WHERE username = 'AngocA';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT username FROM dwh.datamartusers WHERE username = 'AngocA';"
 
 # Check if country exists
-psql -d "${DBNAME:-osm_notes}" -c "SELECT country_name_en FROM dwh.datamartcountries WHERE country_name_en = 'Colombia';"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT country_name_en FROM dwh.datamartcountries WHERE country_name_en = 'Colombia';"
 
 # Check datamart has data
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 ```
 
 **Solutions:**
@@ -764,7 +764,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 
    ```bash
    # Check exact spelling
-   psql -d "${DBNAME:-osm_notes}" -c "SELECT username FROM dwh.datamartusers WHERE username ILIKE '%angoca%';"
+   psql -d "${DBNAME:-notes_dwh}" -c "SELECT username FROM dwh.datamartusers WHERE username ILIKE '%angoca%';"
 
    # Try both English and Spanish for countries
    ./bin/dwh/profile.sh --country Colombia
@@ -834,11 +834,11 @@ ls -la etc/etl.properties.example
 
 ```bash
 # Check base tables exist
-psql -d "${DBNAME:-osm_notes}" -c "\dt notes"
-psql -d "${DBNAME:-osm_notes}" -c "\dt note_comments"
+psql -d "${DBNAME:-notes_dwh}" -c "\dt notes"
+psql -d "${DBNAME:-notes_dwh}" -c "\dt note_comments"
 
 # Check table counts
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM notes;"
 ```
 
 **Solutions:**
@@ -882,7 +882,7 @@ psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
 1. **Backup current data:**
 
    ```bash
-   pg_dump -d "${DBNAME:-osm_notes}" -n dwh > dwh_backup.sql
+   pg_dump -d "${DBNAME:-notes_dwh}" -n dwh > dwh_backup.sql
    ```
 
 2. **Clean and restart:**
@@ -941,9 +941,9 @@ free -h
 df -h
 
 # Database info
-psql -d "${DBNAME:-osm_notes}" -c "SELECT version();"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM notes;"
-psql -d "${DBNAME:-osm_notes}" -c "SELECT COUNT(*) FROM dwh.facts;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT version();"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM notes;"
+psql -d "${DBNAME:-notes_dwh}" -c "SELECT COUNT(*) FROM dwh.facts;"
 
 # Latest logs
 tail -50 $(ls -1rtd /tmp/ETL_* | tail -1)/ETL.log

@@ -130,7 +130,7 @@ Analytics supports two database configurations:
 #### Option 2: Separate Databases (Hybrid Strategy)
 
 - **Ingestion database**: `notes` (on different server/host)
-- **Analytics database**: `osm_notes_dwh` (local)
+- **Analytics database**: `notes_dwh` (local)
 - **FDW required**: Foreign Data Wrappers for remote access
 - **Initial load**: Copies tables locally, then uses FDW for incremental
 
@@ -148,7 +148,7 @@ sudo su - postgres
 
 # Create database (if using separate database)
 psql << EOF
-CREATE DATABASE osm_notes_dwh WITH OWNER notes;
+CREATE DATABASE notes_dwh WITH OWNER notes;
 \q
 EOF
 
@@ -165,7 +165,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 EOF
 
 # For separate database
-psql -d osm_notes_dwh -U notes << EOF
+psql -d notes_dwh -U notes << EOF
 CREATE EXTENSION IF NOT EXISTS postgis;
 \q
 EOF
@@ -232,7 +232,7 @@ Set required environment variables:
 ```bash
 # Database configuration
 export DBNAME_INGESTION="notes"          # Ingestion database name
-export DBNAME_DWH="osm_notes_dwh"        # Analytics database name (or same as Ingestion)
+export DBNAME_DWH="notes_dwh"        # Analytics database name (or same as Ingestion)
 export DB_USER="notes"                   # Database user
 export DB_PASSWORD="your_password"      # Database password
 export DB_HOST="localhost"               # Database host
@@ -266,7 +266,7 @@ source etc/properties.sh
 
 # Or export variables in your shell
 export DBNAME_INGESTION="notes"
-export DBNAME_DWH="osm_notes_dwh"
+export DBNAME_DWH="notes_dwh"
 # ... etc
 ```
 
@@ -359,10 +359,10 @@ If using separate databases and FDW:
 
 ```bash
 # Check FDW extension
-psql -d osm_notes_dwh -c "CREATE EXTENSION IF NOT EXISTS postgres_fdw;"
+psql -d notes_dwh -c "CREATE EXTENSION IF NOT EXISTS postgres_fdw;"
 
 # Verify FDW server exists
-psql -d osm_notes_dwh -c "SELECT * FROM pg_foreign_server;"
+psql -d notes_dwh -c "SELECT * FROM pg_foreign_server;"
 ```
 
 See [Hybrid Strategy Guide](Hybrid_Strategy_Copy_FDW.md) for detailed FDW setup.

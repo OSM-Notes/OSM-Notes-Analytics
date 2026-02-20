@@ -325,19 +325,19 @@ This is only practical if you're starting a new project:
 docker run -d \
   --name postgres-pgml \
   -e POSTGRES_PASSWORD=yourpassword \
-  -e POSTGRES_DB=osm_notes \
+  -e POSTGRES_DB=notes_dwh \
   -p 5432:5432 \
   ghcr.io/postgresml/postgresml:latest
 
 # Connect to the containerized database
-docker exec -it postgres-pgml psql -U postgres -d osm_notes
+docker exec -it postgres-pgml psql -U postgres -d notes_dwh
 ```
 
 **Note**: If using Docker with an existing database, you'll need to:
 
-1. Export your database: `pg_dump osm_notes > backup.sql`
+1. Export your database: `pg_dump notes_dwh > backup.sql`
 2. Import into Docker container:
-   `docker exec -i postgres-pgml psql -U postgres -d osm_notes < backup.sql`
+   `docker exec -i postgres-pgml psql -U postgres -d notes_dwh < backup.sql`
 3. Update all connection strings to point to the Docker container
 
 #### Option C: Manual Compilation from Source
@@ -405,7 +405,7 @@ ls /usr/share/postgresql/*/extension/pgml*
 
 ```sql
 -- Connect to your database
-\c osm_notes
+\c notes_dwh
 
 -- Enable pgml extension
 CREATE EXTENSION IF NOT EXISTS pgml;
@@ -848,7 +848,7 @@ Add to ETL pipeline:
 
 ```bash
 # After datamart updates
-psql -d osm_notes -c "
+psql -d notes_dwh -c "
   INSERT INTO dwh.note_type_classifications (...)
   SELECT ... FROM dwh.v_note_ml_prediction_features
   WHERE id_note NOT IN (SELECT id_note FROM dwh.note_type_classifications);

@@ -22,7 +22,7 @@ users.
 - Inactive users processed in background without affecting active users
 - **Optimal CPU utilization:** Fast users don't leave threads idle
 - **Dynamic load balancing:** Threads always stay busy
-- **Cycle-based processing:** Processes MAX_USERS_PER_CYCLE users per cycle (default: 1000) to allow
+- **Cycle-based processing:** Processes MAX_USERS_PER_CYCLE users per cycle (default: 5000) to allow
   ETL to complete quickly and update data promptly
 
 ## Prioritization System
@@ -103,7 +103,7 @@ ORDER BY
   COUNT(*) DESC,
   -- Priority 4: Most recent activity first
   MAX(f.action_at) DESC NULLS LAST
-LIMIT ${MAX_USERS_PER_CYCLE}  -- Process only N users per cycle (default: 1000)
+LIMIT ${effective_limit}  -- Normal: MAX_USERS_PER_CYCLE (default 5000); catch-up: higher when backlog >= CATCHUP_THRESHOLD
 ```
 
 ## Parallel Processing
@@ -392,7 +392,16 @@ MAX_THREADS="${MAX_THREADS:-$(nproc)}"
 # Maximum users to process per ETL cycle (default: 1000)
 # This limits processing to allow ETL to complete quickly
 # Users are prioritized by activity, so most active users are processed first
-MAX_USERS_PER_CYCLE="${MAX_USERS_PER_CYCLE:-1000}"
+MAX_USERS_PER_CYCLE="${MAX_USERS_PER_CYCLE:-5000}"
+
+# Catch-up mode: when backlog of modified users is large (e.g. 500K historical), process more per cycle
+# CATCHUP_THRESHOLD: enable catch-up when total modified >= this (default: 10000)
+# MAX_USERS_PER_CYCLE_CATCHUP: absolute limit per cycle during catch-up (e.g. 10000)
+# CATCHUP_MULTIPLIER: use MAX_USERS_PER_CYCLE * this during catch-up (e.g. 10)
+# Example: CATCHUP_MULTIPLIER=10 => process up to 50000 users/cycle (5000*10) when backlog >= 10000
+CATCHUP_THRESHOLD="${CATCHUP_THRESHOLD:-10000}"
+# MAX_USERS_PER_CYCLE_CATCHUP=10000
+# CATCHUP_MULTIPLIER=10
 
 # Batch size for logging (default: 1000)
 batch_size=1000
@@ -400,20 +409,30 @@ batch_size=1000
 
 ### Recommended Adjustments
 
+**ETL cycle time vs users per cycle:**
+
+- On typical production, **~1000 users** take **~3–5 minutes**; **~5000 users** fit in a **15-minute** ETL window.
+- **For 15-minute ETL windows:** default 5000 fits; adjust down if the rest of the ETL is heavy.
+- **For more headroom:** 1000–2000 leaves most of the 15 min for other ETL steps; most active users are still processed first.
+
+**Historical backlog (500K+ users):**
+
+- Use **catch-up mode** so each cycle processes more users until the backlog drops:
+  - Set `CATCHUP_THRESHOLD=10000` (default) and `CATCHUP_MULTIPLIER=10` → up to 10× base limit per cycle when backlog ≥ 10K.
+  - Or set `MAX_USERS_PER_CYCLE_CATCHUP=10000` for a fixed catch-up limit.
+- Once backlog falls below `CATCHUP_THRESHOLD`, the script automatically reverts to `MAX_USERS_PER_CYCLE` (normal load).
+
 **For systems with many users:**
 
 - Increase `MAX_THREADS` if resources are available
 - Monitor `max_connections` in PostgreSQL
-- Adjust `MAX_USERS_PER_CYCLE` based on ETL cycle time requirements
-  - **Default (1000):** Good balance for most systems
-  - **Higher (2000-5000):** If you have more resources and longer ETL windows
-  - **Lower (500):** If you need faster ETL completion times
+- Adjust `MAX_USERS_PER_CYCLE` based on ETL cycle time (see above)
 - Adjust `batch_size` for logging based on volume
 
 **For systems with limited resources:**
 
 - Reduce `MAX_THREADS` to `nproc - 2`
-- Reduce `MAX_USERS_PER_CYCLE` to 500 for faster ETL completion
+- Reduce `MAX_USERS_PER_CYCLE` if datamartUsers must finish in under 15 min (e.g. 1000–2000)
 - Increase `batch_size` for less logging
 - Processing happens automatically across multiple cycles
 
@@ -423,26 +442,18 @@ batch_size=1000
 
 **Case 1: 1000 modified users (all processed in one cycle)**
 
-- Active users (7 days): ~50 users → **2-5 minutes**
-- Active users (30 days): ~200 users → **10-15 minutes**
-- Inactive users: ~750 users → **30-60 minutes**
-- **Total:** ~1 hour (vs. days without prioritization)
+- **Total:** ~3–5 minutes on typical production (observed on prod servers).
 
 **Case 2: 10000 modified users (processed across multiple cycles)**
 
-- **Cycle 1 (1000 users):**
-  - Active users (7 days): ~50 users → **2-5 minutes**
-  - Active users (30 days): ~200 users → **10-15 minutes**
-  - High activity users: ~750 users → **30-60 minutes**
-  - **Total Cycle 1:** ~1 hour
-- **Cycle 2-10:** Remaining users processed progressively
-- **Key benefit:** Most active users have fresh data in ~1 hour, not days/weeks
+- **Cycle 1 (e.g. 5000 users):** ~15 minutes on typical production
+- **Cycle 2:** Remaining users processed in next run
+- **Key benefit:** Most active users (by prioritization) have fresh data within one or two cycles
 
-**Case 3: 50000 modified users (large initial load)**
+**Case 3: 50000+ modified users (large initial load)**
 
-- **Cycle 1 (1000 users):** Most active users → **~1 hour**
-- **Cycles 2-50:** Remaining users processed progressively
-- **Key benefit:** Active users have fresh data quickly, ETL completes promptly each cycle
+- Use **catch-up mode** (e.g. `CATCHUP_MULTIPLIER=10`) to process more per cycle (e.g. 5000–10000) until backlog drops
+- **Key benefit:** Active users have fresh data quickly; ETL completes promptly each cycle
 
 ## Security Considerations
 
@@ -545,9 +556,12 @@ batch_size=1000
 ## Version History
 
 - **v1.0 (2025-12-27):** Initial implementation with static pool
-- **v2.0 (2025-01-XX):** Migrated to work queue for dynamic load balancing (DM-006)
+- **v2.0 (2026-01-01):** Migrated to work queue for dynamic load balancing (DM-006)
 - **v2.1 (2026-01-03):** Added cycle-based processing limit (MAX_USERS_PER_CYCLE)
-  - Processes maximum 1000 users per cycle (configurable)
+  - Processes maximum 5000 users per cycle by default (configurable)
   - Allows ETL to complete quickly and update data promptly
   - Most active users processed first, less active users processed progressively
+- **v2.2 (2026-02-19):** Catch-up mode for large historical backlogs
+  - When total modified users ≥ CATCHUP_THRESHOLD, use higher limit (MAX_USERS_PER_CYCLE_CATCHUP or CATCHUP_MULTIPLIER)
+  - Enables faster drain of 500K+ backlogs; reverts to normal limit when backlog drops
 - **Author:** Andres Gomez (AngocA)

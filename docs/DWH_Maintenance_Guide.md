@@ -276,7 +276,7 @@ ERROR: Permission denied for schema dwh
 #### Database Not Found
 
 ```
-ERROR: Database 'osm_notes' does not exist
+ERROR: Database 'notes_dwh' does not exist
 ```
 
 **Solution:** Check `etc/properties.sh` configuration
