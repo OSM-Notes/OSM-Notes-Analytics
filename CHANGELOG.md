@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-01-26] - Recent Updates and Improvements
+
+### Added
+
+- **CI/CD Testing Infrastructure**: Added local CI testing scripts and improved test workflows
+- **Datamart Enhancements**: Added new tracking columns and metrics to datamartUsers and
+  datamartCountries
+- **Enhanced Export Functionality**: Improved CSV and JSON export processes with incremental updates
+  and conflict resolution
+
+### Changed
+
+- **Documentation**: Comprehensive documentation updates including standardized links, metadata
+  sections, and Mermaid diagrams
+- **ETL Process**: Enhanced ETL execution with improved phase handling and closed dimension date
+  updates
+- **Database**: Updated SQL scripts to use public schema and improved query optimization
+- **Performance**: Optimized SQL queries, export processes, and added locking mechanisms
+- **Code Quality**: Standardized code formatting, improved error handling, and enhanced logging
+
+### Fixed
+
+- **Timestamp handling**: Fixed multiple issues related to timestamp handling
+
+---
+
 ## [2025-12-27] - Machine Learning Integration and Complete Datamart Implementation
 
 ### Added
@@ -108,32 +134,6 @@ All notable changes to this project will be documented in this file.
 - Added `sql/dwh/ml/README.md`: pgml installation and usage guide
 - Updated `ToDo/TODO_LIST.md`: All datamart tasks marked as completed
 - Removed obsolete files: `ToDo/ToDos.md`, `ToDo/DATAMARTS_IMPLEMENTATION_PLAN.md`
-
----
-
-## [2026-01-26] - Recent Updates and Improvements
-
-### Added
-
-- **CI/CD Testing Infrastructure**: Added local CI testing scripts and improved test workflows
-- **Datamart Enhancements**: Added new tracking columns and metrics to datamartUsers and
-  datamartCountries
-- **Enhanced Export Functionality**: Improved CSV and JSON export processes with incremental updates
-  and conflict resolution
-
-### Changed
-
-- **Documentation**: Comprehensive documentation updates including standardized links, metadata
-  sections, and Mermaid diagrams
-- **ETL Process**: Enhanced ETL execution with improved phase handling and closed dimension date
-  updates
-- **Database**: Updated SQL scripts to use public schema and improved query optimization
-- **Performance**: Optimized SQL queries, export processes, and added locking mechanisms
-- **Code Quality**: Standardized code formatting, improved error handling, and enhanced logging
-
-### Fixed
-
-- **Timestamp handling**: Fixed multiple issues related to timestamp handling
 
 ---
 
