@@ -29,7 +29,7 @@ INSERT INTO dwh.dimension_regions (region_name_es, region_name_en) VALUES
  ('Islas del Pacífico (Melanesia, Micronesia y Polinesia)',
    'Pacific Islands (Melanesia, Micronesia and Polynesia)'),
  ('Australia', 'Australia'),
- ('Antártida','Antarctica');
+ ('Antártida', 'Antarctica');
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Inserting Continents' AS Task;
@@ -46,19 +46,19 @@ ON CONFLICT DO NOTHING;
 -- Optional mapping Regions -> Continents (coarse, can be refined later)
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Americas'
-) WHERE region_name_en IN ('North America','Central America','Antilles','South America');
+) WHERE region_name_en IN ('North America', 'Central America', 'Antilles', 'South America');
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Europe'
-) WHERE region_name_en IN ('Western Europe','Eastern Europe','Caucasus','Siberia');
+) WHERE region_name_en IN ('Western Europe', 'Eastern Europe', 'Caucasus', 'Siberia');
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Asia'
-) WHERE region_name_en IN ('Central Asia','East Asia','Middle East','Indian subcontinent','Mainland Southeast Asia','Malay Archipelago');
+) WHERE region_name_en IN ('Central Asia', 'East Asia', 'Middle East', 'Indian subcontinent', 'Mainland Southeast Asia', 'Malay Archipelago');
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Africa'
-) WHERE region_name_en IN ('North Africa','Sub-Saharan Africa');
+) WHERE region_name_en IN ('North Africa', 'Sub-Saharan Africa');
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Oceania'
-) WHERE region_name_en IN ('Pacific Islands (Melanesia, Micronesia and Polynesia)','Australia');
+) WHERE region_name_en IN ('Pacific Islands (Melanesia, Micronesia and Polynesia)', 'Australia');
 UPDATE dwh.dimension_regions SET continent_id = (
   SELECT dimension_continent_id FROM dwh.dimension_continents WHERE continent_name_en = 'Antarctica'
 ) WHERE region_name_en IN ('Antarctica');
@@ -138,6 +138,24 @@ INSERT INTO dwh.dimension_applications (application_name, pattern, platform) VAL
 ('msftopenmaps', '%(#msftopenmaps|%#MSFTOpenMaps)%', 'web'),
 ('OnOSM.OSMiranorg', 'onosm.osmiran.org %', 'web')
 ;
+
+-- Applications commonly indicated in note comment text (e.g. "Opened with iD 2.19", "JOSM").
+-- Only apps not already in the INSERTs above; idempotent for existing installations.
+INSERT INTO dwh.dimension_applications (application_name, pattern)
+SELECT v.app_name, v.pat
+FROM (VALUES
+  ('iD', '% iD %'),
+  ('iD', '%with iD%'),
+  ('JOSM', '%JOSM%'),
+  ('Vespucci', '%Vespucci%'),
+  ('Go Map!!', '%Go Map%'),
+  ('Potlatch', '%Potlatch%'),
+  ('Mapillary', '%Mapillary%')
+) AS v(app_name, pat)
+WHERE NOT EXISTS (
+  SELECT 1 FROM dwh.dimension_applications a
+  WHERE a.application_name = v.app_name AND (a.pattern IS NOT DISTINCT FROM v.pat)
+);
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Dimensions populated' AS Task;

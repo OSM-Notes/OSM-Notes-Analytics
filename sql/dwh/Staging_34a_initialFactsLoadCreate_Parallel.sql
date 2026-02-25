@@ -133,20 +133,15 @@ BEGIN
    m_closed_id_date := NULL;
    m_closed_id_hour_of_week := NULL;
 
-   -- Get application info if present
+   -- Get application info from comment body (all apps, not only iD/JOSM/Potlatch)
    m_text_comment := rec_note_action.body;
-   IF (m_text_comment LIKE '%iD%' OR m_text_comment LIKE '%JOSM%' OR m_text_comment LIKE '%Potlatch%') THEN
-    m_application := staging.get_application(m_text_comment);
-    -- Try to parse version simple pattern N.N or N.N.N
-    IF (m_text_comment ~* '\\d+\\.\\d+(\\.\\d+)?') THEN
-     m_application_version := dwh.get_application_version_id(
-       m_application,
-       (SELECT regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)')::text)
-     );
-    END IF;
-   ELSE
-    m_application := NULL;
-    m_application_version := NULL;
+   m_application := staging.get_application(m_text_comment);
+   m_application_version := NULL;
+   IF (m_application IS NOT NULL AND m_text_comment IS NOT NULL AND m_text_comment ~* '\\d+\\.\\d+(\\.\\d+)?') THEN
+    m_application_version := dwh.get_application_version_id(
+      m_application,
+      (SELECT regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)')::text)
+    );
    END IF;
 
    -- Get hashtags (UNLIMITED)
