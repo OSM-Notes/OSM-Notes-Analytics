@@ -435,31 +435,44 @@ for table in "${TABLES[@]}"; do
   __logi "Verified: ${TARGET_COUNT} rows copied for ${table}"
  fi
 
- # Create indexes (copy from source)
+ # Create indexes (copy from source, or only needed ones for slim tables)
  __logi "Creating indexes for ${table}"
  set +e
- index_list=$(PGPASSWORD="${INGESTION_PGPASSWORD}" psql "${INGESTION_PSQL_ARGS[@]}" -t -A -c \
-  "SELECT 'CREATE INDEX IF NOT EXISTS ' || indexname || ' ON public.${table} ' ||
-          regexp_replace(indexdef, '^CREATE (UNIQUE )?INDEX .* ON public\.${table} ', '') || ';'
-   FROM pg_indexes
-   WHERE tablename = '${table}' AND schemaname = 'public'
-   AND indexname NOT LIKE '%_pkey';" 2>&1)
- index_list_exit_code=$?
- set -e
- if [[ ${index_list_exit_code} -eq 0 ]] && [[ -n "${index_list}" ]]; then
-  while IFS= read -r index_sql; do
-   if [[ -n "${index_sql}" ]]; then
-    set +e
-    index_output=$(PGPASSWORD="${ANALYTICS_PGPASSWORD}" psql "${ANALYTICS_PSQL_ARGS[@]}" -c "${index_sql}" 2>&1)
-    index_exit_code=$?
-    set -e
-    if [[ ${index_exit_code} -ne 0 ]]; then
-     # shellcheck disable=SC2310  # Function invocation in || condition is intentional for error handling
-     __logw "Warning: Failed to create index for ${table}: ${index_output}"
+ if [[ "${table}" == "countries" ]]; then
+  # Slim countries table has only country_id, country_name, country_name_es, country_name_en.
+  # Create only the primary key; skip source indexes (geom, is_maritime, etc.) to avoid WARNs.
+  index_output=$(PGPASSWORD="${ANALYTICS_PGPASSWORD}" psql "${ANALYTICS_PSQL_ARGS[@]}" -c \
+   "ALTER TABLE public.countries ADD PRIMARY KEY (country_id);" 2>&1)
+  index_exit_code=$?
+  if [[ ${index_exit_code} -ne 0 ]]; then
+   # May already exist from a previous run
+   __logw "Warning: Failed to add primary key on countries (may already exist): ${index_output}"
+  fi
+ else
+  index_list=$(PGPASSWORD="${INGESTION_PGPASSWORD}" psql "${INGESTION_PSQL_ARGS[@]}" -t -A -c \
+   "SELECT 'CREATE INDEX IF NOT EXISTS ' || indexname || ' ON public.${table} ' ||
+           regexp_replace(indexdef, '^CREATE (UNIQUE )?INDEX .* ON public\.${table} ', '') || ';'
+    FROM pg_indexes
+    WHERE tablename = '${table}' AND schemaname = 'public'
+    AND indexname NOT LIKE '%_pkey';" 2>&1)
+  index_list_exit_code=$?
+  set -e
+  if [[ ${index_list_exit_code} -eq 0 ]] && [[ -n "${index_list}" ]]; then
+   while IFS= read -r index_sql; do
+    if [[ -n "${index_sql}" ]]; then
+     set +e
+     index_output=$(PGPASSWORD="${ANALYTICS_PGPASSWORD}" psql "${ANALYTICS_PSQL_ARGS[@]}" -c "${index_sql}" 2>&1)
+     index_exit_code=$?
+     set -e
+     if [[ ${index_exit_code} -ne 0 ]]; then
+      # shellcheck disable=SC2310  # Function invocation in || condition is intentional for error handling
+      __logw "Warning: Failed to create index for ${table}: ${index_output}"
+     fi
     fi
-   fi
-  done <<< "${index_list}"
+   done <<< "${index_list}"
+  fi
  fi
+ set -e
 
  # Analyze table for better query performance
  __logi "Analyzing table ${table}"
