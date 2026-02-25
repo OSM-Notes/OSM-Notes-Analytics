@@ -326,61 +326,6 @@ The system processes a **limited number of users per ETL cycle** (default: 1000)
 
 **Key Benefit:** Active users have fresh data in minutes, not hours/days.
 
-## Processing Old Users (PROCESS_OLD_USERS)
-
-### ⚠️ NOT RECOMMENDED - Use Only for Initial Load
-
-The `PROCESS_OLD_USERS` option processes **all users** including inactive ones (users with ≤20
-actions, which represent ~95% of users). This is **extremely slow** and **not recommended** for
-regular ETL cycles.
-
-### Why It's Slow
-
-1. **OFFSET Pagination:** Uses `OFFSET` which requires PostgreSQL to count and skip all previous
-   rows. Each batch becomes slower than the previous one.
-2. **No Prioritization:** Processes users in order of `user_id`, not by activity or relevance.
-3. **Full Table Scans:** Requires `GROUP BY` and `HAVING` on the entire `facts` table for each
-   batch.
-4. **Estimated Time:** Can take **days or weeks** to complete (e.g., 239 days at current rate).
-
-### When to Use
-
-**Only use `PROCESS_OLD_USERS=yes` for:**
-
-- Initial datamart creation when you need to process ALL users
-- One-time historical data backfill
-
-**Never use for:**
-
-- Regular ETL cycles
-- Incremental updates
-- Production environments with active data
-
-### Recommended Approach
-
-Instead of `PROCESS_OLD_USERS=yes`, use the default behavior (`PROCESS_OLD_USERS=no`):
-
-1. **Process modified users only** - Much faster, only processes users with changes
-2. **Intelligent prioritization** - Most active users processed first
-3. **Cycle-based processing** - Limits users per cycle (default: 1000) for quick ETL completion
-4. **Incremental updates** - Users are marked as `modified=TRUE` when their data changes, so they'll
-   be processed in subsequent cycles
-
-### Configuration
-
-```bash
-# In etc/properties.sh or environment variable
-PROCESS_OLD_USERS=no  # Recommended (default)
-# PROCESS_OLD_USERS=yes  # Only for initial load
-```
-
-### Performance Comparison
-
-| Approach                         | Users Processed                  | Time             | Use Case           |
-| -------------------------------- | -------------------------------- | ---------------- | ------------------ |
-| `PROCESS_OLD_USERS=no` (default) | Modified users only (~1000-4000) | Minutes to hours | Regular ETL cycles |
-| `PROCESS_OLD_USERS=yes`          | ALL users (~547K)                | Days to weeks    | Initial load only  |
-
 ## Configuration
 
 ### Environment Variables

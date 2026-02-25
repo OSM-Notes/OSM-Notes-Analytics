@@ -107,9 +107,6 @@ declare -r POSTGRES_15_BADGE_SYSTEM_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datam
 # Generic script to add years.
 declare -r POSTGRES_21_ADD_YEARS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_20_alterTableAddYears.sql"
 
-# Name of the SQL script to analyse only users with few actions.
-declare -r POSTGRES_31_POPULATE_OLD_USERS_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_30_populateOldUsers.sql"
-
 # Name of the SQL script that contains the ETL process.
 declare -r POSTGRES_32_POPULATE_FILE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_31_populateDatamartUsersTable.sql"
 
@@ -191,7 +188,6 @@ function __checkPrereqs {
   "${POSTGRES_14_LAST_YEAR_ACTITIES_SCRIPT}"
   "${POSTGRES_15_BADGE_SYSTEM_FILE}"
   "${POSTGRES_21_ADD_YEARS_SCRIPT}"
-  "${POSTGRES_31_POPULATE_OLD_USERS_FILE}"
   "${POSTGRES_32_POPULATE_FILE}"
  )
 
@@ -211,10 +207,6 @@ function __checkPrereqs {
 function __createBaseTables {
  __log_start
  __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 -f "${POSTGRES_12_CREATE_TABLES_FILE}"
- # PROCESS_OLD_USERS is now configurable via environment variable or properties.sh
- # Default is 'no' to prioritize modified users with intelligent prioritization
- # Set PROCESS_OLD_USERS=yes only if you need to process all users (initial load)
- PROCESS_OLD_USERS="${PROCESS_OLD_USERS:-no}"
  __log_finish
 }
 
@@ -290,129 +282,6 @@ function __addYears {
  __log_finish
 }
 
-# Processes initial batch of users.
-# Processes users in small batches with periodic commits to avoid long transactions
-# and reduce lock contention between parallel processes.
-function __processOldUsers {
- __log_start
- MAX_USER_ID=$(__psql_with_appname -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT MAX(user_id) FROM dwh.dimension_users" -v ON_ERROR_STOP=1)
- MAX_USER_ID=$(("MAX_USER_ID" + 1))
-
- # Processes the users in parallel.
- # Uses n-1 cores, if number of cores is greater than 1.
- # This prevents monopolization of the CPUs.
- if [[ "${MAX_THREADS}" -gt 6 ]]; then
-  MAX_THREADS=$((MAX_THREADS - 2))
- elif [[ "${MAX_THREADS}" -gt 1 ]]; then
-  MAX_THREADS=$((MAX_THREADS - 1))
- fi
-
- SIZE=$((MAX_USER_ID / MAX_THREADS))
- LOWER_VALUE=1
- HIGH_VALUE="${SIZE}"
- ITER=1
- local BATCH_SIZE=50
- __logw "Starting parallel process for datamartUsers (batch size: ${BATCH_SIZE} users per transaction)..."
- while [[ "${ITER}" -le "${MAX_THREADS}" ]]; do
-  (
-   __logi "Starting user batch ${LOWER_VALUE}-${HIGH_VALUE} - ${BASHPID}."
-
-   export LOWER_VALUE
-   export HIGH_VALUE
-   export BATCH_SIZE
-   local batch_offset=0
-   local total_processed=0
-   local batch_num=1
-   local batch_count=0
-
-   # Set up date properties once at the beginning
-   set +e
-   __psql_with_appname "datamartUsers-batch-${LOWER_VALUE}-${HIGH_VALUE}" -d "${DBNAME_DWH}" -c "
-    DELETE FROM dwh.properties WHERE key IN ('year', 'month', 'day');
-    INSERT INTO dwh.properties VALUES ('year', DATE_PART('year', CURRENT_DATE));
-    INSERT INTO dwh.properties VALUES ('month', DATE_PART('month', CURRENT_DATE));
-    INSERT INTO dwh.properties VALUES ('day', DATE_PART('day', CURRENT_DATE));
-   " >> "${LOG_FILENAME}.${BASHPID}" 2>&1
-   set -e
-
-   # Process users in small batches with periodic commits
-   while true; do
-    export BATCH_OFFSET="${batch_offset}"
-
-    # Process batch of users in a single transaction
-    set +e
-    local batch_result
-    # shellcheck disable=SC2016  # Single quotes intentional for envsubst variable list
-    batch_result=$(__psql_with_appname "datamartUsers-batch-${LOWER_VALUE}-${HIGH_VALUE}" -d "${DBNAME_DWH}" -c "$(envsubst '$LOWER_VALUE,$HIGH_VALUE,$BATCH_SIZE,$BATCH_OFFSET' \
-     < "${POSTGRES_31_POPULATE_OLD_USERS_FILE}" || true)" \
-     2>&1)
-    local batch_exit_code=$?
-    set -e
-
-    if [[ ${batch_exit_code} -eq 0 ]]; then
-     # Extract number of users processed from NOTICE messages
-     batch_count=$(echo "${batch_result}" | grep -oP 'Processed \K[0-9]+' | tail -1 || echo "0")
-     if [[ -z "${batch_count}" ]] || ! [[ "${batch_count}" =~ ^[0-9]+$ ]]; then
-      batch_count=0
-     fi
-
-     if [[ ${batch_count} -gt 0 ]]; then
-      total_processed=$((total_processed + batch_count))
-      batch_offset=$((batch_offset + batch_count))
-
-      if [[ $((total_processed % 500)) -eq 0 ]]; then
-       __logi "Batch ${LOWER_VALUE}-${HIGH_VALUE}: Processed ${total_processed} users (committed)"
-      fi
-     fi
-
-     # If batch returned fewer users than batch_size, we've reached the end
-     if [[ ${batch_count} -lt ${BATCH_SIZE} ]] || [[ ${batch_count} -eq 0 ]]; then
-      break
-     fi
-    else
-     __loge "Batch ${LOWER_VALUE}-${HIGH_VALUE}: Error processing batch ${batch_num} (offset ${batch_offset}), continuing..."
-     # Try next batch even if current batch failed
-     batch_offset=$((batch_offset + BATCH_SIZE))
-     # Limit retries to avoid infinite loops
-     if [[ ${batch_num} -gt 1000 ]]; then
-      __loge "Batch ${LOWER_VALUE}-${HIGH_VALUE}: Too many batch attempts, stopping"
-      break
-     fi
-    fi
-
-    batch_num=$((batch_num + 1))
-   done
-
-   __logi "Finished user batch ${LOWER_VALUE}-${HIGH_VALUE} - ${BASHPID}. Total processed: ${total_processed}"
-  ) &
-  ITER=$((ITER + 1))
-  LOWER_VALUE=$((HIGH_VALUE + 1))
-  HIGH_VALUE=$((HIGH_VALUE + SIZE))
-  __logi "Check log per thread for more information."
-  sleep 5
- done
-
- local failed_jobs=0
- for pid in $(jobs -p); do
-  if ! wait "${pid}"; then
-   failed_jobs=$((failed_jobs + 1))
-  fi
- done
-
- if [[ ${failed_jobs} -eq 0 ]]; then
-  __logi "SUCCESS: All old user batches processed successfully"
- else
-  __loge "ERROR: ${failed_jobs} old user batch(es) failed. Check individual log files for details."
- fi
- __logw "Waited for all jobs, restarting in main thread."
-
- __log_finish
- if [[ ${failed_jobs} -gt 0 ]]; then
-  return 1
- fi
- return 0
-}
 # Thread-safe function to get next user from shared work queue.
 # Uses file locking (flock) to ensure atomic queue operations.
 # This function is used by worker threads to get the next user to process.
@@ -477,14 +346,7 @@ __get_next_user_from_queue() {
 # DM-006: Migrated from static pool to work queue for optimal CPU utilization.
 function __processNotesUser {
  __log_start
- if [[ "${PROCESS_OLD_USERS}" == "yes" ]]; then
-  __logw "WARNING: PROCESS_OLD_USERS=yes is enabled. This will process ALL users including inactive ones."
-  __logw "This uses OFFSET pagination which is extremely slow and can take days/weeks to complete."
-  __logw "Consider using PROCESS_OLD_USERS=no to only process modified users with intelligent prioritization."
-  __processOldUsers
- else
-  __logi "PROCESS_OLD_USERS=no: Only processing modified users with intelligent prioritization (recommended)"
- fi
+ __logi "Processing modified users with intelligent prioritization (recent and high-activity first)"
 
  __logi "=== PROCESSING USERS IN PARALLEL (WORK QUEUE) ==="
 
@@ -859,17 +721,6 @@ function main() {
  flock -n 7
  # shellcheck disable=SC2034
  ONLY_EXECUTION="yes"
-
- # This variable controls processing of users with <=20 actions (95% of users).
- # Default: 'no' - Only process modified users with intelligent prioritization (recommended)
- # Set to 'yes' only for initial load or when you need to process all users.
- # WARNING: Processing old users uses OFFSET which is very slow. It's better to
- # process them incrementally via modified flag in subsequent ETL cycles.
- # Note: PROCESS_OLD_USERS is already set in __createBaseTables() or from properties.sh
- # Only set default if not already set (to avoid readonly variable error)
- if [[ -z "${PROCESS_OLD_USERS:-}" ]]; then
-  PROCESS_OLD_USERS="no"
- fi
 
  set +E
  # shellcheck disable=SC2310  # Function invocation in ! condition is intentional for error handling

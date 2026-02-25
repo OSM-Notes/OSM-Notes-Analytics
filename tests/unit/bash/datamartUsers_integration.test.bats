@@ -75,7 +75,6 @@ teardown() {
   "__createDatamartUsersTable"
   "__createProcedure"
   "__alterTableAddYears"
-  "__populateOldUsers"
   "__populateDatamartUsersTable"
   "__showHelp"
  )
@@ -192,7 +191,6 @@ teardown() {
   "sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
   "sql/dwh/datamarts/62_createBadgeSystem.sql"
   "sql/dwh/datamartUsers/datamartUsers_20_alterTableAddYears.sql"
-  "sql/dwh/datamartUsers/datamartUsers_30_populateOldUsers.sql"
   "sql/dwh/datamartUsers/datamartUsers_31_populateDatamartUsersTable.sql"
   "sql/dwh/datamartUsers/datamartUsers_00_dropDatamartObjects.sql"
  )
@@ -253,7 +251,6 @@ teardown() {
 @test "datamartUsers.sh data population functions should work correctly" {
  # Test that population functions are available
  local POPULATION_FUNCTIONS=(
-  "__populateOldUsers"
   "__populateDatamartUsersTable"
  )
 

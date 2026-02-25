@@ -53,7 +53,6 @@ teardown() {
  [[ -f "${datamart_users_dir}/datamartUsers_10_checkDatamartUsersTables.sql" ]]
  [[ -f "${datamart_users_dir}/datamartUsers_11_createDatamartUsersTable.sql" ]]
  [[ -f "${datamart_users_dir}/datamartUsers_12_createProcedure.sql" ]]
- [[ -f "${datamart_users_dir}/datamartUsers_30_populateOldUsers.sql" ]]
  [[ -f "${datamart_users_dir}/datamartUsers_31_populateDatamartUsersTable.sql" ]]
 
  [[ -f "${datamart_countries_dir}/datamartCountries_10_checkDatamartCountriesTables.sql" ]]

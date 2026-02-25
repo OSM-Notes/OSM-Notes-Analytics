@@ -29,8 +29,7 @@ sql/
         ├── datamartUsers_11_createDatamartUsersTable.sql
         ├── datamartUsers_12_createProcedure.sql
         ├── datamartUsers_21_alterTableAddYears.sql
-        ├── datamartUsers_31_populateOldUsers.sql
-        ├── datamartUsers_32_populateDatamartUsersTable.sql
+        ├── datamartUsers_31_populateDatamartUsersTable.sql
         └── datamartUsers_00_dropDatamartObjects.sql
 ```
 
@@ -412,11 +411,7 @@ Creates procedures for incremental user datamart updates.
 
 Adds year columns for user datamart as needed.
 
-#### datamartUsers_31_populateOldUsers.sql
-
-Pre-processes users with minimal activity for efficiency.
-
-#### datamartUsers_32_populateDatamartUsersTable.sql
+#### datamartUsers_31_populateDatamartUsersTable.sql
 
 Main incremental population script:
 
