@@ -115,10 +115,7 @@ setup() {
 
 # Test that country update performance log has correct data
 @test "Country update performance log should have correct data" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists and verify creation
@@ -174,10 +171,7 @@ setup() {
 
 # Test that user update procedure logs performance
 @test "User update procedure should log performance" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists
@@ -211,10 +205,7 @@ setup() {
 
 # Test that user update performance log has correct data
 @test "User update performance log should have correct data" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists and verify creation
@@ -270,10 +261,7 @@ setup() {
 
 # Test that duration_seconds is positive
 @test "Performance log duration should be positive" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists
@@ -296,10 +284,7 @@ setup() {
 
 # Test that end_time is after start_time
 @test "Performance log end_time should be after start_time" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists
@@ -321,10 +306,7 @@ setup() {
 
 # Test that duration matches time difference
 @test "Performance log duration should match time difference" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists
@@ -352,10 +334,7 @@ setup() {
 
 # Test that existing datamart update procedures still work
 @test "Existing datamart update procedures should still work" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Ensure table exists (so logging doesn't fail)
@@ -382,10 +361,7 @@ setup() {
 
 # Test that procedures can be called without performance table (graceful degradation)
 @test "Procedures should handle missing performance table gracefully" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Drop table if exists
@@ -417,10 +393,7 @@ setup() {
 
 # Test that performance log table has indexes
 @test "Performance log table should have indexes" {
-  if [[ -z "${DBNAME:-}" ]] && [[ -z "${TEST_DBNAME:-}" ]]; then
-    skip "No database configured"
-  fi
-
+  skip_if_no_db_connection
   local dbname="${TEST_DBNAME:-${DBNAME}}"
 
   # Check for indexes
