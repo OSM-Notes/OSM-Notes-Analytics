@@ -246,7 +246,8 @@ will be removed.
 **Features:**
 
 - Aggregates note statistics by user
-- Processes incrementally (MAX_USERS_PER_CYCLE per run, default 4000; fits in 15 min on typical prod)
+- Processes incrementally (MAX_USERS_PER_CYCLE per run, default 4000; fits in 15 min on typical
+  prod)
 - Computes yearly historical data
 - Generates country rankings per user
 - Tracks contribution patterns
@@ -254,7 +255,8 @@ will be removed.
 
 **Execution time:**
 
-- Per run: ~3–5 minutes for 1000 users on typical production; ~4000 users fit in a 15-minute ETL window
+- Per run: ~3–5 minutes for 1000 users on typical production; ~4000 users fit in a 15-minute ETL
+  window
 - Full initial load: incremental over multiple ETL cycles (use catch-up mode for large backlogs)
 
 **Prerequisites:**

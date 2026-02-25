@@ -188,8 +188,8 @@ For complete installation instructions, see
 
 ## Database Architecture
 
-This system uses a **shared database** approach with separate schemas.
-When using separate databases: `notes` (ingestion) and `notes_dwh` (analytics).
+This system uses a **shared database** approach with separate schemas. When using separate
+databases: `notes` (ingestion) and `notes_dwh` (analytics).
 
 ```text
 Database: notes_dwh          # Or "notes" when same DB for ingestion+DWH
@@ -789,8 +789,8 @@ cd bin/dwh
 
 ## Scheduling with Cron
 
-The ETL process **automatically updates datamarts** (datamartCountries, datamartUsers, datamartGlobal)
-at the end of each run. Separate cron jobs for datamarts are **not needed**.
+The ETL process **automatically updates datamarts** (datamartCountries, datamartUsers,
+datamartGlobal) at the end of each run. Separate cron jobs for datamarts are **not needed**.
 
 For automated analytics updates:
 

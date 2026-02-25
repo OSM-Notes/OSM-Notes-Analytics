@@ -356,16 +356,20 @@ batch_size=1000
 
 **ETL cycle time vs users per cycle:**
 
-- On typical production, **~1000 users** take **~3–5 minutes**; **~4000 users** fit in a **15-minute** ETL window.
+- On typical production, **~1000 users** take **~3–5 minutes**; **~4000 users** fit in a
+  **15-minute** ETL window.
 - **For 15-minute ETL windows:** default 4000 fits; adjust down if the rest of the ETL is heavy.
-- **For more headroom:** 1000–2000 leaves most of the 15 min for other ETL steps; most active users are still processed first.
+- **For more headroom:** 1000–2000 leaves most of the 15 min for other ETL steps; most active users
+  are still processed first.
 
 **Historical backlog (500K+ users):**
 
 - Use **catch-up mode** so each cycle processes more users until the backlog drops:
-  - Set `CATCHUP_THRESHOLD=10000` (default) and `CATCHUP_MULTIPLIER=10` → up to 10× base limit per cycle when backlog ≥ 10K.
+  - Set `CATCHUP_THRESHOLD=10000` (default) and `CATCHUP_MULTIPLIER=10` → up to 10× base limit per
+    cycle when backlog ≥ 10K.
   - Or set `MAX_USERS_PER_CYCLE_CATCHUP=10000` for a fixed catch-up limit.
-- Once backlog falls below `CATCHUP_THRESHOLD`, the script automatically reverts to `MAX_USERS_PER_CYCLE` (normal load).
+- Once backlog falls below `CATCHUP_THRESHOLD`, the script automatically reverts to
+  `MAX_USERS_PER_CYCLE` (normal load).
 
 **For systems with many users:**
 
@@ -397,7 +401,8 @@ batch_size=1000
 
 **Case 3: 50000+ modified users (large initial load)**
 
-- Use **catch-up mode** (e.g. `CATCHUP_MULTIPLIER=10`) to process more per cycle (e.g. 4000–10000) until backlog drops
+- Use **catch-up mode** (e.g. `CATCHUP_MULTIPLIER=10`) to process more per cycle (e.g. 4000–10000)
+  until backlog drops
 - **Key benefit:** Active users have fresh data quickly; ETL completes promptly each cycle
 
 ## Security Considerations
@@ -507,6 +512,7 @@ batch_size=1000
   - Allows ETL to complete quickly and update data promptly
   - Most active users processed first, less active users processed progressively
 - **v2.2 (2026-02-19):** Catch-up mode for large historical backlogs
-  - When total modified users ≥ CATCHUP_THRESHOLD, use higher limit (MAX_USERS_PER_CYCLE_CATCHUP or CATCHUP_MULTIPLIER)
+  - When total modified users ≥ CATCHUP_THRESHOLD, use higher limit (MAX_USERS_PER_CYCLE_CATCHUP or
+    CATCHUP_MULTIPLIER)
   - Enables faster drain of 500K+ backlogs; reverts to normal limit when backlog drops
 - **Author:** Andres Gomez (AngocA)

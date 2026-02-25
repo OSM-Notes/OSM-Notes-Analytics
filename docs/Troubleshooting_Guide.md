@@ -23,8 +23,8 @@ OSM-Notes-Analytics system. Problems are organized by category for easy navigati
 ## Database Configuration
 
 **Note:** For DWH operations, use `DBNAME_INGESTION` and `DBNAME_DWH` variables. The examples in
-this guide uses `${DBNAME:-notes_dwh}` as a fallback for simplicity, but in production you should use
-the specific variables:
+this guide uses `${DBNAME:-notes_dwh}` as a fallback for simplicity, but in production you should
+use the specific variables:
 
 ```bash
 # Recommended configuration
