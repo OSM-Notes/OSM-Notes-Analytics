@@ -82,8 +82,8 @@ periods.
 ##### `history_whole_open`
 
 **Business Name**: Total Notes Created (All Time)  
-**Definition**: Total number of notes opened by user/country since 2013.  
-**Formula**: `COUNT(*) WHERE action_comment = 'opened'`  
+**Definition**: Total number of notes this user (or country) opened/created since 2013. This is a **count of notes**, not of days or session.  
+**Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'opened'`  
 **Unit**: Count (integer)  
 **Interpretation**:
 
@@ -124,8 +124,8 @@ periods.
 ##### `history_whole_closed`
 
 **Business Name**: Total Notes Resolved (All Time)  
-**Definition**: Total number of notes closed (resolved) by user/country.  
-**Formula**: `COUNT(*) WHERE action_comment = 'closed'`  
+**Definition**: Total number of notes this user (or country) closed/resolved. This is a **count of notes**, not of days—e.g. 9,000 means the user resolved 9,000 notes (which can be much higher than notes created if the user mainly resolves others’ notes).  
+**Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'closed'`  
 **Unit**: Count (integer)  
 **Interpretation**:
 

@@ -159,15 +159,15 @@ COMMENT ON COLUMN dwh.datamartUsers.working_hours_of_week_commenting IS
 COMMENT ON COLUMN dwh.datamartUsers.working_hours_of_week_closing IS
   'Hours when the user closes notes';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_open IS
-  'Qty opened notes in the whole history';
+  'Number of notes this user opened (created) in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_commented IS
-  'Qty commented notes in the whole history';
+  'Number of comments this user added to notes in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_closed IS
-  'Qty closed notes in the whole history';
+  'Number of notes this user closed (resolved) in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_closed_with_comment IS
-  'Qty closed notes with comments in the whole history';
+  'Number of notes this user closed with an explanatory comment in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_reopened IS
-  'Qty reopened notes in the whole history';
+  'Number of notes this user reopened in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_year_open IS
   'Qty of notes opened in the current year';
 COMMENT ON COLUMN dwh.datamartUsers.history_year_commented IS
