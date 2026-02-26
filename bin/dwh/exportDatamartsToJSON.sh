@@ -389,6 +389,8 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
       du.id_contributor_type,
       ct.contributor_type_name,
       ct.contributor_type_name_en,
+      dimu.experience_level_id,
+      el.experience_level,
       du.date_starting_creating_notes,
       du.history_whole_open,
       du.history_whole_closed,
@@ -407,6 +409,8 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
     FROM dwh.datamartusers du
     LEFT JOIN dwh.contributor_types ct
       ON du.id_contributor_type = ct.contributor_type_id
+    LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
+    LEFT JOIN dwh.dimension_experience_levels el ON dimu.experience_level_id = el.dimension_experience_id
     WHERE du.user_id IS NOT NULL
     ORDER BY du.history_whole_open DESC NULLS LAST, du.history_whole_closed DESC NULLS LAST
   ) t

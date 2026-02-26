@@ -227,6 +227,8 @@ Complete user profile containing **78+ metrics** organized into categories:
 | `user_id`             | integer | OSM user ID (required, minimum: 1)    |
 | `username`            | string  | OSM username (required, minLength: 1) |
 | `id_contributor_type` | integer | Contributor type ID                   |
+| `experience_level_id` | integer \| null | Experience level ID (1=newcomer to 7=legend) |
+| `experience_level`    | string \| null | Experience level name (newcomer, beginner, intermediate, advanced, expert, master, legend) |
 
 #### Date Fields
 

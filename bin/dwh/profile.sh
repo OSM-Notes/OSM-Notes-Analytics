@@ -666,6 +666,17 @@ function __processUserProfile {
      " \
   -v ON_ERROR_STOP=1)
 
+ # Experience level (newcomer -> legend).
+ declare EXPERIENCE_LEVEL
+ EXPERIENCE_LEVEL=$(psql -d "${DBNAME_DWH}" -Atq \
+  -c "SELECT el.experience_level
+     FROM dwh.dimension_users u
+      JOIN dwh.dimension_experience_levels el
+      ON u.experience_level_id = el.dimension_experience_id
+     WHERE u.dimension_user_id = ${DIMENSION_USER_ID}
+     " \
+  -v ON_ERROR_STOP=1 2> /dev/null || echo "")
+
  # Last activity year.
  declare LAST_ACTIVITY_YEAR
  LAST_ACTIVITY_YEAR=$(psql -d "${DBNAME_DWH}" -Atq \
@@ -1157,6 +1168,9 @@ function __processUserProfile {
  # Show user information
  echo "User name: ${USERNAME} (id: ${OSM_USER_ID})."
  echo "Note solver type: ${CONTRIBUTOR_TYPE}."
+ if [[ -n "${EXPERIENCE_LEVEL}" ]]; then
+  echo "Experience level: ${EXPERIENCE_LEVEL}."
+ fi
  if [[ ${QTY_DAYS_OPEN} -gt 0 ]]; then
   echo "Quantity of days creating notes: ${QTY_DAYS_OPEN}, since ${DATE_FIRST_OPEN}."
  fi

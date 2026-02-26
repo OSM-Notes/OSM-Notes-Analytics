@@ -552,7 +552,7 @@ Features are derived from existing analysis patterns:
    `ml_00_analyzeHashtagsForClassification.sql`)
 3. **Application Features**: `is_assisted_app`, `is_mobile_app`
 4. **Geographic Features**: `country_resolution_rate`, `country_notes_health_score`
-5. **User Features**: `user_response_time`, `user_experience_level`
+5. **User Features**: `user_response_time`, `user_total_notes`, `user_experience_level` (1–7, from dimension_experience_levels), `user_contributor_type_id` (contributor type from datamart)
 6. **Temporal Features**: `day_of_week`, `hour_of_day`, `month`
 7. **Age Features**: `days_open`
 

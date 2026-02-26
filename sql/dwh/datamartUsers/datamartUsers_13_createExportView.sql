@@ -11,134 +11,137 @@ DROP VIEW IF EXISTS dwh.datamartusers_export;
 -- Create view that excludes internal columns
 -- This view is used by JSON export scripts to ensure internal columns
 -- (prefixed with _partial_ or _last_processed_) are not included in exports
+-- Joins dimension_users and dimension_experience_levels to expose experience level
 CREATE VIEW dwh.datamartusers_export AS
-SELECT 
+SELECT
   -- Primary keys and identifiers
-  dimension_user_id,
-  user_id,
-  username,
-  
+  du.dimension_user_id,
+  du.user_id,
+  du.username,
+
   -- Dates
-  date_starting_creating_notes,
-  date_starting_solving_notes,
-  
+  du.date_starting_creating_notes,
+  du.date_starting_solving_notes,
+
   -- First/last note IDs
-  first_open_note_id,
-  first_commented_note_id,
-  first_closed_note_id,
-  first_reopened_note_id,
-  latest_open_note_id,
-  latest_commented_note_id,
-  latest_closed_note_id,
-  latest_reopened_note_id,
-  
+  du.first_open_note_id,
+  du.first_commented_note_id,
+  du.first_closed_note_id,
+  du.first_reopened_note_id,
+  du.latest_open_note_id,
+  du.latest_commented_note_id,
+  du.latest_closed_note_id,
+  du.latest_reopened_note_id,
+
   -- Activity tracking
-  last_year_activity,
-  id_contributor_type,
-  
+  du.last_year_activity,
+  du.id_contributor_type,
+  el.dimension_experience_id AS experience_level_id,
+  el.experience_level AS experience_level,
+
   -- JSON aggregations
-  dates_most_open,
-  dates_most_closed,
-  hashtags,
-  countries_open_notes,
-  countries_solving_notes,
-  countries_open_notes_current_month,
-  countries_solving_notes_current_month,
-  countries_open_notes_current_day,
-  countries_solving_notes_current_day,
-  working_hours_of_week_opening,
-  working_hours_of_week_commenting,
-  working_hours_of_week_closing,
-  
+  du.dates_most_open,
+  du.dates_most_closed,
+  du.hashtags,
+  du.countries_open_notes,
+  du.countries_solving_notes,
+  du.countries_open_notes_current_month,
+  du.countries_solving_notes_current_month,
+  du.countries_open_notes_current_day,
+  du.countries_solving_notes_current_day,
+  du.working_hours_of_week_opening,
+  du.working_hours_of_week_commenting,
+  du.working_hours_of_week_closing,
+
   -- Historical counts (whole)
-  history_whole_open,
-  history_whole_commented,
-  history_whole_closed,
-  history_whole_closed_with_comment,
-  history_whole_reopened,
-  
+  du.history_whole_open,
+  du.history_whole_commented,
+  du.history_whole_closed,
+  du.history_whole_closed_with_comment,
+  du.history_whole_reopened,
+
   -- Historical counts (current year)
-  history_year_open,
-  history_year_commented,
-  history_year_closed,
-  history_year_closed_with_comment,
-  history_year_reopened,
-  
+  du.history_year_open,
+  du.history_year_commented,
+  du.history_year_closed,
+  du.history_year_closed_with_comment,
+  du.history_year_reopened,
+
   -- Historical counts (current month)
-  history_month_open,
-  history_month_commented,
-  history_month_closed,
-  history_month_closed_with_comment,
-  history_month_reopened,
-  
+  du.history_month_open,
+  du.history_month_commented,
+  du.history_month_closed,
+  du.history_month_closed_with_comment,
+  du.history_month_reopened,
+
   -- Historical counts (current day)
-  history_day_open,
-  history_day_commented,
-  history_day_closed,
-  history_day_closed_with_comment,
-  history_day_reopened,
-  
+  du.history_day_open,
+  du.history_day_commented,
+  du.history_day_closed,
+  du.history_day_closed_with_comment,
+  du.history_day_reopened,
+
   -- Resolution metrics
-  avg_days_to_resolution,
-  median_days_to_resolution,
-  notes_resolved_count,
-  notes_still_open_count,
-  notes_opened_but_not_closed_by_user,
-  resolution_rate,
-  
+  du.avg_days_to_resolution,
+  du.median_days_to_resolution,
+  du.notes_resolved_count,
+  du.notes_still_open_count,
+  du.notes_opened_but_not_closed_by_user,
+  du.resolution_rate,
+
   -- Application statistics
-  applications_used,
-  most_used_application_id,
-  mobile_apps_count,
-  desktop_apps_count,
-  
+  du.applications_used,
+  du.most_used_application_id,
+  du.mobile_apps_count,
+  du.desktop_apps_count,
+
   -- Content quality
-  avg_comment_length,
-  comments_with_url_count,
-  comments_with_url_pct,
-  comments_with_mention_count,
-  comments_with_mention_pct,
-  avg_comments_per_note,
-  
+  du.avg_comment_length,
+  du.comments_with_url_count,
+  du.comments_with_url_pct,
+  du.comments_with_mention_count,
+  du.comments_with_mention_pct,
+  du.avg_comments_per_note,
+
   -- Community health
-  active_notes_count,
-  notes_backlog_size,
-  notes_age_distribution,
-  notes_created_last_30_days,
-  notes_resolved_last_30_days,
-  
+  du.active_notes_count,
+  du.notes_backlog_size,
+  du.notes_age_distribution,
+  du.notes_created_last_30_days,
+  du.notes_resolved_last_30_days,
+
   -- Resolution temporal metrics
-  resolution_by_year,
-  resolution_by_month,
-  
+  du.resolution_by_year,
+  du.resolution_by_month,
+
   -- Hashtag metrics
-  hashtags_opening,
-  hashtags_resolution,
-  hashtags_comments,
-  favorite_opening_hashtag,
-  favorite_resolution_hashtag,
-  opening_hashtag_count,
-  resolution_hashtag_count,
-  
+  du.hashtags_opening,
+  du.hashtags_resolution,
+  du.hashtags_comments,
+  du.favorite_opening_hashtag,
+  du.favorite_resolution_hashtag,
+  du.opening_hashtag_count,
+  du.resolution_hashtag_count,
+
   -- Application trends
-  application_usage_trends,
-  version_adoption_rates,
-  
+  du.application_usage_trends,
+  du.version_adoption_rates,
+
   -- User behavior
-  user_response_time,
-  days_since_last_action,
-  collaboration_patterns,
-  
+  du.user_response_time,
+  du.days_since_last_action,
+  du.collaboration_patterns,
+
   -- Enhanced date/time columns
-  iso_week,
-  quarter,
-  month_name,
-  hour_of_week,
-  period_of_day,
-  
+  du.iso_week,
+  du.quarter,
+  du.month_name,
+  du.hour_of_week,
+  du.period_of_day,
+
   -- Export tracking (needed for incremental exports)
-  json_exported
-  
+  du.json_exported
+
   -- NOTE: Columns prefixed with _partial_ or _last_processed_ are EXCLUDED
   -- These are internal implementation details for incremental updates:
   -- - _partial_count_opened
@@ -151,9 +154,11 @@ SELECT
   -- - _partial_sum_days_to_resolution
   -- - _partial_count_resolved
   -- - _last_processed_fact_id
-  
-FROM dwh.datamartusers;
 
-COMMENT ON VIEW dwh.datamartusers_export IS 
+FROM dwh.datamartusers du
+LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
+LEFT JOIN dwh.dimension_experience_levels el ON dimu.experience_level_id = el.dimension_experience_id;
+
+COMMENT ON VIEW dwh.datamartusers_export IS
   'Export view for datamartUsers that excludes internal columns (_partial_* and _last_processed_*). '
   'Use this view for JSON exports to ensure internal implementation details are not included.';

@@ -201,6 +201,8 @@ Returns export metadata:
   "date_starting_solving_notes": "2015-04-15",
   "first_open_note_id": 100,
   "id_contributor_type": 2,
+  "experience_level_id": 4,
+  "experience_level": "advanced",
   "last_year_activity": "...",
   "hashtags": [
     {"rank": 1, "hashtag": "#mapathon", "quantity": 45},
