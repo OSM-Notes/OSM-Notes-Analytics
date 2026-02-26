@@ -325,6 +325,48 @@ automatically skips FDW setup. The system logs:
 `"Ingestion and Analytics use same database, skipping FDW setup"`. This prevents SQL errors that
 would occur when trying to create foreign tables pointing to the same database.
 
+**User mapping:** The script creates a user mapping only for **CURRENT_USER** (the user that runs
+`ETL_60_setupFDW.sql`, typically the ETL user e.g. `notes`). Any other database user (e.g. `angoca`)
+that needs to query the foreign tables must have its own user mapping; see below.
+
+### User mapping for additional users (e.g. angoca)
+
+If you connect to the DWH as a different user (e.g. `angoca`) and get **"user mapping not found for angoca"** when querying foreign tables, add a user mapping for that user.
+
+**Option 1: Run the FDW setup script as that user**
+
+Run `ETL_60_setupFDW.sql` once while connected as `angoca` (with the same `FDW_INGESTION_*` env vars). The script creates `USER MAPPING FOR CURRENT_USER`, so `angoca` will get its own mapping.
+
+**Option 2: Create the mapping manually (as superuser or server owner)**
+
+Connect to the DWH as a user that can create user mappings (superuser or the owner of `ingestion_server`, usually the user that first ran the FDW setup, e.g. `notes`):
+
+```sql
+-- Replace 'angoca' with the DWH user that needs FDW access.
+-- Replace 'notes' with your FDW_INGESTION_USER (the user used to connect to the Ingestion DB).
+-- Password: use the same password as for FDW, or '' and rely on .pgpass on the server.
+DROP USER MAPPING IF EXISTS FOR angoca SERVER ingestion_server;
+CREATE USER MAPPING FOR angoca
+  SERVER ingestion_server
+  OPTIONS (user 'notes', password '');   -- empty password => use .pgpass
+-- If you prefer to set password explicitly (avoid storing in scripts):
+-- OPTIONS (user 'notes', password 'your_fdw_password');
+```
+
+Then grant `angoca` permission to use the foreign server (if not already allowed):
+
+```sql
+GRANT USAGE ON FOREIGN SERVER ingestion_server TO angoca;
+```
+
+**Verify:** Connect as `angoca` and run:
+
+```sql
+SELECT COUNT(*) FROM public.note_comments LIMIT 1;
+```
+
+If that returns a number (or 0) instead of "user mapping not found", the mapping is correct.
+
 ---
 
 ## Status
