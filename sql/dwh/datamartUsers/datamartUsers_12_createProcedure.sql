@@ -207,25 +207,16 @@ AS $proc$
     AND f.action_comment = 'closed'
     AND d.year = m_year;
 
-   -- history_year_closed_with_comment
-   -- Note: This SELECT reads from ingestion tables (note_comments, note_comments_text)
-   -- and should ideally be executed in READ ONLY mode for better concurrency, but this
-   -- procedure also performs writes, so READ ONLY cannot be applied to the entire transaction.
+   -- history_year_closed_with_comment (uses dwh.facts.comment_length to avoid FDW dependency)
    SELECT /* Notes-datamartUsers */ COUNT(1)
     INTO m_history_year_closed_with_comment
    FROM dwh.facts f
     JOIN dwh.dimension_days d
     ON f.action_dimension_id_date = d.dimension_day_id
-    JOIN public.note_comments nc
-    ON (f.id_note = nc.note_id
-        AND nc.event = 'closed')
-    JOIN public.note_comments_text nct
-    ON (nc.note_id = nct.note_id AND nc.sequence_action = nct.sequence_action)
    WHERE f.action_dimension_id_user = m_dimension_user_id
     AND f.action_comment = 'closed'
     AND d.year = m_year
-    AND nct.body IS NOT NULL
-    AND LENGTH(TRIM(nct.body)) > 0;
+    AND COALESCE(f.comment_length, 0) > 0;
 
    -- history_year_reopened
    SELECT /* Notes-datamartUsers */ COUNT(1)
@@ -878,22 +869,14 @@ AS $proc$
   WHERE f.action_dimension_id_user = m_dimension_user_id
    AND f.action_comment = 'closed';
 
-  -- history_whole_closed_with_comment
+  -- history_whole_closed_with_comment: uses dwh.facts.comment_length (same result as joining
+  -- note_comments_text.body; simpler and works regardless of FDW user mapping for the session user)
   SELECT /* Notes-datamartUsers */ COUNT(1)
    INTO m_history_whole_closed_with_comment
   FROM dwh.facts f
-   JOIN (
-    SELECT note_id, sequence_action, id_user
-    FROM public.note_comments
-    WHERE CAST(event AS text) = 'closed'
-   ) nc
-   ON (f.id_note = nc.note_id)
-   JOIN public.note_comments_text nct
-   ON (nc.note_id = nct.note_id AND nc.sequence_action = nct.sequence_action)
   WHERE f.action_dimension_id_user = m_dimension_user_id
    AND f.action_comment = 'closed'
-   AND nct.body IS NOT NULL
-   AND LENGTH(TRIM(nct.body)) > 0;
+   AND COALESCE(f.comment_length, 0) > 0;
 
   -- history_whole_reopened
   SELECT /* Notes-datamartUsers */ COUNT(1)
@@ -932,25 +915,16 @@ AS $proc$
    AND f.action_comment = 'closed'
    AND d.year = m_current_year;
 
-  -- history_year_closed_with_comment
+  -- history_year_closed_with_comment (uses dwh.facts.comment_length to avoid FDW dependency)
   SELECT /* Notes-datamartUsers */ COUNT(1)
    INTO m_history_year_closed_with_comment
   FROM dwh.facts f
    JOIN dwh.dimension_days d
    ON (f.action_dimension_id_date = d.dimension_day_id)
-   JOIN (
-    SELECT note_id, sequence_action, id_user
-    FROM public.note_comments
-    WHERE CAST(event AS text) = 'closed'
-   ) nc
-   ON (f.id_note = nc.note_id)
-   JOIN public.note_comments_text nct
-   ON (nc.note_id = nct.note_id AND nc.sequence_action = nct.sequence_action)
   WHERE f.action_dimension_id_user = m_dimension_user_id
    AND f.action_comment = 'closed'
    AND d.year = m_current_year
-   AND nct.body IS NOT NULL
-   AND LENGTH(TRIM(nct.body)) > 0;
+   AND COALESCE(f.comment_length, 0) > 0;
 
   -- history_year_reopened
   SELECT /* Notes-datamartUsers */ COUNT(1)
@@ -995,26 +969,17 @@ AS $proc$
    AND d.month = m_current_month
    AND d.year = m_current_year;
 
-  -- history_month_closed_with_comment
+  -- history_month_closed_with_comment (uses dwh.facts.comment_length to avoid FDW dependency)
   SELECT /* Notes-datamartUsers */ COUNT(1)
    INTO m_history_month_closed_with_comment
   FROM dwh.facts f
    JOIN dwh.dimension_days d
    ON (f.action_dimension_id_date = d.dimension_day_id)
-   JOIN (
-    SELECT note_id, sequence_action, id_user
-    FROM public.note_comments
-    WHERE CAST(event AS text) = 'closed'
-   ) nc
-   ON (f.id_note = nc.note_id)
-   JOIN public.note_comments_text nct
-   ON (nc.note_id = nct.note_id AND nc.sequence_action = nct.sequence_action)
   WHERE f.action_dimension_id_user = m_dimension_user_id
    AND f.action_comment = 'closed'
    AND d.month = m_current_month
    AND d.year = m_current_year
-   AND nct.body IS NOT NULL
-   AND LENGTH(TRIM(nct.body)) > 0;
+   AND COALESCE(f.comment_length, 0) > 0;
 
   -- history_month_reopened
   SELECT /* Notes-datamartUsers */ COUNT(1)
@@ -1063,27 +1028,18 @@ AS $proc$
    AND d.month = m_current_month
    AND d.year = m_current_year;
 
-  -- history_day_closed_with_comment
+  -- history_day_closed_with_comment (uses dwh.facts.comment_length to avoid FDW dependency)
   SELECT /* Notes-datamartUsers */ COUNT(1)
    INTO m_history_day_closed_with_comment
   FROM dwh.facts f
    JOIN dwh.dimension_days d
    ON (f.action_dimension_id_date = d.dimension_day_id)
-   JOIN (
-    SELECT note_id, sequence_action, id_user
-    FROM public.note_comments
-    WHERE CAST(event AS text) = 'closed'
-   ) nc
-   ON (f.id_note = nc.note_id)
-   JOIN public.note_comments_text nct
-   ON (nc.note_id = nct.note_id AND nc.sequence_action = nct.sequence_action)
   WHERE f.action_dimension_id_user = m_dimension_user_id
    AND f.action_comment = 'closed'
    AND d.day = m_current_day
    AND d.month = m_current_month
    AND d.year = m_current_year
-   AND nct.body IS NOT NULL
-   AND LENGTH(TRIM(nct.body)) > 0;
+   AND COALESCE(f.comment_length, 0) > 0;
 
   -- history_day_reopened
   SELECT /* Notes-datamartUsers */ COUNT(1)
