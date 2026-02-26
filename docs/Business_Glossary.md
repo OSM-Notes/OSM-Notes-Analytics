@@ -177,7 +177,7 @@ or themes.
 #### Total Notes Opened (`history_whole_open`)
 
 **Business Name**: Total Notes Created  
-**Definition**: Total number of notes this user (or country) opened/created across all time. This is a **count of notes**, not of days or activity sessions.  
+**Definition**: Total number of notes this user (or country) opened/created across all time.  
 **Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'opened'`  
 **Unit**: Count (integer)  
 **Interpretation**: Higher values indicate more active contribution to note creation. For users,
@@ -202,7 +202,7 @@ this shows their engagement level. For countries, this shows community activity.
 #### Total Notes Closed (`history_whole_closed`)
 
 **Business Name**: Total Notes Resolved  
-**Definition**: Total number of notes this user (or country) closed/resolved across all time. This is a **count of notes**, not of days—a user can have closed many more notes than opened (e.g. 9,000 closed vs 226 opened) if they mainly resolve others’ notes.  
+**Definition**: Number of close events (actions) by this user across all time. Same note closed twice = 2. For distinct notes, see notes_resolved_count.  
 **Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'closed'`  
 **Unit**: Count (integer)  
 **Interpretation**: Higher values indicate more active contribution to note resolution. This is a

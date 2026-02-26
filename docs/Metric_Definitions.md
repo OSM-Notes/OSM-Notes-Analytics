@@ -82,7 +82,7 @@ periods.
 ##### `history_whole_open`
 
 **Business Name**: Total Notes Created (All Time)  
-**Definition**: Total number of notes this user (or country) opened/created since 2013. This is a **count of notes**, not of days or session.  
+**Definition**: Total number of notes this user (or country) opened/created since 2013.  
 **Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'opened'`  
 **Unit**: Count (integer)  
 **Interpretation**:
@@ -124,8 +124,9 @@ periods.
 ##### `history_whole_closed`
 
 **Business Name**: Total Notes Resolved (All Time)  
-**Definition**: Total number of notes this user (or country) closed/resolved. This is a **count of notes**, not of days—e.g. 9,000 means the user resolved 9,000 notes (which can be much higher than notes created if the user mainly resolves others’ notes).  
-**Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'closed'`  
+**Definition**: Number of close events (actions) by this user—one per close action. Same note closed twice = 2. For distinct notes, use notes_resolved_count.  
+**Formula**: `COUNT(*) FROM facts WHERE action_dimension_id_user = user AND action_comment = 'closed'` (count of **events**, not distinct notes).  
+**See also**: `notes_resolved_count` = `COUNT(DISTINCT id_note)` for closes by this user (same note closed twice = 1). So `history_whole_closed` ≥ `notes_resolved_count`.  
 **Unit**: Count (integer)  
 **Interpretation**:
 
@@ -314,10 +315,11 @@ Percentage (0-100, decimal)
 #### 2.4 `notes_resolved_count`
 
 **Business Name**: Number of Notes Resolved  
-**Definition**: Count of notes that have been closed.  
-**Formula**: `COUNT(*) WHERE action_comment = 'closed'`  
+**Definition**: Count of **distinct notes** that this user has closed (resolved). Each note is counted at most once, even if the user closed it, it was reopened, and they closed it again.  
+**Formula**: `COUNT(DISTINCT id_note) FROM facts WHERE closed_dimension_id_user = user AND action_comment = 'closed'`  
 **Unit**: Count (integer)  
-**Interpretation**: Absolute number of resolved notes
+**See also**: `history_whole_closed` = number of close **events** (actions); same note closed twice by the user counts as 2 there, 1 here.  
+**Interpretation**: Absolute number of distinct notes resolved by this user
 
 **Use Cases**:
 

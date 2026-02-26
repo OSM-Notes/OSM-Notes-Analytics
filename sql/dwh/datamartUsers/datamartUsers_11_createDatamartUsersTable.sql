@@ -163,7 +163,7 @@ COMMENT ON COLUMN dwh.datamartUsers.history_whole_open IS
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_commented IS
   'Number of comments this user added to notes in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_closed IS
-  'Number of notes this user closed (resolved) in the whole history.';
+  'Number of close events (actions) by this user in the whole history. Same note closed twice = 2. For distinct notes, see notes_resolved_count.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_closed_with_comment IS
   'Number of notes this user closed with an explanatory comment in the whole history.';
 COMMENT ON COLUMN dwh.datamartUsers.history_whole_reopened IS
@@ -219,7 +219,7 @@ COMMENT ON COLUMN dwh.datamartUsers.avg_days_to_resolution IS
 COMMENT ON COLUMN dwh.datamartUsers.median_days_to_resolution IS
   'Median days to resolve notes (from open to most recent close) by this user';
 COMMENT ON COLUMN dwh.datamartUsers.notes_resolved_count IS
-  'Number of notes that have been closed by this user';
+  'Number of distinct notes this user has closed (resolved). Same note closed twice = 1. For close events, see history_whole_closed.';
 COMMENT ON COLUMN dwh.datamartUsers.notes_still_open_count IS
   'Number of notes opened by this user but never closed';
 COMMENT ON COLUMN dwh.datamartUsers.notes_opened_but_not_closed_by_user IS
