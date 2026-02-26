@@ -140,7 +140,7 @@ BEGIN
    IF (m_application IS NOT NULL AND m_text_comment IS NOT NULL AND m_text_comment ~* '\\d+\\.\\d+(\\.\\d+)?') THEN
     m_application_version := dwh.get_application_version_id(
       m_application,
-      (SELECT regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)')::text)
+      (SELECT (regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)'))[1])
     );
    END IF;
 

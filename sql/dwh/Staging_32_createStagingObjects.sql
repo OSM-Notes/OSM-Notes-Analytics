@@ -207,7 +207,7 @@ CREATE OR REPLACE PROCEDURE staging.process_notes_at_date (
      IF (m_text_comment ~* '\\d+\\.\\d+(\\.\\d+)?') THEN
        m_application_version := dwh.get_application_version_id(
          m_application,
-         (SELECT regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)')::text)
+         (SELECT (regexp_match(m_text_comment, '(\\d+\\.\\d+(?:\\.\\d+)?)'))[1])
        );
      END IF;
    ELSE
