@@ -43,6 +43,8 @@ DECLARE
   rec_note_action RECORD;
   notes_cursor REFCURSOR;
   m_count INTEGER := 0;
+  m_fact_id INTEGER;
+  i INTEGER;
 BEGIN
   RAISE NOTICE 'Starting Phase 1 load for year ${YEAR}...';
 
@@ -204,7 +206,27 @@ BEGIN
      m_hashtag_number, m_timezone_id, m_local_action_id_date,
      m_local_action_id_hour_of_week, m_season_id,
      m_comment_length, m_has_url, m_has_mention
-    );
+    ) RETURNING fact_id INTO m_fact_id;
+
+   -- Populate bridge table for hashtags (same logic as Staging_34 / Staging_32)
+   IF array_length(m_all_hashtag_ids, 1) > 0 THEN
+     FOR i IN 1..array_length(m_all_hashtag_ids, 1) LOOP
+       INSERT INTO dwh.fact_hashtags (
+         fact_id, dimension_hashtag_id, position,
+         used_in_action, is_opening_hashtag, is_resolution_hashtag
+       ) VALUES (
+         m_fact_id, m_all_hashtag_ids[i], i,
+         rec_note_action.action_comment,
+         (rec_note_action.action_comment = 'opened'),
+         (rec_note_action.action_comment = 'closed')
+       );
+     END LOOP;
+   END IF;
+
+   m_text_comment := NULL;
+   m_hashtag_name := NULL;
+   m_hashtag_number := 0;
+   m_all_hashtag_ids := ARRAY[]::INTEGER[];
 
   m_count := m_count + 1;
   IF (MOD(m_count, 10000) = 0) THEN

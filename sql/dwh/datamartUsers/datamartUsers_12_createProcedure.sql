@@ -628,9 +628,10 @@ AS $proc$
   ) AS T;
 
   -- hashtags - aggregates all hashtags used by this user with their frequency
+  -- COALESCE so that no hashtags yields [] instead of NULL for consistent JSON export
   SELECT /* Notes-datamartUsers */
-   JSON_AGG(JSON_BUILD_OBJECT('rank', rank, 'hashtag', hashtag,
-   'quantity', quantity))
+   COALESCE(JSON_AGG(JSON_BUILD_OBJECT('rank', rank, 'hashtag', hashtag,
+   'quantity', quantity)), '[]'::json)
    INTO m_hashtags
   FROM (
    SELECT /* Notes-datamartUsers */
