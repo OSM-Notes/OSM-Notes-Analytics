@@ -14,7 +14,9 @@
 CREATE EXTENSION IF NOT EXISTS pgml;
 
 -- Verify installation
-SELECT * FROM pg_extension WHERE extname = 'pgml';
+SELECT extname, extversion
+FROM pg_extension
+WHERE extname = 'pgml';
 
 -- ============================================================================
 -- 2. Create Training Data View
