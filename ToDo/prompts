@@ -57,15 +57,3 @@ Las tareas definidas y priorizadas se encuentran en: `DWH_Improvements_Plan.md`
 1. ¿Deberíamos mantener datos históricos indefinidamente o implementar archivado?
 2. ¿Qué nivel de granularidad necesitamos en los datamarts?
 3. ¿Es necesario un data lake además del data warehouse?
-4. ¿Deberíamos exponer una API REST para consultas al DWH?
-
----
-
-## Notas de Reuniones y Discusiones
-
-<!-- Agregar aquí notas de reuniones, decisiones de diseño, etc. -->
-
----
-
-**Última actualización**: 2025-10-21
-**Estado**: Limpiado - Tareas movidas a DWH_Improvements_Plan.md
