@@ -1608,7 +1608,7 @@ AS $proc$
            EXTRACT(MONTH FROM d.date_id)::INT AS m,
            COUNT(DISTINCT id_note) AS closed_cnt,
            AVG(f.days_to_resolution) FILTER (WHERE f.days_to_resolution IS NOT NULL)::DECIMAL(10,2) AS avg_days,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY f.days_to_resolution)::DECIMAL(10,2) AS median_days
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY f.days_to_resolution) FILTER (WHERE f.days_to_resolution IS NOT NULL)::DECIMAL(10,2) AS median_days
     FROM dwh.facts f
     JOIN dwh.dimension_days d ON f.closed_dimension_id_date = d.dimension_day_id
     WHERE f.dimension_id_country = m_dimension_id_country
