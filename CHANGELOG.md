@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
+
+### Added
+
+- **ETL Backfills**: Backfill for `comment_length` and JSON export in ETL process; backfill for
+  application version in ETL process
+- **Datamart Analysis**: Script for analyzing datamartUsers execution times and duration
+- **Hashtag Handling**: Enhanced hashtag handling in initial facts load
+- **User Metrics**: Experience level metrics in user export and profile
+- **Application Detection**: Enhanced application detection logic with unit tests
+- **Badge System**: Refactored badge population logic in badge system
+
+### Changed
+
+- **Resolution Metrics**: Updated and improved resolution metrics calculations in datamart procedures
+- **Logs and Activity**: Enhanced logs table creation and datamart user activity metrics (date/time
+  columns)
+- **Comment Handling**: Simplified comment handling in datamartUsers procedure
+- **pgml Extension**: Enhanced pgml extension verification query
+- **Application Version**: Updated regex match extraction for application version detection
+- **Countries Table**: Improved index creation logic for countries table
+- **User Processing**: Removed old user processing logic and related configurations
+- **Tests**: Simplified database connection checks in performance monitoring tests
+- **Documentation**: Refined documentation for clarity and consistency; updated user processing
+  limits
+
+### Fixed
+
+- **Spelling**: Corrected spelling of "lastest" to "latest" in SQL queries and documentation;
+  corrected "latest_open_note_id" across documentation and scripts
+- **Log Processing**: Robust log processing in analyze_datamart_users_duration script
+
+### Documentation
+
+- Removed outdated prompts and meeting notes from documentation
+- Added enhanced date and time columns description for user activity metrics
+- Expanded metric definitions for user collaboration metrics
+- Clarified definitions for note metrics in Business Glossary and Metric Definitions
+- Added user mapping instructions for foreign tables in Hybrid Strategy documentation
+- Updated definitions and comments for note metrics in glossary and SQL scripts
+
+### Chore
+
+- Updated osm-common submodule to latest (user schemas) and subproject commit reference
+
+---
+
 ## [2026-01-26] - Recent Updates and Improvements
 
 ### Added
