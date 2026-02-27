@@ -689,7 +689,7 @@ function __processUserProfile {
  # Most recent actions.
  declare -i LAST_OPEN_NOTE_ID
  LAST_OPEN_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_open_note_id
+  -c "SELECT latest_open_note_id
      FROM dwh.datamartUsers
      WHERE dimension_user_id = ${DIMENSION_USER_ID}
      " \
@@ -1491,7 +1491,7 @@ function __processCountryProfile {
  # Most recent actions.
  declare -i LAST_OPEN_NOTE_ID
  LAST_OPEN_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_open_note_id
+  -c "SELECT latest_open_note_id
      FROM dwh.datamartCountries
      WHERE dimension_country_id = ${COUNTRY_ID}
      " \

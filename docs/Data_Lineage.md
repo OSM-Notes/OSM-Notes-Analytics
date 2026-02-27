@@ -333,7 +333,7 @@ flowchart LR
 
 10. **First/Last Actions**
     - Source: Facts ordered by date
-    - Target: `date_starting_creating_notes`, `first_open_note_id`, `lastest_open_note_id`
+    - Target: `date_starting_creating_notes`, `first_open_note_id`, `latest_open_note_id`
     - Rule: `MIN(action_dimension_id_date)`, `MIN(id_note)`, `MAX(id_note)`
 
 #### SQL Scripts

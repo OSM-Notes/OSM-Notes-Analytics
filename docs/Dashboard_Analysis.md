@@ -153,7 +153,7 @@ The datamarts were enhanced with 21 new metrics across 4 categories:
 - `date_starting_creating_notes`: Oldest opened note
 - `date_starting_solving_notes`: Oldest closed note
 - `first_open_note_id`: First note ID
-- `lastest_open_note_id`: Most recent note ID
+- `latest_open_note_id`: Most recent note ID
 - Same for commented/closed/reopened
 
 ### datamartUsers - User-Level Aggregates

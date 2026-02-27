@@ -245,7 +245,7 @@ Complete user profile containing **78+ metrics** organized into categories:
 | `first_commented_note_id`   | integer \| null | ID of first note commented on  |
 | `first_closed_note_id`      | integer \| null | ID of first note closed        |
 | `first_reopened_note_id`    | integer \| null | ID of first note reopened      |
-| `lastest_open_note_id`      | integer         | ID of latest note opened       |
+| `latest_open_note_id`       | integer         | ID of latest note opened       |
 | `lastest_commented_note_id` | integer \| null | ID of latest note commented on |
 | `lastest_closed_note_id`    | integer \| null | ID of latest note closed       |
 | `lastest_reopened_note_id`  | integer \| null | ID of latest note reopened     |

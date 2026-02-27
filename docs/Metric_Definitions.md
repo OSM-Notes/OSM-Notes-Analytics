@@ -1454,7 +1454,7 @@ Metrics tracking the first and most recent actions.
 
 ---
 
-#### 9.5 `lastest_open_note_id` (Note: "lastest" is the column name)
+#### 9.5 `latest_open_note_id`
 
 **Business Name**: Most Recent Note ID Created  
 **Definition**: OSM note ID of the most recent note opened.  
@@ -1601,7 +1601,7 @@ JSON array
 | Geographic Patterns    | 15+          | `countries_open_notes`, `ranking_countries_opening_2013`, etc.                     |
 | Community Health       | 5            | `active_notes_count`, `notes_backlog_size`, `notes_age_distribution`, etc.         |
 | Hashtag Metrics        | 8            | `hashtags`, `hashtags_opening`, `favorite_opening_hashtag`, etc.                   |
-| First/Last Actions     | 8            | `date_starting_creating_notes`, `first_open_note_id`, `lastest_open_note_id`, etc. |
+| First/Last Actions     | 8            | `date_starting_creating_notes`, `first_open_note_id`, `latest_open_note_id`, etc. |
 | User Classification    | 1            | `id_contributor_type`                                                              |
 
 **Total**: 78+ metrics per user (includes `notes_opened_but_not_closed_by_user`)
