@@ -1128,6 +1128,18 @@ mentions received, replies, and a collaboration score.
 **Unit**:
 JSON object  
 **Format**: `{"mentions_given": 50, "mentions_received": 30, "replies_count": 25, "collaboration_score": 105}`  
+
+**How it is calculated** (source: `datamartUsers_12_createProcedure.sql`):
+
+| Field | Calculation |
+|-------|-------------|
+| **mentions_given** | Count of facts where this user commented (`action_comment = 'commented'`) and the comment has a mention (`has_mention = TRUE`). I.e. comments by this user that contain `@username`. |
+| **mentions_received** | Count of comments (by any user) that have `has_mention = TRUE` on notes that **this user opened** (`opened_dimension_id_user` = this user). I.e. “comments with a mention on notes I opened”. |
+| **replies_count** | Count of distinct notes where this user commented and there exists at least one **earlier** comment on the same note (`action_at` &lt; this user’s comment). Measures “notes where this user replied in a thread”. |
+| **collaboration_score** | Sum: `mentions_given + mentions_received + replies_count`. |
+
+**Source of `has_mention`**: In the ETL, each comment is stored in `dwh.facts` with `has_mention = TRUE` when the comment body matches the pattern `@\w+` (e.g. `@username`). Set in `Staging_32_createStagingObjects.sql`, `Staging_34a_initialFactsLoadCreate_Parallel.sql`, `Staging_35a_initialFactsLoadExecute_Simple.sql` (e.g. `m_has_mention := body ~ '@\w+'`).
+
 **Interpretation**:
 
 - **High collaboration_score**: Very collaborative user
