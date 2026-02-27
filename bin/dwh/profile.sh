@@ -96,12 +96,23 @@ declare LOG_FILENAME
 LOG_FILENAME="${TMP_DIR}/${BASENAME}.log"
 readonly LOG_FILENAME
 
-# Type of process to run in the script.
+# Parse log level options from arguments and set PROCESS_TYPE/ARGUMENT from the rest.
 if [[ -z "${PROCESS_TYPE:-}" ]]; then
- declare -r PROCESS_TYPE=${1:-}
+ declare -a remaining_args=()
+ for arg in "$@"; do
+  case "${arg}" in
+  -v | --verbose) LOG_LEVEL="INFO" ;;
+  --debug) LOG_LEVEL="DEBUG" ;;
+  -q | --quiet) LOG_LEVEL="ERROR" ;;
+  *) remaining_args+=("${arg}") ;;
+  esac
+ done
+ declare -r PROCESS_TYPE="${remaining_args[0]:-}"
+ declare -r ARGUMENT="${remaining_args[1]:-}"
+else
+ declare -r PROCESS_TYPE="${PROCESS_TYPE}"
+ declare -r ARGUMENT="${ARGUMENT:-}"
 fi
-# Argument for the process type.
-declare -r ARGUMENT=${2:-}
 
 # Username.
 declare USERNAME
@@ -149,6 +160,12 @@ function __show_help {
  echo "* --country \"United States of America\""
  echo "* --pais \"Estados Unidos\""
  echo "* (empty) : Shows general statistics about notes."
+ echo
+ echo "Log level (controls verbosity; default is ERROR, i.e. only errors):"
+ echo "* -v, --verbose : INFO  - progress and key steps"
+ echo "* --debug       : DEBUG - include function start/finish and timing"
+ echo "* -q, --quiet   : ERROR - only errors (default)"
+ echo "  Or set LOG_LEVEL=INFO (or DEBUG, WARN, ERROR) in the environment."
  echo
  echo "Written by: Andres Gomez (AngocA)"
  echo "OSM-LatAm, OSM-Colombia, MaptimeBogota."
