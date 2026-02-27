@@ -248,6 +248,9 @@ declare -r POSTGRES_61_LOAD_NOTES_STAGING="${SCRIPT_BASE_DIRECTORY}/sql/dwh/Stag
 # Setup Foreign Data Wrappers for incremental processing.
 declare -r POSTGRES_60_SETUP_FDW="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_60_setupFDW.sql"
 
+# Backfill application version from note_comments_text (so version_adoption_rates is populated).
+declare -r POSTGRES_27_BACKFILL_APPLICATION_VERSION="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_27_backfill_application_version.sql"
+
 # Scripts for hybrid strategy (copy tables for initial load).
 declare -r COPY_BASE_TABLES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/copyBaseTables.sh"
 declare -r DROP_COPIED_BASE_TABLES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/dropCopiedBaseTables.sh"
@@ -2432,6 +2435,18 @@ function main() {
   FDW_END_TIME=$(date +%s)
   local fdw_duration=$((FDW_END_TIME - FDW_START_TIME))
   __logi "⏱️  TIME: Setting up FDW took ${fdw_duration} seconds"
+
+  # Backfill dimension_application_version from note_comments_text so version_adoption_rates is populated
+  __logi "Backfilling application version from opening comment body (version_adoption_rates)..."
+  set +e
+  __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 -f "${POSTGRES_27_BACKFILL_APPLICATION_VERSION}" 2>&1
+  local backfill_version_exit_code=$?
+  set -e
+  if [[ ${backfill_version_exit_code} -ne 0 ]]; then
+   __logw "Backfill application version failed (exit code: ${backfill_version_exit_code}); version_adoption_rates may be empty"
+  else
+   __logi "Backfill application version completed"
+  fi
 
   local DATAMART_START_TIME
   DATAMART_START_TIME=$(date +%s)

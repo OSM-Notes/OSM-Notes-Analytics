@@ -511,6 +511,10 @@ Shows version adoption patterns and upgrade trends
 - Upgrade patterns: "Users are slow to adopt new versions"
 - Technology trends: "Latest version adoption rate is increasing"
 
+**Why it may be empty (or zero for all users)**: This metric is built from `dwh.facts.dimension_application_version`, which is only set when the **opening comment** of a note includes both an application match and a **version string** in the form `N.N` or `N.N.N` (e.g. "Opened with iD 2.19", "2.20.0"). Many clients do not send a version in the comment (e.g. "#organicmaps", "via StreetComplete"), so most facts have `dimension_application_version` NULL and `version_adoption_rates` remains an empty array `[]` for every user.  
+**Source**: ETL sets version only when `action_comment = 'opened'`, an application is detected, and the comment matches regex `\d+\.\d+(\.\d+)?` (see `Staging_32_createStagingObjects.sql`, `Staging_34a_initialFactsLoadCreate_Parallel.sql`, `Staging_35a_initialFactsLoadExecute_Simple.sql`; `get_application_version_id`).  
+**Diagnostic**: If `version_adoption_rates` is empty for all users, run `tests/sql/diagnose_version_adoption_rates.sql` against your DWH to see how many facts have `dimension_application_version` set; if that count is 0, no version data was extracted from your note comments.
+
 **Available In**: `datamartusers`, `datamartcountries`
 
 ---

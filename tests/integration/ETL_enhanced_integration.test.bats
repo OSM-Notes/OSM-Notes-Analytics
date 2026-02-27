@@ -81,9 +81,21 @@ teardown() {
  [[ -f "${sql_dir}/ETL_23_addFunctions.sql" ]]
  [[ -f "${sql_dir}/ETL_25_populateDimensionTables.sql" ]]
  [[ -f "${sql_dir}/ETL_26_updateDimensionTables.sql" ]]
+ [[ -f "${sql_dir}/ETL_27_backfill_application_version.sql" ]]
  [[ -f "${sql_dir}/ETL_40_addConstraintsIndexesTriggers.sql" ]]
  [[ -f "${sql_dir}/Staging_32_createStagingObjects.sql" ]]
  [[ -f "${sql_dir}/Staging_34_initialFactsLoadCreate.sql" ]]
+}
+
+@test "ETL_27 backfill application version script has required SQL" {
+ local sql_dir="${PROJECT_ROOT}/sql/dwh"
+ local script="${sql_dir}/ETL_27_backfill_application_version.sql"
+ [[ -f "${script}" ]] || skip "ETL_27_backfill_application_version.sql not found"
+ grep -q "dimension_application_version" "${script}" || { echo "Missing dimension_application_version"; return 1; }
+ grep -q "get_application_version_id" "${script}" || { echo "Missing get_application_version_id"; return 1; }
+ grep -q "note_comments_text" "${script}" || { echo "Missing note_comments_text"; return 1; }
+ grep -q "UPDATE.*dwh.facts" "${script}" || grep -q "UPDATE dwh.facts" "${script}" || { echo "Missing UPDATE dwh.facts"; return 1; }
+ grep -q "regexp_match" "${script}" || { echo "Missing regexp_match (version pattern)"; return 1; }
 }
 
 @test "ETL enhanced dimensions validation" {

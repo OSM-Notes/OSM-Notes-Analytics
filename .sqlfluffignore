@@ -1,0 +1,3 @@
+# SQLFluff ignore patterns (pathspec / .gitignore-style)
+# File uses CTE with UPDATE (valid PostgreSQL); sqlfluff parser does not support it
+sql/dwh/ETL_27_backfill_application_version.sql

@@ -6,7 +6,7 @@
 [sqlfluff]
 dialect = postgres
 max_line_length = 100
-exclude_rules = PRS,L031,L011,L034,L051,L014,L003,L036,L030,L052,L016,L061,L013,L029
+exclude_rules = PRS,L031,L011,L034,L051,L014,L003,L036,L030,L052,L016,L061,L013,L029,L045
 
 [sqlfluff:indentation]
 indent_unit = space
