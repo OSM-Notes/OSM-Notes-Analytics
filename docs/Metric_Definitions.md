@@ -1471,7 +1471,7 @@ Metrics tracking the first and most recent actions.
 
 ---
 
-#### 9.6 `lastest_commented_note_id`, `lastest_closed_note_id`, `lastest_reopened_note_id`
+#### 9.6 `latest_commented_note_id`, `latest_closed_note_id`, `latest_reopened_note_id`
 
 **Business Name**: Most Recent Note ID for Action Type  
 **Definition**: OSM note ID of the most recent note for each action type.  

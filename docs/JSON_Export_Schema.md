@@ -246,9 +246,9 @@ Complete user profile containing **78+ metrics** organized into categories:
 | `first_closed_note_id`      | integer \| null | ID of first note closed        |
 | `first_reopened_note_id`    | integer \| null | ID of first note reopened      |
 | `latest_open_note_id`       | integer         | ID of latest note opened       |
-| `lastest_commented_note_id` | integer \| null | ID of latest note commented on |
-| `lastest_closed_note_id`    | integer \| null | ID of latest note closed       |
-| `lastest_reopened_note_id`  | integer \| null | ID of latest note reopened     |
+| `latest_commented_note_id` | integer \| null | ID of latest note commented on |
+| `latest_closed_note_id`    | integer \| null | ID of latest note closed       |
+| `latest_reopened_note_id`  | integer \| null | ID of latest note reopened     |
 
 #### Activity Pattern Fields
 

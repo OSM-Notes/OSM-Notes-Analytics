@@ -697,7 +697,7 @@ function __processUserProfile {
 
  declare -i LAST_COMMENTED_NOTE_ID
  LAST_COMMENTED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_commented_note_id
+  -c "SELECT latest_commented_note_id
      FROM dwh.datamartUsers
      WHERE dimension_user_id = ${DIMENSION_USER_ID}
      " \
@@ -705,7 +705,7 @@ function __processUserProfile {
 
  declare -i LAST_CLOSED_NOTE_ID
  LAST_CLOSED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_closed_note_id
+  -c "SELECT latest_closed_note_id
      FROM dwh.datamartUsers
      WHERE dimension_user_id = ${DIMENSION_USER_ID}
      " \
@@ -713,7 +713,7 @@ function __processUserProfile {
 
  declare -i LAST_REOPENED_NOTE_ID
  LAST_REOPENED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_reopened_note_id
+  -c "SELECT latest_reopened_note_id
      FROM dwh.datamartUsers
      WHERE dimension_user_id = ${DIMENSION_USER_ID}
      " \
@@ -1499,7 +1499,7 @@ function __processCountryProfile {
 
  declare -i LAST_COMMENTED_NOTE_ID
  LAST_COMMENTED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_commented_note_id
+  -c "SELECT latest_commented_note_id
      FROM dwh.datamartCountries
      WHERE dimension_country_id = ${COUNTRY_ID}
      " \
@@ -1507,7 +1507,7 @@ function __processCountryProfile {
 
  declare -i LAST_CLOSED_NOTE_ID
  LAST_CLOSED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_closed_note_id
+  -c "SELECT latest_closed_note_id
      FROM dwh.datamartCountries
      WHERE dimension_country_id = ${COUNTRY_ID}
      " \
@@ -1515,7 +1515,7 @@ function __processCountryProfile {
 
  declare -i LAST_REOPENED_NOTE_ID
  LAST_REOPENED_NOTE_ID=$(psql -d "${DBNAME_DWH}" -Atq \
-  -c "SELECT lastest_reopened_note_id
+  -c "SELECT latest_reopened_note_id
      FROM dwh.datamartCountries
      WHERE dimension_country_id = ${COUNTRY_ID}
      " \

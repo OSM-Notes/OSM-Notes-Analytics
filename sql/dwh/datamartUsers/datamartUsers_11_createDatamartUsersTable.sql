@@ -112,7 +112,7 @@ COMMENT ON COLUMN dwh.datamartUsers.dimension_user_id IS
   'Surrogated ID from dimension''user';
 COMMENT ON COLUMN dwh.datamartUsers.user_id IS 'OSM id user';
 COMMENT ON COLUMN dwh.datamartUsers.username IS
-  'OSM username at the time of the lastest note activity';
+  'OSM username at the time of the latest note activity';
 COMMENT ON COLUMN dwh.datamartUsers.date_starting_creating_notes IS
   'Oldest opened note';
 COMMENT ON COLUMN dwh.datamartUsers.date_starting_solving_notes IS
