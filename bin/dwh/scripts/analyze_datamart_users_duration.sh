@@ -37,7 +37,7 @@ for log in /tmp/ETL_*.log; do
     [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
     echo "  ${log}: datamartUsers took ${secs}s (${mins}m ${rem}s)${ok}"
    fi
-  done < <(grep "datamartUsers took" "${log}" 2> /dev/null)
+  done < <(grep "datamartUsers took" "${log}" 2> /dev/null || true)
  fi
 done
 for dir in /tmp/ETL_*/; do
@@ -54,7 +54,7 @@ for dir in /tmp/ETL_*/; do
     [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK]" || ok=" [OVER]"
     echo "  ${dir}: ${secs}s (${mins}m ${rem}s)${ok}"
    fi
-  done < <(grep "datamartUsers took" "${log}" 2> /dev/null)
+  done < <(grep "datamartUsers took" "${log}" 2> /dev/null || true)
  fi
 done
 [[ ${found_etl} -eq 0 ]] && echo "  (No 'datamartUsers took' lines found in ETL logs)"
@@ -64,7 +64,7 @@ echo ""
 echo "--- From datamartUsers logs (/tmp/datamartUsers_*.log or .../datamartUsers.log) ---"
 found_dm=0
 # Show last 25 log files (most recent first)
-for log in $(ls -1t /tmp/datamartUsers_*.log 2> /dev/null | head -25); do
+while IFS= read -r log; do
  [[ -f "${log}" ]] || continue
  # Penultimate "Took: 0h:Xm:Ys" is __processNotesUser duration (parallel processing)
  took=$(grep "Took: 0h:" "${log}" 2> /dev/null | tail -2 | head -1 | sed -n 's/.*Took: 0h:\([0-9]*\)m:\([0-9]*\)s.*/\1 \2/p')
@@ -77,7 +77,7 @@ for log in $(ls -1t /tmp/datamartUsers_*.log 2> /dev/null | head -25); do
   echo "  $(basename "${log}"): ${m}m ${s}s (${total}s)${ok}"
   found_dm=1
  fi
-done
+done < <(find /tmp -maxdepth 1 -name 'datamartUsers_*.log' -type f -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -25 | cut -d' ' -f2-)
 for dir in /tmp/datamartUsers_*/; do
  [[ -d "${dir}" ]] || continue
  log="${dir}datamartUsers.log"
