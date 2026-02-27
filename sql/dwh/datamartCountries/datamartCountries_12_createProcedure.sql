@@ -108,32 +108,29 @@ AS $proc$
     AND f.action_comment = 'reopened'
   );
 
+  -- Use fixed window of last 371 days (generate_series) so we always get a full year regardless of
+  -- how many dates exist in dimension_days (which is populated on demand during ETL).
   m_last_year_activity := '0';
-  -- Create the last year activity
   FOR r IN
-   SELECT /* Notes-datamartCountries */ t.date_id, qty
-   FROM (
-    SELECT /* Notes-datamartCountries */ e.date_id AS date_id,
-     COALESCE(c.qty, 0) AS qty
-    FROM dwh.dimension_days e
-    LEFT JOIN (
-    SELECT /* Notes-datamartCountries */ d.dimension_day_id day_id, count(1) qty
-     FROM dwh.facts f
-      JOIN dwh.dimension_days d
-      ON (f.action_dimension_id_date = d.dimension_day_id)
-     WHERE f.dimension_id_country = m_dimension_country_id
-     GROUP BY d.dimension_day_id
-    ) c
-    ON (e.dimension_day_id = c.day_id)
-    ORDER BY e.date_id DESC
-    LIMIT 371
-   ) AS t
-   ORDER BY t.date_id ASC
+   WITH last_371_days AS (
+    SELECT d::date AS date_id
+    FROM generate_series(CURRENT_DATE - 370, CURRENT_DATE, '1 day'::interval) d
+   ),
+   country_activity AS (
+    SELECT /* Notes-datamartCountries */ dd.date_id, count(1) qty
+    FROM dwh.facts f
+     JOIN dwh.dimension_days dd ON f.action_dimension_id_date = dd.dimension_day_id
+    WHERE f.dimension_id_country = m_dimension_country_id
+    GROUP BY dd.date_id
+   )
+   SELECT /* Notes-datamartCountries */ ld.date_id, COALESCE(c.qty, 0) qty
+   FROM last_371_days ld
+   LEFT JOIN country_activity c ON ld.date_id = c.date_id
+   ORDER BY ld.date_id ASC
   LOOP
    m_last_year_activity := dwh.refresh_today_activities(m_last_year_activity,
      (dwh.get_score_country_activity(r.qty::INTEGER)));
   END LOOP;
-  -- Pad to 371 chars when dimension_days has fewer dates (e.g. fresh DB): leading '0' = no data for older days
   m_last_year_activity := LPAD(m_last_year_activity, 371, '0');
 
   INSERT INTO dwh.datamartCountries (

@@ -89,31 +89,29 @@ AS $proc$
    AND f.action_comment = 'reopened';
 
   -- Creates the activity array.
+  -- Use fixed window of last 371 days (generate_series) so we always get a full year regardless of
+  -- how many dates exist in dimension_days (which is populated on demand during ETL).
   m_last_year_activity := '0';
-  -- Create the last year activity
   FOR r IN
-   SELECT /* Notes-datamartUsers */ t.date_id, qty
-   FROM (
-    SELECT /* Notes-datamartUsers */ e.date_id, COALESCE(u.qty, 0) qty
-    FROM dwh.dimension_days e
-    LEFT JOIN (
-     SELECT /* Notes-datamartUsers */ d.dimension_day_id day_id, count(1) qty
-     FROM dwh.facts f
-      JOIN dwh.dimension_days d
-      ON (f.action_dimension_id_date = d.dimension_day_id)
-     WHERE f.action_dimension_id_user = m_dimension_user_id
-     GROUP BY d.dimension_day_id
-    ) u
-    ON (e.dimension_day_id = u.day_id)
-    ORDER BY e.date_id DESC
-    LIMIT 371
-   ) AS t
-   ORDER BY t.date_id ASC
- LOOP
+   WITH last_371_days AS (
+    SELECT d::date AS date_id
+    FROM generate_series(CURRENT_DATE - 370, CURRENT_DATE, '1 day'::interval) d
+   ),
+   user_activity AS (
+    SELECT /* Notes-datamartUsers */ dd.date_id, count(1) qty
+    FROM dwh.facts f
+     JOIN dwh.dimension_days dd ON f.action_dimension_id_date = dd.dimension_day_id
+    WHERE f.action_dimension_id_user = m_dimension_user_id
+    GROUP BY dd.date_id
+   )
+   SELECT /* Notes-datamartUsers */ ld.date_id, COALESCE(u.qty, 0) qty
+   FROM last_371_days ld
+   LEFT JOIN user_activity u ON ld.date_id = u.date_id
+   ORDER BY ld.date_id ASC
+  LOOP
    m_last_year_activity := dwh.refresh_today_activities(m_last_year_activity,
      (dwh.get_score_user_activity(r.qty::INTEGER)));
   END LOOP;
-  -- Pad to 371 chars when dimension_days has fewer dates (e.g. fresh DB): leading '0' = no data for older days
   m_last_year_activity := LPAD(m_last_year_activity, 371, '0');
 
   INSERT INTO dwh.datamartUsers (

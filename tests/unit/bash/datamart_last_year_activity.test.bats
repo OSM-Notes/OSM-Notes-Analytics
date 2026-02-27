@@ -1,10 +1,15 @@
 #!/usr/bin/env bats
 
-# Tests for last_year_activity: 371-char string, LPAD when dimension_days has fewer dates.
-# Ensures the fix (LPAD to 371) is present and that helper functions behave as expected.
+# Tests for last_year_activity: 371-char string, LPAD, and fixed 371-day window.
+# - LPAD to 371 chars and helper functions (move_day, refresh_today_activities).
+# - Procedures must use generate_series(CURRENT_DATE - 370, CURRENT_DATE) so the
+#   "last year" is always the last 371 calendar days, not limited by dimension_days.
+#   (dimension_days is populated on demand during ETL; if only recent data was loaded,
+#   we used to get only N days and LPAD with zeros, so the heatmap showed only ~9 weeks.
+#   The tests that only checked LPAD and length did not catch that.)
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-02-19
+# Version: 2026-02-27
 
 load ../../../tests/test_helper
 
@@ -56,6 +61,24 @@ setup() {
 
   grep -q "CHAR(371)" "${sql_file}" || fail "lastYearActivities functions must use CHAR(371)"
   grep -q "SUBSTRING(activity, 1, 370)" "${sql_file}" || fail "refresh_today_activities must keep 370 chars and append one"
+}
+
+# --- Regression: procedures must use fixed 371-day window (generate_series), not only dimension_days ---
+
+@test "datamartUsers_12 procedure uses generate_series for last 371 calendar days" {
+  local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartUsers/datamartUsers_12_createProcedure.sql"
+  [[ -f "${sql_file}" ]] || skip "SQL file not found: ${sql_file}"
+
+  grep -q "generate_series" "${sql_file}" || fail "Procedure must use generate_series for fixed 371-day window"
+  grep -q "CURRENT_DATE - 370" "${sql_file}" || fail "Procedure must use CURRENT_DATE - 370 for last 371 days"
+}
+
+@test "datamartCountries_12 procedure uses generate_series for last 371 calendar days" {
+  local sql_file="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartCountries/datamartCountries_12_createProcedure.sql"
+  [[ -f "${sql_file}" ]] || skip "SQL file not found: ${sql_file}"
+
+  grep -q "generate_series" "${sql_file}" || fail "Procedure must use generate_series for fixed 371-day window"
+  grep -q "CURRENT_DATE - 370" "${sql_file}" || fail "Procedure must use CURRENT_DATE - 370 for last 371 days"
 }
 
 # --- Runtime test: with DB, LPAD and helper functions return 371-char string ---
