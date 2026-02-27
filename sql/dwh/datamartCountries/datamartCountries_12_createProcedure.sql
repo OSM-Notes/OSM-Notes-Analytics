@@ -131,8 +131,10 @@ AS $proc$
    ORDER BY t.date_id ASC
   LOOP
    m_last_year_activity := dwh.refresh_today_activities(m_last_year_activity,
-     (dwh.get_score_user_activity(r.qty::INTEGER)));
+     (dwh.get_score_country_activity(r.qty::INTEGER)));
   END LOOP;
+  -- Pad to 371 chars when dimension_days has fewer dates (e.g. fresh DB): leading '0' = no data for older days
+  m_last_year_activity := LPAD(m_last_year_activity, 371, '0');
 
   INSERT INTO dwh.datamartCountries (
    dimension_country_id,

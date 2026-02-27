@@ -20,6 +20,7 @@ tests/
 │   │   ├── ETL_enhanced.test.bats
 │   │   ├── ETL_integration.test.bats
 │   │   ├── datamartCountries_integration.test.bats
+│   │   ├── datamart_last_year_activity.test.bats
 │   │   ├── datamartUsers_integration.test.bats
 │   │   ├── datamart_resolution_metrics.test.bats
 │   │   ├── datamartUsers_resolution_metrics.test.bats

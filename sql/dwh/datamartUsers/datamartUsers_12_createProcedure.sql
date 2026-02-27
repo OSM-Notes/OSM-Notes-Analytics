@@ -113,6 +113,8 @@ AS $proc$
    m_last_year_activity := dwh.refresh_today_activities(m_last_year_activity,
      (dwh.get_score_user_activity(r.qty::INTEGER)));
   END LOOP;
+  -- Pad to 371 chars when dimension_days has fewer dates (e.g. fresh DB): leading '0' = no data for older days
+  m_last_year_activity := LPAD(m_last_year_activity, 371, '0');
 
   INSERT INTO dwh.datamartUsers (
    dimension_user_id,
@@ -170,7 +172,10 @@ AS $proc$
   stmt := 'SELECT /* Notes-datamartUsers */ history_' || m_year || '_open '
    || 'FROM dwh.datamartUsers '
    || 'WHERE dimension_user_id = ' || m_dimension_user_id;
-  INSERT INTO dwh.logs (message) VALUES (stmt);
+  BEGIN
+   INSERT INTO dwh.logs (message) VALUES (stmt);
+  EXCEPTION WHEN undefined_table THEN NULL;
+  END;
   EXECUTE stmt
    INTO m_check_year_populated;
 
@@ -290,7 +295,10 @@ AS $proc$
      || 'ranking_countries_closing_' || m_year || ' = '
      || QUOTE_NULLABLE(m_ranking_countries_closing_year) || ' '
      || 'WHERE dimension_user_id = ' || m_dimension_user_id;
-   INSERT INTO logs (message) VALUES (SUBSTR(stmt, 1, 900));
+   BEGIN
+    INSERT INTO dwh.logs (message) VALUES (SUBSTR(stmt, 1, 900));
+   EXCEPTION WHEN undefined_table THEN NULL;
+   END;
    EXECUTE stmt;
   END IF;
  END

@@ -265,19 +265,19 @@ function __checkBaseTables {
  return "${RET}"
 }
 
-# Adds the columns up to the current year.
+# Adds the columns for years 2014..current year (2013 exists in base table).
 function __addYears {
  __log_start
- YEAR=2013
  CURRENT_YEAR=$(date +%Y)
- while [[ "${YEAR}" -lt "${CURRENT_YEAR}" ]]; do
-  YEAR=$((YEAR + 1))
+ YEAR=2014
+ while [[ "${YEAR}" -le "${CURRENT_YEAR}" ]]; do
   export YEAR
   set +e
   # shellcheck disable=SC2016
   __psql_with_appname -d "${DBNAME_DWH}" -c "$(envsubst '$YEAR' \
    < "${POSTGRES_21_ADD_YEARS_SCRIPT}" || true)" 2>&1
   set -e
+  YEAR=$((YEAR + 1))
  done
  __log_finish
 }

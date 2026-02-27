@@ -124,6 +124,7 @@ User runs: bash tests/run_all_tests.sh
 - `datamartGlobal_integration.test.bats` - Global datamart tests
 - `datamartCountries_integration.test.bats` - Country datamart tests
 - `datamartUsers_integration.test.bats` - User datamart tests
+- `datamart_last_year_activity.test.bats` - last_year_activity 371-char string and LPAD padding
 - `ETL_enhanced.test.bats` - ETL enhancements
 - `datamart_resolution_metrics.test.bats` - Resolution metrics
 

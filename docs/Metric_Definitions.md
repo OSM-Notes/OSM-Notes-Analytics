@@ -741,7 +741,7 @@ day).
 - Trend visualization: "Activity increased in recent months"
 
 **Available In**: `datamartusers`, `datamartcountries`  
-**Note**: 371 characters = 365 days + 6 characters for encoding
+**Note**: 371 characters = 365 days + 6 characters for encoding. Position 1 = oldest day, 371 = newest. When `dimension_days` has fewer than 371 dates (e.g. fresh DB or partial load), the string is left-padded with `'0'`, so you may see many leading zeros and only the rightmost N characters with real activity.
 
 ---
 
@@ -1172,6 +1172,39 @@ The following columns summarize **when** the user is most active by storing the 
 **How they are calculated**: For each column, the procedure groups the user’s facts by that attribute (e.g. by `d.iso_week`), counts actions per value, and takes the value with the highest count (`ORDER BY COUNT(*) DESC LIMIT 1`). So each column is the “most common” date or time attribute for that user’s activity.
 
 **Use cases**: Identify typical activity windows (e.g. “users who act mainly in the afternoon”), seasonal patterns (quarter, month_name), or preferred weekday/hour (hour_of_week, period_of_day).
+
+**Available In**: `datamartusers` only
+
+---
+
+#### 8.3b Columns with year suffix (Users only)
+
+The datamart users table has **one set of columns per year** (2013, 2014, …, current year). Columns are added by `datamartUsers_20_alterTableAddYears.sql` and filled by `dwh.update_datamart_user_activity_year(dimension_user_id, year)` (called from the main procedure). **YYYY** below is the year (e.g. 2013, 2024).
+
+**History columns (counts for that year)**
+
+| Column | Type | Meaning |
+|--------|------|---------|
+| **history_YYYY_open** | INTEGER | Number of notes **opened** by this user in year YYYY (action_comment = 'opened', action date in YYYY). |
+| **history_YYYY_commented** | INTEGER | Number of **comments** by this user in year YYYY. |
+| **history_YYYY_closed** | INTEGER | Number of notes **closed** by this user in year YYYY. |
+| **history_YYYY_closed_with_comment** | INTEGER | Number of **closures with a non-empty comment** by this user in year YYYY (comment_length > 0). |
+| **history_YYYY_reopened** | INTEGER | Number of **reopens** by this user in year YYYY. |
+
+**Ranking columns (top countries for that year)**
+
+| Column | Type | Meaning |
+|--------|------|---------|
+| **ranking_countries_opening_YYYY** | JSON | Ranking of countries by **notes opened** by this user in year YYYY. Array of `{rank, country_name, quantity}` (up to 50 countries), ordered by quantity descending. Country name from `dimension_countries.country_name_es`. |
+| **ranking_countries_closing_YYYY** | JSON | Ranking of countries by **notes closed** by this user in year YYYY. Same structure as above; uses `closed_dimension_id_date` and `closed_dimension_id_user`. |
+
+**How they are calculated**: For a given year, the procedure filters facts by `dimension_days.year = YYYY` (for history) or by the open/close date year (for rankings), restricts to this user (`action_dimension_id_user` or `opened_dimension_id_user` / `closed_dimension_id_user`), and counts or aggregates by country. Source: `datamartUsers_12_createProcedure.sql` (procedure `update_datamart_user_activity_year`).
+
+**Use cases**: Year-over-year activity (e.g. history_2023_open vs history_2024_open), geographic focus per year (ranking_countries_opening_2024), or “notes closed with comment” as a quality proxy for that year.
+
+**Why they may be NULL**: These columns are filled by `update_datamart_user_activity_year`, which is called from the main datamart procedure for each year from 2013 to current. If they are all NULL, typical causes are: (1) **`dwh.logs` table missing** — the ETL now creates `dwh.logs` before datamarts (always, not only when ingestion and DWH are different), and the procedure tolerates a missing table. (2) **Columns for year YYYY missing** — columns are added by `datamartUsers_20_alterTableAddYears.sql` (run from `datamartUsers.sh` for years 2014..current). Ensure the datamart script has been run so that `history_YYYY_*` and `ranking_countries_*_YYYY` exist for every year. (3) **First failure stops the loop** — if one year fails (e.g. column missing), the exception handler swallows it and the loop ends, so later years are never updated. After fixing the cause (create `dwh.logs` if needed, run add-years for all years), re-run the datamart users refresh so the procedure runs again for all users and years.
+
+**Verification after a fresh DB load**: Run the datamart users script (which runs `__addYears` then the main procedure). To confirm year columns are populated, you can run e.g. `SELECT COUNT(*) FROM dwh.datamartUsers WHERE history_2024_open IS NOT NULL;` (adjust the year to one you have data for); you should see a positive count for at least some years.
 
 **Available In**: `datamartusers` only
 

@@ -2337,21 +2337,18 @@ function main() {
   local maintenance_duration=$((MAINTENANCE_END_TIME - MAINTENANCE_START_TIME))
   __logi "⏱️  TIME: Database maintenance took ${maintenance_duration} seconds"
 
-  # Create logs table if databases are different (needed for debugging in datamart procedures)
-  if [[ "${DBNAME_INGESTION}" != "${DBNAME_DWH}" ]]; then
-   __logi "Creating logs table for debugging (databases are different)..."
-   set +e
-   __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 \
-    -f "${POSTGRES_CREATE_LOGS_TABLE}" 2>&1
-   local logs_table_exit_code=$?
-   set -e
-   if [[ ${logs_table_exit_code} -ne 0 ]]; then
-    __loge "ERROR: Failed to create logs table (exit code: ${logs_table_exit_code})"
-    # Don't fail the ETL, but warn that datamarts may fail
-    __logw "Continuing anyway (datamart procedures may fail if they try to log)"
-   else
-    __logi "Logs table created successfully"
-   fi
+  # Create logs table (required by datamart procedures e.g. update_datamart_user_activity_year)
+  # Always create so year-suffixed columns get populated even when ingestion and DWH use same DB
+  __logi "Creating logs table for datamart procedures..."
+  set +e
+  __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 \
+   -f "${POSTGRES_CREATE_LOGS_TABLE}" 2>&1
+  local logs_table_exit_code=$?
+  set -e
+  if [[ ${logs_table_exit_code} -ne 0 ]]; then
+   __logw "Could not create logs table (exit code: ${logs_table_exit_code}); year columns may still be populated (procedure tolerates missing logs)"
+  else
+   __logi "Logs table created successfully"
   fi
 
   # Create datamart performance log table before executing datamarts
