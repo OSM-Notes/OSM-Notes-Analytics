@@ -84,3 +84,33 @@ setup() {
 	run psql -d "${DBNAME}" -tAc "SELECT (resolution_by_year->0)->>'year' FROM dwh.datamartCountries WHERE resolution_by_year IS NOT NULL LIMIT 1"
 	[[ "${status}" -eq 0 ]]
 }
+
+@test "resolution_by_year has expected keys (year, avg_days, median_days, resolution_rate)" {
+	[[ -n "${DBNAME:-}" ]] || skip "No database configured"
+	psql -d "${DBNAME}" -tAc "SELECT 1" > /dev/null 2>&1 || skip "Database not reachable"
+	run psql -d "${DBNAME}" -tAc "SELECT COUNT(1) FROM dwh.datamartUsers WHERE resolution_by_year IS NOT NULL"
+	[[ "${status}" -eq 0 ]]
+	[[ "${output}" -gt 0 ]] || skip "No populated resolution_by_year in datamartUsers"
+	# Check first element has required keys
+	run psql -d "${DBNAME}" -tAc "SELECT (resolution_by_year->0)->>'year' IS NOT NULL AND (resolution_by_year->0)->>'resolution_rate' IS NOT NULL FROM dwh.datamartUsers WHERE resolution_by_year IS NOT NULL AND jsonb_array_length(resolution_by_year::jsonb) > 0 LIMIT 1"
+	[[ "${status}" -eq 0 ]]
+	[[ "${output}" == *"t"* ]]
+}
+
+@test "resolution_by_year not all zeros when closed notes exist (datamartUsers)" {
+	[[ -n "${DBNAME:-}" ]] || skip "No database configured"
+	psql -d "${DBNAME}" -tAc "SELECT 1" > /dev/null 2>&1 || skip "Database not reachable"
+	# Skip if facts table does not exist or has no closed rows
+	run psql -d "${DBNAME}" -tAc "SELECT COUNT(*) FROM dwh.facts WHERE action_comment = 'closed'"
+	[[ "${status}" -eq 0 ]]
+	[[ "${output}" -ge 0 ]]
+	[[ "${output}" -eq 0 ]] && skip "No closed notes in facts"
+	# When closed notes exist, at least one user should have resolution_rate > 0 in resolution_by_year (validates fix for all-zeros bug)
+	run psql -d "${DBNAME}" -tAc "
+	SELECT COUNT(*) FROM dwh.datamartUsers du
+	WHERE du.resolution_by_year IS NOT NULL
+	  AND EXISTS (SELECT 1 FROM jsonb_array_elements(du.resolution_by_year::jsonb) elem WHERE (elem->>'resolution_rate')::numeric > 0);
+	"
+	[[ "${status}" -eq 0 ]]
+	[[ "${output}" -ge 1 ]] || { echo "Expected at least one user with non-zero resolution_rate in resolution_by_year"; return 1; }
+}

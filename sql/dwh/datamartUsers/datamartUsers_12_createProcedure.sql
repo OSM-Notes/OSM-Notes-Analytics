@@ -1305,13 +1305,12 @@ AS $proc$
   closed AS (
     SELECT EXTRACT(YEAR FROM d.date_id)::INT AS y,
            COUNT(DISTINCT id_note) AS closed_cnt,
-           AVG(days_to_resolution)::DECIMAL(10,2) AS avg_days,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_resolution)::DECIMAL(10,2) AS median_days
+           AVG(f.days_to_resolution) FILTER (WHERE f.days_to_resolution IS NOT NULL)::DECIMAL(10,2) AS avg_days,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY f.days_to_resolution)::DECIMAL(10,2) AS median_days
     FROM dwh.facts f
     JOIN dwh.dimension_days d ON f.closed_dimension_id_date = d.dimension_day_id
     WHERE f.closed_dimension_id_user = m_dimension_user_id
       AND f.action_comment = 'closed'
-      AND f.days_to_resolution IS NOT NULL
     GROUP BY 1
   )
   SELECT json_agg(
@@ -1357,13 +1356,12 @@ AS $proc$
     SELECT EXTRACT(YEAR FROM d.date_id)::INT AS y,
            EXTRACT(MONTH FROM d.date_id)::INT AS m,
            COUNT(DISTINCT id_note) AS closed_cnt,
-           AVG(days_to_resolution)::DECIMAL(10,2) AS avg_days,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_resolution)::DECIMAL(10,2) AS median_days
+           AVG(f.days_to_resolution) FILTER (WHERE f.days_to_resolution IS NOT NULL)::DECIMAL(10,2) AS avg_days,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY f.days_to_resolution)::DECIMAL(10,2) AS median_days
     FROM dwh.facts f
     JOIN dwh.dimension_days d ON f.closed_dimension_id_date = d.dimension_day_id
     WHERE f.closed_dimension_id_user = m_dimension_user_id
       AND f.action_comment = 'closed'
-      AND f.days_to_resolution IS NOT NULL
     GROUP BY 1,2
   )
   SELECT json_agg(
