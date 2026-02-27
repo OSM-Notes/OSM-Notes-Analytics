@@ -1157,6 +1157,26 @@ JSON object
 
 ---
 
+#### 8.3a Enhanced date and time columns (Users only)
+
+The following columns summarize **when** the user is most active by storing the **most frequent** (mode) value across all their actions. Source: `dwh.dimension_days` and `dwh.dimension_time_of_week` via `datamartUsers_12_createProcedure.sql`.
+
+| Column | Type | Meaning |
+|--------|------|---------|
+| **iso_week** | SMALLINT | ISO week of the year (1–53) in which this user has the **most actions**. From `dimension_days.iso_week` on the action date. |
+| **quarter** | SMALLINT | Quarter (1–4) in which this user has the **most actions**. From `dimension_days.quarter`. |
+| **month_name** | VARCHAR(16) | English month name (e.g. January, February) in which this user has the **most actions**. From `dimension_days.month_name`. |
+| **hour_of_week** | SMALLINT | Hour of the week (0–167: 7×24) at which this user has the **most actions**. From `dimension_time_of_week.hour_of_week` on the action time. |
+| **period_of_day** | VARCHAR(16) | Period of the day (Night, Morning, Afternoon, Evening) in which this user has the **most actions**. From `dimension_time_of_week.period_of_day`. |
+
+**How they are calculated**: For each column, the procedure groups the user’s facts by that attribute (e.g. by `d.iso_week`), counts actions per value, and takes the value with the highest count (`ORDER BY COUNT(*) DESC LIMIT 1`). So each column is the “most common” date or time attribute for that user’s activity.
+
+**Use cases**: Identify typical activity windows (e.g. “users who act mainly in the afternoon”), seasonal patterns (quarter, month_name), or preferred weekday/hour (hour_of_week, period_of_day).
+
+**Available In**: `datamartusers` only
+
+---
+
 #### 8.4 `notes_opened_but_not_closed_by_user` (Users only)
 
 **Business Name**: Notes Opened But Not Closed By User  
