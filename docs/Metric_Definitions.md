@@ -162,6 +162,8 @@ periods.
 
 **Available In**: `datamartusers`, `datamartcountries`
 
+**Why it may be empty (0 or NULL)**: The metric uses `dwh.facts.comment_length` (closed actions with `comment_length > 0`). If facts were loaded without comment text (e.g. before the column existed, or via a copy that did not set it), `comment_length` is NULL/0 and the count is 0. Run the backfill script `sql/dwh/ETL_28_backfill_comment_length.sql` to populate `comment_length` from `public.note_comments_text`; then refresh the datamart users/countries.
+
 ---
 
 ##### `history_whole_reopened`

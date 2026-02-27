@@ -54,14 +54,6 @@ CREATE TABLE IF NOT EXISTS dwh.datamartUsers (
  history_day_closed INTEGER,
  history_day_closed_with_comment INTEGER,
  history_day_reopened INTEGER,
- history_2013_open INTEGER, -- Qty in 2013
- history_2013_commented INTEGER,
- history_2013_closed INTEGER,
- history_2013_closed_with_comment INTEGER,
- history_2013_reopened INTEGER,
- ranking_countries_opening_2013 JSON,
- ranking_countries_closing_2013 JSON,
- json_exported BOOLEAN DEFAULT FALSE,
  avg_days_to_resolution DECIMAL(10, 2),
  median_days_to_resolution DECIMAL(10, 2),
  notes_resolved_count INTEGER,
@@ -103,7 +95,16 @@ CREATE TABLE IF NOT EXISTS dwh.datamartUsers (
   month_name VARCHAR(16), -- Most common month name for user activity
   -- Enhanced time columns from dimension_time_of_week
   hour_of_week SMALLINT, -- Most common hour of week for user activity
-  period_of_day VARCHAR(16) -- Most common period of day (Night/Morning/Afternoon/Evening)
+  period_of_day VARCHAR(16), -- Most common period of day (Night/Morning/Afternoon/Evening)
+  -- Columns updated by a different flow (export) or extended per year (add-years); keep at end
+  json_exported BOOLEAN DEFAULT FALSE,
+  history_2013_open INTEGER, -- Qty in 2013
+  history_2013_commented INTEGER,
+  history_2013_closed INTEGER,
+  history_2013_closed_with_comment INTEGER,
+  history_2013_reopened INTEGER,
+  ranking_countries_opening_2013 JSON,
+  ranking_countries_closing_2013 JSON
 );
 COMMENT ON TABLE dwh.datamartUsers IS
   'Contains all precalculated statistical values for users';

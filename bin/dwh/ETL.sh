@@ -250,6 +250,8 @@ declare -r POSTGRES_60_SETUP_FDW="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_60_setupF
 
 # Backfill application version from note_comments_text (so version_adoption_rates is populated).
 declare -r POSTGRES_27_BACKFILL_APPLICATION_VERSION="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_27_backfill_application_version.sql"
+# Backfill comment_length from note_comments_text (so history_whole_closed_with_comment is populated).
+declare -r POSTGRES_28_BACKFILL_COMMENT_LENGTH="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_28_backfill_comment_length.sql"
 
 # Scripts for hybrid strategy (copy tables for initial load).
 declare -r COPY_BASE_TABLES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/copyBaseTables.sh"
@@ -259,6 +261,8 @@ declare -r DROP_COPIED_BASE_TABLES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/drop
 declare -r DATAMART_COUNTRIES_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartCountries/datamartCountries.sh"
 declare -r DATAMART_USERS_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartUsers/datamartUsers.sh"
 declare -r DATAMART_GLOBAL_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/datamartGlobal/datamartGlobal.sh"
+# Export datamarts to JSON (sets json_exported = TRUE; run after datamarts so the column is populated).
+declare -r EXPORT_DATAMARTS_TO_JSON_SCRIPT="${SCRIPT_BASE_DIRECTORY}/bin/dwh/exportDatamartsToJSON.sh"
 # Create datamart performance log table.
 declare -r POSTGRES_DATAMART_PERFORMANCE_CREATE_TABLE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/datamartPerformance/datamartPerformance_10_createTable.sql"
 # Create logs table for debugging (only needed when Ingestion and Analytics databases are different).
@@ -2445,6 +2449,18 @@ function main() {
    __logi "Backfill application version completed"
   fi
 
+  # Backfill comment_length from note_comments_text so history_whole_closed_with_comment is populated
+  __logi "Backfilling comment_length from note_comments_text (history_whole_closed_with_comment)..."
+  set +e
+  __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 -f "${POSTGRES_28_BACKFILL_COMMENT_LENGTH}" 2>&1
+  local backfill_comment_exit_code=$?
+  set -e
+  if [[ ${backfill_comment_exit_code} -ne 0 ]]; then
+   __logw "Backfill comment_length failed (exit code: ${backfill_comment_exit_code}); history_whole_closed_with_comment may be empty"
+  else
+   __logi "Backfill comment_length completed"
+  fi
+
   local DATAMART_START_TIME
   DATAMART_START_TIME=$(date +%s)
   __logi "Executing datamart scripts..."
@@ -2525,6 +2541,21 @@ function main() {
   DATAMART_END_TIME=$(date +%s)
   local datamart_duration=$((DATAMART_END_TIME - DATAMART_START_TIME))
   __logi "⏱️  TIME: All datamart scripts total time: ${datamart_duration} seconds"
+
+  # Run JSON export so json_exported is set to TRUE for exported entities (optional, set ETL_RUN_JSON_EXPORT=true to enable)
+  if [[ "${ETL_RUN_JSON_EXPORT:-false}" == "true" ]] && [[ -x "${EXPORT_DATAMARTS_TO_JSON_SCRIPT}" ]]; then
+   __logi "Running JSON export (json_exported will be set for exported users/countries)..."
+   set +e
+   export DBNAME_DWH
+   JSON_EXPORT_BATCH_SIZE=0 "${EXPORT_DATAMARTS_TO_JSON_SCRIPT}" 2>&1
+   local json_export_exit_code=$?
+   set -e
+   if [[ ${json_export_exit_code} -ne 0 ]]; then
+    __logw "JSON export failed (exit code: ${json_export_exit_code}); json_exported may remain FALSE for some rows"
+   else
+    __logi "JSON export completed"
+   fi
+  fi
  else
   __logi "AUTO-DETECTED INCREMENTAL EXECUTION - Processing only new data"
   # Check data volume to adjust timeout if needed for large incrementals

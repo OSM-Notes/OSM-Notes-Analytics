@@ -146,6 +146,12 @@ if [ -n "$STAGED_SQL_FILES" ]; then
                     continue
                 fi
 
+                # Skip files listed in .sqlfluffignore (e.g. CTE with UPDATE not supported by parser)
+                if [ -f .sqlfluffignore ] && grep -v '^[[:space:]]*#' .sqlfluffignore | grep -q -F "$file" 2>/dev/null; then
+                    echo -e "${YELLOW}⚠️  Skipping (in .sqlfluffignore): $file${NC}"
+                    continue
+                fi
+
                 if ! sqlfluff lint "$file" > /dev/null 2>&1; then
                     SQLFLUFF_FAILED=1
                     echo -e "${RED}❌ SQL format check failed for: $file${NC}"
