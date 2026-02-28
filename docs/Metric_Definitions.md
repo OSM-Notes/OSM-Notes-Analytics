@@ -124,9 +124,12 @@ periods.
 ##### `history_whole_closed`
 
 **Business Name**: Total Notes Resolved (All Time)  
-**Definition**: Number of close events (actions) by this user—one per close action. Same note closed twice = 2. For distinct notes, use notes_resolved_count.  
-**Formula**: `COUNT(*) FROM facts WHERE action_dimension_id_user = user AND action_comment = 'closed'` (count of **events**, not distinct notes).  
-**See also**: `notes_resolved_count` = `COUNT(DISTINCT id_note)` for closes by this user (same note closed twice = 1). So `history_whole_closed` ≥ `notes_resolved_count`.  
+**Definition**: Number of close events (actions) by this user—one per close action. Same note closed
+twice = 2. For distinct notes, use notes_resolved_count.  
+**Formula**: `COUNT(*) FROM facts WHERE action_dimension_id_user = user AND action_comment = 'closed'`
+(count of **events**, not distinct notes).  
+**See also**: `notes_resolved_count` = `COUNT(DISTINCT id_note)` for closes by this user (same note
+closed twice = 1). So `history_whole_closed` ≥ `notes_resolved_count`.  
 **Unit**: Count (integer)  
 **Interpretation**:
 
@@ -162,7 +165,11 @@ periods.
 
 **Available In**: `datamartusers`, `datamartcountries`
 
-**Why it may be empty (0 or NULL)**: The metric uses `dwh.facts.comment_length` (closed actions with `comment_length > 0`). If facts were loaded without comment text (e.g. before the column existed, or via a copy that did not set it), `comment_length` is NULL/0 and the count is 0. Run the backfill script `sql/dwh/ETL_28_backfill_comment_length.sql` to populate `comment_length` from `public.note_comments_text`; then refresh the datamart users/countries.
+**Why it may be empty (0 or NULL)**: The metric uses `dwh.facts.comment_length` (closed actions with
+`comment_length > 0`). If facts were loaded without comment text (e.g. before the column existed, or
+via a copy that did not set it), `comment_length` is NULL/0 and the count is 0. Run the backfill
+script `sql/dwh/ETL_28_backfill_comment_length.sql` to populate `comment_length` from
+`public.note_comments_text`; then refresh the datamart users/countries.
 
 ---
 
@@ -317,10 +324,13 @@ Percentage (0-100, decimal)
 #### 2.4 `notes_resolved_count`
 
 **Business Name**: Number of Notes Resolved  
-**Definition**: Count of **distinct notes** that this user has closed (resolved). Each note is counted at most once, even if the user closed it, it was reopened, and they closed it again.  
+**Definition**: Count of **distinct notes** that this user has closed (resolved). Each note is
+counted at most once, even if the user closed it, it was reopened, and they closed it again.  
 **Formula**: `COUNT(DISTINCT id_note) FROM facts WHERE closed_dimension_id_user = user AND action_comment = 'closed'`  
-**Unit**: Count (integer)  
-**See also**: `history_whole_closed` = number of close **events** (actions); same note closed twice by the user counts as 2 there, 1 here.  
+**Unit**:
+Count (integer)  
+**See also**: `history_whole_closed` = number of close **events** (actions); same note closed twice
+by the user counts as 2 there, 1 here.  
 **Interpretation**: Absolute number of distinct notes resolved by this user
 
 **Use Cases**:
@@ -513,9 +523,20 @@ Shows version adoption patterns and upgrade trends
 - Upgrade patterns: "Users are slow to adopt new versions"
 - Technology trends: "Latest version adoption rate is increasing"
 
-**Why it may be empty (or zero for all users)**: This metric is built from `dwh.facts.dimension_application_version`, which is only set when the **opening comment** of a note includes both an application match and a **version string** in the form `N.N` or `N.N.N` (e.g. "Opened with iD 2.19", "2.20.0"). Many clients do not send a version in the comment (e.g. "#organicmaps", "via StreetComplete"), so most facts have `dimension_application_version` NULL and `version_adoption_rates` remains an empty array `[]` for every user.  
-**Source**: ETL sets version only when `action_comment = 'opened'`, an application is detected, and the comment matches regex `\d+\.\d+(\.\d+)?` (see `Staging_32_createStagingObjects.sql`, `Staging_34a_initialFactsLoadCreate_Parallel.sql`, `Staging_35a_initialFactsLoadExecute_Simple.sql`; `get_application_version_id`).  
-**Diagnostic**: If `version_adoption_rates` is empty for all users, run `tests/sql/diagnose_version_adoption_rates.sql` against your DWH to see how many facts have `dimension_application_version` set; if that count is 0, no version data was extracted from your note comments.
+**Why it may be empty (or zero for all users)**: This metric is built from
+`dwh.facts.dimension_application_version`, which is only set when the **opening comment** of a note
+includes both an application match and a **version string** in the form `N.N` or `N.N.N` (e.g.
+"Opened with iD 2.19", "2.20.0"). Many clients do not send a version in the comment (e.g.
+"#organicmaps", "via StreetComplete"), so most facts have `dimension_application_version` NULL and
+`version_adoption_rates` remains an empty array `[]` for every user.  
+**Source**: ETL sets version only when `action_comment = 'opened'`, an application is detected, and
+the comment matches regex `\d+\.\d+(\.\d+)?` (see `Staging_32_createStagingObjects.sql`,
+`Staging_34a_initialFactsLoadCreate_Parallel.sql`, `Staging_35a_initialFactsLoadExecute_Simple.sql`;
+`get_application_version_id`).  
+**Diagnostic**: If `version_adoption_rates` is empty for all users, run
+`tests/sql/diagnose_version_adoption_rates.sql` against your DWH to see how many facts have
+`dimension_application_version` set; if that count is 0, no version data was extracted from your
+note comments.
 
 **Available In**: `datamartusers`, `datamartcountries`
 
@@ -743,7 +764,10 @@ day).
 - Trend visualization: "Activity increased in recent months"
 
 **Available In**: `datamartusers`, `datamartcountries`  
-**Note**: 371 characters = 365 days + 6 characters for encoding. Position 1 = oldest day, 371 = newest. When `dimension_days` has fewer than 371 dates (e.g. fresh DB or partial load), the string is left-padded with `'0'`, so you may see many leading zeros and only the rightmost N characters with real activity.
+**Note**: 371 characters = 365 days + 6 characters for encoding. Position 1 = oldest day, 371 =
+newest. When `dimension_days` has fewer than 371 dates (e.g. fresh DB or partial load), the string
+is left-padded with `'0'`, so you may see many leading zeros and only the rightmost N characters
+with real activity.
 
 ---
 
@@ -1129,18 +1153,21 @@ mentions received, replies, and a collaboration score.
 **Formula**: `json_build_object('mentions_given', mentions_given, 'mentions_received', mentions_received, 'replies_count', replies_count, 'collaboration_score', total_score)`  
 **Unit**:
 JSON object  
-**Format**: `{"mentions_given": 50, "mentions_received": 30, "replies_count": 25, "collaboration_score": 105}`  
+**Format**: `{"mentions_given": 50, "mentions_received": 30, "replies_count": 25, "collaboration_score": 105}`
 
 **How it is calculated** (source: `datamartUsers_12_createProcedure.sql`):
 
-| Field | Calculation |
-|-------|-------------|
-| **mentions_given** | Count of facts where this user commented (`action_comment = 'commented'`) and the comment has a mention (`has_mention = TRUE`). I.e. comments by this user that contain `@username`. |
-| **mentions_received** | Count of comments (by any user) that have `has_mention = TRUE` on notes that **this user opened** (`opened_dimension_id_user` = this user). I.e. “comments with a mention on notes I opened”. |
-| **replies_count** | Count of distinct notes where this user commented and there exists at least one **earlier** comment on the same note (`action_at` &lt; this user’s comment). Measures “notes where this user replied in a thread”. |
-| **collaboration_score** | Sum: `mentions_given + mentions_received + replies_count`. |
+| Field                   | Calculation                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **mentions_given**      | Count of facts where this user commented (`action_comment = 'commented'`) and the comment has a mention (`has_mention = TRUE`). I.e. comments by this user that contain `@username`.                               |
+| **mentions_received**   | Count of comments (by any user) that have `has_mention = TRUE` on notes that **this user opened** (`opened_dimension_id_user` = this user). I.e. “comments with a mention on notes I opened”.                      |
+| **replies_count**       | Count of distinct notes where this user commented and there exists at least one **earlier** comment on the same note (`action_at` &lt; this user’s comment). Measures “notes where this user replied in a thread”. |
+| **collaboration_score** | Sum: `mentions_given + mentions_received + replies_count`.                                                                                                                                                         |
 
-**Source of `has_mention`**: In the ETL, each comment is stored in `dwh.facts` with `has_mention = TRUE` when the comment body matches the pattern `@\w+` (e.g. `@username`). Set in `Staging_32_createStagingObjects.sql`, `Staging_34a_initialFactsLoadCreate_Parallel.sql`, `Staging_35a_initialFactsLoadExecute_Simple.sql` (e.g. `m_has_mention := body ~ '@\w+'`).
+**Source of `has_mention`**: In the ETL, each comment is stored in `dwh.facts` with
+`has_mention = TRUE` when the comment body matches the pattern `@\w+` (e.g. `@username`). Set in
+`Staging_32_createStagingObjects.sql`, `Staging_34a_initialFactsLoadCreate_Parallel.sql`,
+`Staging_35a_initialFactsLoadExecute_Simple.sql` (e.g. `m_has_mention := body ~ '@\w+'`).
 
 **Interpretation**:
 
@@ -1161,19 +1188,25 @@ JSON object
 
 #### 8.3a Enhanced date and time columns (Users only)
 
-The following columns summarize **when** the user is most active by storing the **most frequent** (mode) value across all their actions. Source: `dwh.dimension_days` and `dwh.dimension_time_of_week` via `datamartUsers_12_createProcedure.sql`.
+The following columns summarize **when** the user is most active by storing the **most frequent**
+(mode) value across all their actions. Source: `dwh.dimension_days` and `dwh.dimension_time_of_week`
+via `datamartUsers_12_createProcedure.sql`.
 
-| Column | Type | Meaning |
-|--------|------|---------|
-| **iso_week** | SMALLINT | ISO week of the year (1–53) in which this user has the **most actions**. From `dimension_days.iso_week` on the action date. |
-| **quarter** | SMALLINT | Quarter (1–4) in which this user has the **most actions**. From `dimension_days.quarter`. |
-| **month_name** | VARCHAR(16) | English month name (e.g. January, February) in which this user has the **most actions**. From `dimension_days.month_name`. |
-| **hour_of_week** | SMALLINT | Hour of the week (0–167: 7×24) at which this user has the **most actions**. From `dimension_time_of_week.hour_of_week` on the action time. |
+| Column            | Type        | Meaning                                                                                                                                          |
+| ----------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **iso_week**      | SMALLINT    | ISO week of the year (1–53) in which this user has the **most actions**. From `dimension_days.iso_week` on the action date.                      |
+| **quarter**       | SMALLINT    | Quarter (1–4) in which this user has the **most actions**. From `dimension_days.quarter`.                                                        |
+| **month_name**    | VARCHAR(16) | English month name (e.g. January, February) in which this user has the **most actions**. From `dimension_days.month_name`.                       |
+| **hour_of_week**  | SMALLINT    | Hour of the week (0–167: 7×24) at which this user has the **most actions**. From `dimension_time_of_week.hour_of_week` on the action time.       |
 | **period_of_day** | VARCHAR(16) | Period of the day (Night, Morning, Afternoon, Evening) in which this user has the **most actions**. From `dimension_time_of_week.period_of_day`. |
 
-**How they are calculated**: For each column, the procedure groups the user’s facts by that attribute (e.g. by `d.iso_week`), counts actions per value, and takes the value with the highest count (`ORDER BY COUNT(*) DESC LIMIT 1`). So each column is the “most common” date or time attribute for that user’s activity.
+**How they are calculated**: For each column, the procedure groups the user’s facts by that
+attribute (e.g. by `d.iso_week`), counts actions per value, and takes the value with the highest
+count (`ORDER BY COUNT(*) DESC LIMIT 1`). So each column is the “most common” date or time attribute
+for that user’s activity.
 
-**Use cases**: Identify typical activity windows (e.g. “users who act mainly in the afternoon”), seasonal patterns (quarter, month_name), or preferred weekday/hour (hour_of_week, period_of_day).
+**Use cases**: Identify typical activity windows (e.g. “users who act mainly in the afternoon”),
+seasonal patterns (quarter, month_name), or preferred weekday/hour (hour_of_week, period_of_day).
 
 **Available In**: `datamartusers` only
 
@@ -1181,32 +1214,54 @@ The following columns summarize **when** the user is most active by storing the 
 
 #### 8.3b Columns with year suffix (Users only)
 
-The datamart users table has **one set of columns per year** (2013, 2014, …, current year). Columns are added by `datamartUsers_20_alterTableAddYears.sql` and filled by `dwh.update_datamart_user_activity_year(dimension_user_id, year)` (called from the main procedure). **YYYY** below is the year (e.g. 2013, 2024).
+The datamart users table has **one set of columns per year** (2013, 2014, …, current year). Columns
+are added by `datamartUsers_20_alterTableAddYears.sql` and filled by
+`dwh.update_datamart_user_activity_year(dimension_user_id, year)` (called from the main procedure).
+**YYYY** below is the year (e.g. 2013, 2024).
 
 **History columns (counts for that year)**
 
-| Column | Type | Meaning |
-|--------|------|---------|
-| **history_YYYY_open** | INTEGER | Number of notes **opened** by this user in year YYYY (action_comment = 'opened', action date in YYYY). |
-| **history_YYYY_commented** | INTEGER | Number of **comments** by this user in year YYYY. |
-| **history_YYYY_closed** | INTEGER | Number of notes **closed** by this user in year YYYY. |
-| **history_YYYY_closed_with_comment** | INTEGER | Number of **closures with a non-empty comment** by this user in year YYYY (comment_length > 0). |
-| **history_YYYY_reopened** | INTEGER | Number of **reopens** by this user in year YYYY. |
+| Column                               | Type    | Meaning                                                                                                |
+| ------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------ |
+| **history_YYYY_open**                | INTEGER | Number of notes **opened** by this user in year YYYY (action_comment = 'opened', action date in YYYY). |
+| **history_YYYY_commented**           | INTEGER | Number of **comments** by this user in year YYYY.                                                      |
+| **history_YYYY_closed**              | INTEGER | Number of notes **closed** by this user in year YYYY.                                                  |
+| **history_YYYY_closed_with_comment** | INTEGER | Number of **closures with a non-empty comment** by this user in year YYYY (comment_length > 0).        |
+| **history_YYYY_reopened**            | INTEGER | Number of **reopens** by this user in year YYYY.                                                       |
 
 **Ranking columns (top countries for that year)**
 
-| Column | Type | Meaning |
-|--------|------|---------|
+| Column                             | Type | Meaning                                                                                                                                                                                                                      |
+| ---------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ranking_countries_opening_YYYY** | JSON | Ranking of countries by **notes opened** by this user in year YYYY. Array of `{rank, country_name, quantity}` (up to 50 countries), ordered by quantity descending. Country name from `dimension_countries.country_name_es`. |
-| **ranking_countries_closing_YYYY** | JSON | Ranking of countries by **notes closed** by this user in year YYYY. Same structure as above; uses `closed_dimension_id_date` and `closed_dimension_id_user`. |
+| **ranking_countries_closing_YYYY** | JSON | Ranking of countries by **notes closed** by this user in year YYYY. Same structure as above; uses `closed_dimension_id_date` and `closed_dimension_id_user`.                                                                 |
 
-**How they are calculated**: For a given year, the procedure filters facts by `dimension_days.year = YYYY` (for history) or by the open/close date year (for rankings), restricts to this user (`action_dimension_id_user` or `opened_dimension_id_user` / `closed_dimension_id_user`), and counts or aggregates by country. Source: `datamartUsers_12_createProcedure.sql` (procedure `update_datamart_user_activity_year`).
+**How they are calculated**: For a given year, the procedure filters facts by
+`dimension_days.year = YYYY` (for history) or by the open/close date year (for rankings), restricts
+to this user (`action_dimension_id_user` or `opened_dimension_id_user` /
+`closed_dimension_id_user`), and counts or aggregates by country. Source:
+`datamartUsers_12_createProcedure.sql` (procedure `update_datamart_user_activity_year`).
 
-**Use cases**: Year-over-year activity (e.g. history_2023_open vs history_2024_open), geographic focus per year (ranking_countries_opening_2024), or “notes closed with comment” as a quality proxy for that year.
+**Use cases**: Year-over-year activity (e.g. history_2023_open vs history_2024_open), geographic
+focus per year (ranking_countries_opening_2024), or “notes closed with comment” as a quality proxy
+for that year.
 
-**Why they may be NULL**: These columns are filled by `update_datamart_user_activity_year`, which is called from the main datamart procedure for each year from 2013 to current. If they are all NULL, typical causes are: (1) **`dwh.logs` table missing** — the ETL now creates `dwh.logs` before datamarts (always, not only when ingestion and DWH are different), and the procedure tolerates a missing table. (2) **Columns for year YYYY missing** — columns are added by `datamartUsers_20_alterTableAddYears.sql` (run from `datamartUsers.sh` for years 2014..current). Ensure the datamart script has been run so that `history_YYYY_*` and `ranking_countries_*_YYYY` exist for every year. (3) **First failure stops the loop** — if one year fails (e.g. column missing), the exception handler swallows it and the loop ends, so later years are never updated. After fixing the cause (create `dwh.logs` if needed, run add-years for all years), re-run the datamart users refresh so the procedure runs again for all users and years.
+**Why they may be NULL**: These columns are filled by `update_datamart_user_activity_year`, which is
+called from the main datamart procedure for each year from 2013 to current. If they are all NULL,
+typical causes are: (1) **`dwh.logs` table missing** — the ETL now creates `dwh.logs` before
+datamarts (always, not only when ingestion and DWH are different), and the procedure tolerates a
+missing table. (2) **Columns for year YYYY missing** — columns are added by
+`datamartUsers_20_alterTableAddYears.sql` (run from `datamartUsers.sh` for years 2014..current).
+Ensure the datamart script has been run so that `history_YYYY_*` and `ranking_countries_*_YYYY`
+exist for every year. (3) **First failure stops the loop** — if one year fails (e.g. column
+missing), the exception handler swallows it and the loop ends, so later years are never updated.
+After fixing the cause (create `dwh.logs` if needed, run add-years for all years), re-run the
+datamart users refresh so the procedure runs again for all users and years.
 
-**Verification after a fresh DB load**: Run the datamart users script (which runs `__addYears` then the main procedure). To confirm year columns are populated, you can run e.g. `SELECT COUNT(*) FROM dwh.datamartUsers WHERE history_2024_open IS NOT NULL;` (adjust the year to one you have data for); you should see a positive count for at least some years.
+**Verification after a fresh DB load**: Run the datamart users script (which runs `__addYears` then
+the main procedure). To confirm year columns are populated, you can run e.g.
+`SELECT COUNT(*) FROM dwh.datamartUsers WHERE history_2024_open IS NOT NULL;` (adjust the year to
+one you have data for); you should see a positive count for at least some years.
 
 **Available In**: `datamartusers` only
 
@@ -1591,18 +1646,18 @@ JSON array
 
 ### User Datamart Metrics (78+ metrics)
 
-| Category               | Metric Count | Examples                                                                           |
-| ---------------------- | ------------ | ---------------------------------------------------------------------------------- |
-| Historical Counts      | 30+          | `history_whole_open`, `history_year_open`, `history_2013_open`, etc.               |
-| Resolution Metrics     | 7            | `avg_days_to_resolution`, `resolution_rate`, `resolution_by_year`, etc.            |
-| Application Statistics | 4            | `applications_used`, `most_used_application_id`, `mobile_apps_count`, etc.         |
-| Content Quality        | 5            | `avg_comment_length`, `comments_with_url_pct`, `avg_comments_per_note`, etc.       |
-| Temporal Patterns      | 5            | `working_hours_of_week_opening`, `last_year_activity`, `dates_most_open`, etc.     |
-| Geographic Patterns    | 15+          | `countries_open_notes`, `ranking_countries_opening_2013`, etc.                     |
-| Community Health       | 5            | `active_notes_count`, `notes_backlog_size`, `notes_age_distribution`, etc.         |
-| Hashtag Metrics        | 8            | `hashtags`, `hashtags_opening`, `favorite_opening_hashtag`, etc.                   |
+| Category               | Metric Count | Examples                                                                          |
+| ---------------------- | ------------ | --------------------------------------------------------------------------------- |
+| Historical Counts      | 30+          | `history_whole_open`, `history_year_open`, `history_2013_open`, etc.              |
+| Resolution Metrics     | 7            | `avg_days_to_resolution`, `resolution_rate`, `resolution_by_year`, etc.           |
+| Application Statistics | 4            | `applications_used`, `most_used_application_id`, `mobile_apps_count`, etc.        |
+| Content Quality        | 5            | `avg_comment_length`, `comments_with_url_pct`, `avg_comments_per_note`, etc.      |
+| Temporal Patterns      | 5            | `working_hours_of_week_opening`, `last_year_activity`, `dates_most_open`, etc.    |
+| Geographic Patterns    | 15+          | `countries_open_notes`, `ranking_countries_opening_2013`, etc.                    |
+| Community Health       | 5            | `active_notes_count`, `notes_backlog_size`, `notes_age_distribution`, etc.        |
+| Hashtag Metrics        | 8            | `hashtags`, `hashtags_opening`, `favorite_opening_hashtag`, etc.                  |
 | First/Last Actions     | 8            | `date_starting_creating_notes`, `first_open_note_id`, `latest_open_note_id`, etc. |
-| User Classification    | 1            | `id_contributor_type`                                                              |
+| User Classification    | 1            | `id_contributor_type`                                                             |
 
 **Total**: 78+ metrics per user (includes `notes_opened_but_not_closed_by_user`)
 

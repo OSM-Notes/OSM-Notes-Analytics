@@ -221,14 +221,14 @@ Complete user profile containing **78+ metrics** organized into categories:
 
 #### Identity Fields
 
-| Field                 | Type    | Description                           |
-| --------------------- | ------- | ------------------------------------- |
-| `dimension_user_id`   | integer | Internal dimension ID                 |
-| `user_id`             | integer | OSM user ID (required, minimum: 1)    |
-| `username`            | string  | OSM username (required, minLength: 1) |
-| `id_contributor_type` | integer | Contributor type ID                   |
-| `experience_level_id` | integer \| null | Experience level ID (1=newcomer to 7=legend) |
-| `experience_level`    | string \| null | Experience level name (newcomer, beginner, intermediate, advanced, expert, master, legend) |
+| Field                 | Type            | Description                                                                                |
+| --------------------- | --------------- | ------------------------------------------------------------------------------------------ |
+| `dimension_user_id`   | integer         | Internal dimension ID                                                                      |
+| `user_id`             | integer         | OSM user ID (required, minimum: 1)                                                         |
+| `username`            | string          | OSM username (required, minLength: 1)                                                      |
+| `id_contributor_type` | integer         | Contributor type ID                                                                        |
+| `experience_level_id` | integer \| null | Experience level ID (1=newcomer to 7=legend)                                               |
+| `experience_level`    | string \| null  | Experience level name (newcomer, beginner, intermediate, advanced, expert, master, legend) |
 
 #### Date Fields
 
@@ -239,13 +239,13 @@ Complete user profile containing **78+ metrics** organized into categories:
 
 #### First/Last Note IDs
 
-| Field                       | Type            | Description                    |
-| --------------------------- | --------------- | ------------------------------ |
-| `first_open_note_id`        | integer         | ID of first note opened        |
-| `first_commented_note_id`   | integer \| null | ID of first note commented on  |
-| `first_closed_note_id`      | integer \| null | ID of first note closed        |
-| `first_reopened_note_id`    | integer \| null | ID of first note reopened      |
-| `latest_open_note_id`       | integer         | ID of latest note opened       |
+| Field                      | Type            | Description                    |
+| -------------------------- | --------------- | ------------------------------ |
+| `first_open_note_id`       | integer         | ID of first note opened        |
+| `first_commented_note_id`  | integer \| null | ID of first note commented on  |
+| `first_closed_note_id`     | integer \| null | ID of first note closed        |
+| `first_reopened_note_id`   | integer \| null | ID of first note reopened      |
+| `latest_open_note_id`      | integer         | ID of latest note opened       |
 | `latest_commented_note_id` | integer \| null | ID of latest note commented on |
 | `latest_closed_note_id`    | integer \| null | ID of latest note closed       |
 | `latest_reopened_note_id`  | integer \| null | ID of latest note reopened     |

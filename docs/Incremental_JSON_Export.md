@@ -66,13 +66,16 @@ WHERE user_id = ${user_id};
 
 ### 4. Populating `json_exported` in the ETL flow
 
-After a full ETL run (e.g. fresh DB), all datamart rows have `json_exported = FALSE` because the ETL does not run the export by default. To include the JSON export in the normal flow so that `json_exported` is set to `TRUE` for exported users and countries, set:
+After a full ETL run (e.g. fresh DB), all datamart rows have `json_exported = FALSE` because the ETL
+does not run the export by default. To include the JSON export in the normal flow so that
+`json_exported` is set to `TRUE` for exported users and countries, set:
 
 ```bash
 export ETL_RUN_JSON_EXPORT=true
 ```
 
-before running the ETL. The ETL will then run `exportDatamartsToJSON.sh` after the datamarts (full export, no batch limit).
+before running the ETL. The ETL will then run `exportDatamartsToJSON.sh` after the datamarts (full
+export, no batch limit).
 
 ### 5. Preserving Unchanged Files
 

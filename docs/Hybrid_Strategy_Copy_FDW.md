@@ -331,15 +331,18 @@ that needs to query the foreign tables must have its own user mapping; see below
 
 ### User mapping for additional users (e.g. angoca)
 
-If you connect to the DWH as a different user (e.g. `angoca`) and get **"user mapping not found for angoca"** when querying foreign tables, add a user mapping for that user.
+If you connect to the DWH as a different user (e.g. `angoca`) and get **"user mapping not found for
+angoca"** when querying foreign tables, add a user mapping for that user.
 
 **Option 1: Run the FDW setup script as that user**
 
-Run `ETL_60_setupFDW.sql` once while connected as `angoca` (with the same `FDW_INGESTION_*` env vars). The script creates `USER MAPPING FOR CURRENT_USER`, so `angoca` will get its own mapping.
+Run `ETL_60_setupFDW.sql` once while connected as `angoca` (with the same `FDW_INGESTION_*` env
+vars). The script creates `USER MAPPING FOR CURRENT_USER`, so `angoca` will get its own mapping.
 
 **Option 2: Create the mapping manually (as superuser or server owner)**
 
-Connect to the DWH as a user that can create user mappings (superuser or the owner of `ingestion_server`, usually the user that first ran the FDW setup, e.g. `notes`):
+Connect to the DWH as a user that can create user mappings (superuser or the owner of
+`ingestion_server`, usually the user that first ran the FDW setup, e.g. `notes`):
 
 ```sql
 -- Replace 'angoca' with the DWH user that needs FDW access.

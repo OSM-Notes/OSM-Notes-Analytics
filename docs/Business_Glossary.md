@@ -202,7 +202,8 @@ this shows their engagement level. For countries, this shows community activity.
 #### Total Notes Closed (`history_whole_closed`)
 
 **Business Name**: Total Notes Resolved  
-**Definition**: Number of close events (actions) by this user across all time. Same note closed twice = 2. For distinct notes, see notes_resolved_count.  
+**Definition**: Number of close events (actions) by this user across all time. Same note closed
+twice = 2. For distinct notes, see notes_resolved_count.  
 **Formula**: `COUNT(*) WHERE action_dimension_id_user = user AND action_comment = 'closed'`  
 **Unit**: Count (integer)  
 **Interpretation**: Higher values indicate more active contribution to note resolution. This is a
