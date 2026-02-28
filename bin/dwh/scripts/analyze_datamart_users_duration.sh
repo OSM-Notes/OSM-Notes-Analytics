@@ -77,10 +77,10 @@ echo ""
 echo "--- Recent datamartUsers runs (${LOG_BASE_DIR}/datamartUsers_*.log) ---"
 found_dm=0
 datamart_logs_sorted() {
- if command -v find >/dev/null 2>&1 && find "${LOG_BASE_DIR}" -maxdepth 1 -name 'datamartUsers_*.log' -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -25 | cut -d' ' -f2-; then
+ if command -v find > /dev/null 2>&1 && find "${LOG_BASE_DIR}" -maxdepth 1 -name 'datamartUsers_*.log' -type f -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -25 | cut -d' ' -f2-; then
   : # used
  else
-  ls -1t "${LOG_BASE_DIR}"/datamartUsers_*.log 2>/dev/null | head -25 || true
+  ls -1t "${LOG_BASE_DIR}"/datamartUsers_*.log 2> /dev/null | head -25 || true
  fi
 }
 while IFS= read -r log; do
