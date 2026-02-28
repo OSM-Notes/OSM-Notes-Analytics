@@ -50,6 +50,11 @@ setup() {
     skip "staging.get_application not found"
   fi
 
+  run $psql_cmd -tAc "SELECT 1 FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = 'dwh' AND proname = 'get_application_version_id';" 2>&1
+  if [[ "${status}" -ne 0 ]] || [[ -z "${output// }" ]]; then
+    skip "dwh.get_application_version_id not found (run ETL_23 to create it)"
+  fi
+
   run $psql_cmd -v ON_ERROR_STOP=1 -f "${SQL_TEST_FILE}" 2>&1
   if [[ "${status}" -ne 0 ]]; then
     echo "Output: ${output}"
