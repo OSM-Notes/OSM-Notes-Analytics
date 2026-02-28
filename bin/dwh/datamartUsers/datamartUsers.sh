@@ -614,6 +614,7 @@ function __processNotesUser {
   fi
   __logi "Users processed with intelligent prioritization (recent → active → inactive)"
   __logi "⏱️  TIME: Parallel user processing took ${total_time} seconds"
+  echo "datamartUsers took ${total_time} seconds"
   __log_finish
   rm -f "${work_queue_file}" "${queue_lock_file}" 2> /dev/null || true
   return 0
@@ -621,6 +622,7 @@ function __processNotesUser {
   __loge "ERROR: Datamart users population had ${total_failed} failed user(s)"
   __loge "Processed ${actually_processed}/${total_users} users successfully"
   __loge "⏱️  TIME: Parallel user processing took ${total_time} seconds (with ${total_failed} failures)"
+  echo "datamartUsers took ${total_time} seconds"
   __log_finish
   rm -f "${work_queue_file}" "${queue_lock_file}" 2> /dev/null || true
   return 1

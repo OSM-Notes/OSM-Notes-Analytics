@@ -72,8 +72,56 @@ if [[ ${found_etl} -eq 0 ]]; then
 fi
 echo ""
 
-# 2) Recent datamartUsers runs (from log filenames only; duration is from ETL above)
-#    Does not depend on logger "Took: 0h:Xm:Ys" (that line is only at DEBUG/INFO level).
+# 2) From datamartUsers logs: "datamartUsers took N seconds" or "Parallel user processing took N seconds"
+#    (written by datamartUsers.sh so duration is available even when ETL log level is ERROR)
+echo "--- From datamartUsers logs (duration when present) ---"
+found_dm_duration=0
+for log in "${LOG_BASE_DIR}"/datamartUsers_*.log; do
+ [[ -f "${log}" ]] || continue
+ while IFS= read -r line; do
+  if [[ "${line}" =~ datamartUsers\ took\ ([0-9]+)\ seconds ]]; then
+   secs="${BASH_REMATCH[1]}"
+   mins=$((secs / 60))
+   rem=$((secs % 60))
+   ok=""
+   [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
+   echo "  $(basename "${log}"): ${secs}s (${mins}m ${rem}s)${ok}"
+   found_dm_duration=1
+   break
+  fi
+  if [[ "${line}" =~ Parallel\ user\ processing\ took\ ([0-9]+)\ seconds ]]; then
+   secs="${BASH_REMATCH[1]}"
+   mins=$((secs / 60))
+   rem=$((secs % 60))
+   ok=""
+   [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
+   echo "  $(basename "${log}"): ${secs}s (${mins}m ${rem}s)${ok}"
+   found_dm_duration=1
+   break
+  fi
+ done < <(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
+done
+for dir in "${LOG_BASE_DIR}"/datamartUsers_*/; do
+ [[ -d "${dir}" ]] || continue
+ log="${dir}datamartUsers.log"
+ [[ -f "${log}" ]] || continue
+ last_line=$(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
+ if [[ -n "${last_line}" ]] && [[ "${last_line}" =~ (datamartUsers|Parallel\ user\ processing)\ took\ ([0-9]+)\ seconds ]]; then
+  secs="${BASH_REMATCH[2]}"
+  mins=$((secs / 60))
+  rem=$((secs % 60))
+  ok=""
+  [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
+  echo "  ${dir}datamartUsers.log: ${secs}s (${mins}m ${rem}s)${ok} (in progress?)"
+  found_dm_duration=1
+ fi
+done
+if [[ ${found_dm_duration} -eq 0 ]]; then
+ echo "  (No 'datamartUsers took' or 'Parallel user processing took' lines in datamartUsers logs)"
+fi
+echo ""
+
+# 3) Recent datamartUsers runs (from log filenames only)
 echo "--- Recent datamartUsers runs (${LOG_BASE_DIR}/datamartUsers_*.log) ---"
 found_dm=0
 datamart_logs_sorted() {
@@ -108,12 +156,11 @@ if [[ ${found_dm} -eq 0 ]]; then
  echo "  (No datamartUsers log files found)"
  echo "  Tip: Run as the same user that runs datamartUsers, or set LOG_BASE_DIR if logs are elsewhere."
 fi
-echo "  (Duration is taken from ETL logs above, not from logger 'Took:' lines.)"
 echo ""
 
 echo "--- Summary ---"
-if [[ ${found_etl} -eq 0 ]]; then
- echo "No duration data found in ETL logs. Check:"
+if [[ ${found_etl} -eq 0 ]] && [[ ${found_dm_duration} -eq 0 ]]; then
+ echo "No duration data found in ETL or datamartUsers logs. Check:"
  echo "  - Run this script as the same user that runs ETL (e.g. notes/angoca)."
  echo "  - If logs are elsewhere: LOG_BASE_DIR=/path/to/logs $0"
  echo "  - List logs: ls -la ${LOG_BASE_DIR}/ETL_* ${LOG_BASE_DIR}/datamartUsers_* 2>/dev/null || true"
