@@ -16,7 +16,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **Resolution Metrics**: Updated and improved resolution metrics calculations in datamart procedures
+- **Resolution Metrics**: Updated and improved resolution metrics calculations in datamart
+  procedures
 - **Logs and Activity**: Enhanced logs table creation and datamart user activity metrics (date/time
   columns)
 - **Comment Handling**: Simplified comment handling in datamartUsers procedure
