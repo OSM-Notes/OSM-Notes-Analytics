@@ -1,8 +1,9 @@
 #!/bin/bash
 #
-# Analyzes recent datamartUsers execution times from ETL logs only.
-# Duration is taken from ETL log line "datamartUsers took N seconds" (written by ETL.sh).
-# Does not depend on bash_logger "Took: 0h:Xm:Ys" (that line is only at DEBUG/INFO level).
+# Analyzes recent datamartUsers execution times.
+# Duration is read from: ETL log "datamartUsers took N seconds", or from each datamartUsers
+# log file ("datamartUsers took N seconds" / "Parallel user processing took N seconds" /
+# "TIME: ... took N seconds"). The "Recent datamartUsers runs" section shows duration per cycle.
 # Use to check if MAX_USERS_PER_CYCLE (e.g. 4000) fits within the cron window (e.g. 15 min).
 #
 # Run on the server where ETL runs (e.g. via SSH):
@@ -22,6 +23,33 @@ CRON_WINDOW_MINUTES="${CRON_WINDOW_MINUTES:-15}"
 CRON_WINDOW_SECONDS=$((CRON_WINDOW_MINUTES * 60))
 # Base directory for ETL and datamartUsers logs (default /tmp; override if logs are elsewhere)
 LOG_BASE_DIR="${LOG_BASE_DIR:-/tmp}"
+
+# Output duration string for a log file: "Ns (Nm Ns) [OK]" or "[OVER]" or empty if not found.
+# Looks for: "datamartUsers took N seconds", "Parallel user processing took N seconds", or "TIME: ... took N seconds".
+get_duration_from_log() {
+ local log="$1"
+ local line
+ line=$(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds|TIME:.*took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
+ if [[ -z "${line}" ]]; then
+  return 0
+ fi
+ local secs=""
+ if [[ "${line}" =~ datamartUsers\ took\ ([0-9]+)\ seconds ]]; then
+  secs="${BASH_REMATCH[1]}"
+ elif [[ "${line}" =~ Parallel\ user\ processing\ took\ ([0-9]+)\ seconds ]]; then
+  secs="${BASH_REMATCH[1]}"
+ elif [[ "${line}" =~ took\ ([0-9]+)\ seconds ]]; then
+  secs="${BASH_REMATCH[1]}"
+ fi
+ if [[ -z "${secs}" ]]; then
+  return 0
+ fi
+ local mins=$((secs / 60))
+ local rem=$((secs % 60))
+ local ok=""
+ [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
+ echo "${secs}s (${mins}m ${rem}s)${ok}"
+}
 
 echo "=============================================="
 echo "datamartUsers execution time analysis"
@@ -73,46 +101,24 @@ fi
 echo ""
 
 # 2) From datamartUsers logs: "datamartUsers took N seconds" or "Parallel user processing took N seconds"
-#    (written by datamartUsers.sh so duration is available even when ETL log level is ERROR)
+#    (written by datamartUsers.sh; also matches "TIME: ... took N seconds" from __logi)
 echo "--- From datamartUsers logs (duration when present) ---"
 found_dm_duration=0
 for log in "${LOG_BASE_DIR}"/datamartUsers_*.log; do
  [[ -f "${log}" ]] || continue
- while IFS= read -r line; do
-  if [[ "${line}" =~ datamartUsers\ took\ ([0-9]+)\ seconds ]]; then
-   secs="${BASH_REMATCH[1]}"
-   mins=$((secs / 60))
-   rem=$((secs % 60))
-   ok=""
-   [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
-   echo "  $(basename "${log}"): ${secs}s (${mins}m ${rem}s)${ok}"
-   found_dm_duration=1
-   break
-  fi
-  if [[ "${line}" =~ Parallel\ user\ processing\ took\ ([0-9]+)\ seconds ]]; then
-   secs="${BASH_REMATCH[1]}"
-   mins=$((secs / 60))
-   rem=$((secs % 60))
-   ok=""
-   [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
-   echo "  $(basename "${log}"): ${secs}s (${mins}m ${rem}s)${ok}"
-   found_dm_duration=1
-   break
-  fi
- done < <(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
+ duration_str=$(get_duration_from_log "${log}") || true
+ if [[ -n "${duration_str}" ]]; then
+  echo "  $(basename "${log}"): ${duration_str}"
+  found_dm_duration=1
+ fi
 done
 for dir in "${LOG_BASE_DIR}"/datamartUsers_*/; do
  [[ -d "${dir}" ]] || continue
  log="${dir}datamartUsers.log"
  [[ -f "${log}" ]] || continue
- last_line=$(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
- if [[ -n "${last_line}" ]] && [[ "${last_line}" =~ (datamartUsers|Parallel\ user\ processing)\ took\ ([0-9]+)\ seconds ]]; then
-  secs="${BASH_REMATCH[2]}"
-  mins=$((secs / 60))
-  rem=$((secs % 60))
-  ok=""
-  [[ ${secs} -le ${CRON_WINDOW_SECONDS} ]] && ok=" [OK <= ${CRON_WINDOW_MINUTES} min]" || ok=" [OVER ${CRON_WINDOW_MINUTES} min]"
-  echo "  ${dir}datamartUsers.log: ${secs}s (${mins}m ${rem}s)${ok} (in progress?)"
+ duration_str=$(get_duration_from_log "${log}") || true
+ if [[ -n "${duration_str}" ]]; then
+  echo "  ${dir}datamartUsers.log: ${duration_str} (in progress?)"
   found_dm_duration=1
  fi
 done
@@ -121,7 +127,7 @@ if [[ ${found_dm_duration} -eq 0 ]]; then
 fi
 echo ""
 
-# 3) Recent datamartUsers runs (from log filenames only)
+# 3) Recent datamartUsers runs with duration per cycle (from log filenames + duration inside each log)
 echo "--- Recent datamartUsers runs (${LOG_BASE_DIR}/datamartUsers_*.log) ---"
 found_dm=0
 datamart_logs_sorted() {
@@ -134,13 +140,24 @@ datamart_logs_sorted() {
 while IFS= read -r log; do
  [[ -f "${log}" ]] || continue
  base=$(basename "${log}" .log)
+ bytes=$(wc -c < "${log}" | tr -d ' ')
+ duration_str=""
+ duration_str=$(get_duration_from_log "${log}") || true
  # Filename is datamartUsers_YYYY-MM-DD_HH-MM-SS.log; end time is in the name
  if [[ "${base}" =~ datamartUsers_([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}) ]]; then
   ts="${BASH_REMATCH[1]//_/ }"
-  echo "  ${base}.log (finished: ${ts}), $(wc -c < "${log}" | tr -d ' ') bytes"
+  if [[ -n "${duration_str}" ]]; then
+   echo "  ${base}.log (finished: ${ts}), ${duration_str}, ${bytes} bytes"
+  else
+   echo "  ${base}.log (finished: ${ts}), ${bytes} bytes (no duration line in log)"
+  fi
   found_dm=1
  else
-  echo "  ${base}.log, $(wc -c < "${log}" | tr -d ' ') bytes"
+  if [[ -n "${duration_str}" ]]; then
+   echo "  ${base}.log, ${duration_str}, ${bytes} bytes"
+  else
+   echo "  ${base}.log, ${bytes} bytes"
+  fi
   found_dm=1
  fi
 done < <(datamart_logs_sorted)
@@ -148,7 +165,13 @@ for dir in "${LOG_BASE_DIR}"/datamartUsers_*/; do
  [[ -d "${dir}" ]] || continue
  log="${dir}datamartUsers.log"
  if [[ -f "${log}" ]]; then
-  echo "  ${dir}datamartUsers.log (in progress?), $(wc -c < "${log}" | tr -d ' ') bytes"
+  bytes=$(wc -c < "${log}" | tr -d ' ')
+  duration_str=$(get_duration_from_log "${log}") || true
+  if [[ -n "${duration_str}" ]]; then
+   echo "  ${dir}datamartUsers.log (in progress?), ${duration_str}, ${bytes} bytes"
+  else
+   echo "  ${dir}datamartUsers.log (in progress?), ${bytes} bytes"
+  fi
   found_dm=1
  fi
 done
