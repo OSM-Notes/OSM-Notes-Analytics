@@ -13,6 +13,8 @@
 #
 # Optional: LOG_BASE_DIR overrides where to look for logs (default: /tmp).
 #   LOG_BASE_DIR=/var/log/osm-notes ./bin/dwh/scripts/analyze_datamart_users_duration.sh
+# Optional: MAX_RUNS_TO_SHOW limits how many finished runs to list (default: 50).
+#   MAX_RUNS_TO_SHOW=100 ./bin/dwh/scripts/analyze_datamart_users_duration.sh
 # Run as the same user that runs ETL/datamartUsers so log files are readable.
 #
 # Author: Andres Gomez (AngocA)
@@ -23,24 +25,36 @@ CRON_WINDOW_MINUTES="${CRON_WINDOW_MINUTES:-15}"
 CRON_WINDOW_SECONDS=$((CRON_WINDOW_MINUTES * 60))
 # Base directory for ETL and datamartUsers logs (default /tmp; override if logs are elsewhere)
 LOG_BASE_DIR="${LOG_BASE_DIR:-/tmp}"
+# How many finished runs to list (default 50; override for more history)
+MAX_RUNS_TO_SHOW="${MAX_RUNS_TO_SHOW:-50}"
 
 # Output duration string for a log file: "Ns (Nm Ns) [OK]" or "[OVER]" or empty if not found.
-# Looks for: "datamartUsers took N seconds", "Parallel user processing took N seconds", or "TIME: ... took N seconds".
+# Looks for: "datamartUsers took N seconds", "Parallel user processing took N seconds", "TIME: ... took N seconds",
+# or fallback "|-- Took: 0h:Xm:Ys" (bash_logger, only when LOG_LEVEL is DEBUG/INFO).
 get_duration_from_log() {
  local log="$1"
- local line
- line=$(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds|TIME:.*took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
- if [[ -z "${line}" ]]; then
-  return 0
- fi
  local secs=""
- if [[ "${line}" =~ datamartUsers\ took\ ([0-9]+)\ seconds ]]; then
-  secs="${BASH_REMATCH[1]}"
- elif [[ "${line}" =~ Parallel\ user\ processing\ took\ ([0-9]+)\ seconds ]]; then
-  secs="${BASH_REMATCH[1]}"
- elif [[ "${line}" =~ took\ ([0-9]+)\ seconds ]]; then
-  secs="${BASH_REMATCH[1]}"
+ local line
+
+ line=$(grep -E "datamartUsers took [0-9]+ seconds|Parallel user processing took [0-9]+ seconds|TIME:.*took [0-9]+ seconds" "${log}" 2> /dev/null | tail -1 || true)
+ if [[ -n "${line}" ]]; then
+  if [[ "${line}" =~ datamartUsers\ took\ ([0-9]+)\ seconds ]]; then
+   secs="${BASH_REMATCH[1]}"
+  elif [[ "${line}" =~ Parallel\ user\ processing\ took\ ([0-9]+)\ seconds ]]; then
+   secs="${BASH_REMATCH[1]}"
+  elif [[ "${line}" =~ took\ ([0-9]+)\ seconds ]]; then
+   secs="${BASH_REMATCH[1]}"
+  fi
  fi
+
+ if [[ -z "${secs}" ]]; then
+  line=$(grep -E "\|-- Took: [0-9]+h:[0-9]+m:[0-9]+s" "${log}" 2> /dev/null | tail -1 || true)
+  if [[ -n "${line}" ]] && [[ "${line}" =~ Took:\ ([0-9]+)h:([0-9]+)m:([0-9]+)s ]]; then
+   local h="${BASH_REMATCH[1]}" m="${BASH_REMATCH[2]}" s="${BASH_REMATCH[3]}"
+   secs=$((h * 3600 + m * 60 + s))
+  fi
+ fi
+
  if [[ -z "${secs}" ]]; then
   return 0
  fi
@@ -128,13 +142,13 @@ fi
 echo ""
 
 # 3) Recent datamartUsers runs with duration per cycle (from log filenames + duration inside each log)
-echo "--- Recent datamartUsers runs (${LOG_BASE_DIR}/datamartUsers_*.log) ---"
+echo "--- Recent datamartUsers runs (${LOG_BASE_DIR}/datamartUsers_*.log, max ${MAX_RUNS_TO_SHOW}) ---"
 found_dm=0
 datamart_logs_sorted() {
- if command -v find > /dev/null 2>&1 && find "${LOG_BASE_DIR}" -maxdepth 1 -name 'datamartUsers_*.log' -type f -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -25 | cut -d' ' -f2-; then
-  : # used
+ if command -v find > /dev/null 2>&1; then
+  find "${LOG_BASE_DIR}" -maxdepth 1 -name 'datamartUsers_*.log' -type f -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -"${MAX_RUNS_TO_SHOW}" | cut -d' ' -f2- | awk '!seen[$0]++'
  else
-  ls -1t "${LOG_BASE_DIR}"/datamartUsers_*.log 2> /dev/null | head -25 || true
+  ls -1t "${LOG_BASE_DIR}"/datamartUsers_*.log 2> /dev/null | head -"${MAX_RUNS_TO_SHOW}" | awk '!seen[$0]++' || true
  fi
 }
 while IFS= read -r log; do
@@ -161,16 +175,27 @@ while IFS= read -r log; do
   found_dm=1
  fi
 done < <(datamart_logs_sorted)
+# In-progress runs (temp dirs): show start time and last written so you can tell which is the active one
 for dir in "${LOG_BASE_DIR}"/datamartUsers_*/; do
  [[ -d "${dir}" ]] || continue
  log="${dir}datamartUsers.log"
  if [[ -f "${log}" ]]; then
   bytes=$(wc -c < "${log}" | tr -d ' ')
   duration_str=$(get_duration_from_log "${log}") || true
+  first_ts=$(head -1 "${log}" 2> /dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' | head -1 || true)
+  mtime_str=""
+  if stat -c '%y' "${log}" > /dev/null 2>&1; then
+   mtime_str=$(stat -c '%y' "${log}" 2> /dev/null | cut -d'.' -f1 | tr -d ' ')
+  elif stat -f '%Sm' "${log}" > /dev/null 2>&1; then
+   mtime_str=$(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "${log}" 2> /dev/null || true)
+  fi
+  extra=""
+  [[ -n "${first_ts}" ]] && extra="${extra} started: ${first_ts}"
+  [[ -n "${mtime_str}" ]] && extra="${extra} last_written: ${mtime_str}"
   if [[ -n "${duration_str}" ]]; then
-   echo "  ${dir}datamartUsers.log (in progress?), ${duration_str}, ${bytes} bytes"
+   echo "  ${dir}datamartUsers.log (in progress?)${extra}, ${duration_str}, ${bytes} bytes"
   else
-   echo "  ${dir}datamartUsers.log (in progress?), ${bytes} bytes"
+   echo "  ${dir}datamartUsers.log (in progress?)${extra}, ${bytes} bytes"
   fi
   found_dm=1
  fi
