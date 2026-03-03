@@ -53,6 +53,8 @@ HOME=/home/notes
 # Only runs if ETL completed successfully (using && operator)
 # The export script has its own lock file to prevent concurrent executions
 # 45 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh && /home/notes/OSM-Notes-Analytics/bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-json-export.log 2>&1
+# Same, logging to /var/log (same layout as osm-notes-ingestion, osm-notes-monitoring); see log setup above:
+# 45 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh && /home/notes/OSM-Notes-Analytics/bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
 # ==========================================
 # MAINTENANCE TASKS
@@ -104,6 +106,18 @@ HOME=/home/notes
 # sudo touch /var/log/ml-retrain.log
 # sudo chmod 666 /var/log/ml-retrain.log
 # Then use: >> /var/log/ml-retrain.log 2>&1
+#
+# ETL + export log: use same layout as sibling projects (osm-notes-ingestion, osm-notes-monitoring).
+#   /var/log/osm-notes-analytics/analytics.log  → rotated to analytics.log-YYYYMMDD.gz
+# One-time setup (as root):
+#   sudo mkdir -p /var/log/osm-notes-analytics
+#   sudo chown notes:maptimebogota /var/log/osm-notes-analytics
+#   sudo chmod 2775 /var/log/osm-notes-analytics
+#   sudo touch /var/log/osm-notes-analytics/analytics.log
+#   sudo chown notes:maptimebogota /var/log/osm-notes-analytics/analytics.log
+#   sudo chmod 640 /var/log/osm-notes-analytics/analytics.log
+#   sudo cp etc/logrotate.osm-analytics.conf /etc/logrotate.d/osm-analytics
+# Cron line example: ... >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
 # ==========================================
 # MONITORING TASKS (Optional)

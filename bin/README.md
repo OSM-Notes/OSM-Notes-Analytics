@@ -446,17 +446,18 @@ psql -d notes_dwh -c "SELECT COUNT(*) FROM dwh.datamartusers;"
 # Crontab example (add with: crontab -e):
 
 # Incremental ETL every 15 minutes (automatically updates datamarts)
-*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh >> /var/log/osm-analytics-etl.log 2>&1
+*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh >> /tmp/osm-analytics-etl.log 2>&1
 
 # Export to JSON and push to GitHub Pages (after datamarts update)
-45 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-analytics-export.log 2>&1
+45 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-analytics-export.log 2>&1
+
+# Or: ETL + export together, log to /var/log (same layout as osm-notes-ingestion, osm-notes-monitoring).
+# One-time setup: see etc/cron.example and etc/logrotate.osm-analytics.conf.
+# */15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
 # Optional: Manual datamart updates (usually not needed, ETL does this automatically)
-# Update country datamart daily at 2 AM
-# 0 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartCountries/datamartCountries.sh >> /var/log/osm-analytics-datamart-countries.log 2>&1
-
-# Update user datamart daily at 2:30 AM (processes MAX_USERS_PER_CYCLE per run, default 4000)
-# 30 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartUsers/datamartUsers.sh >> /var/log/osm-analytics-datamart-users.log 2>&1
+# 0 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartCountries/datamartCountries.sh >> /tmp/osm-analytics-datamart.log 2>&1
+# 30 2 * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/datamartUsers/datamartUsers.sh >> /tmp/osm-analytics-datamart.log 2>&1
 ```
 
 **Note:** `ETL.sh` automatically updates all datamarts, so separate datamart cron jobs are usually

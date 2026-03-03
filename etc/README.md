@@ -39,6 +39,15 @@ nano etc/etl.properties
 - `etc/properties.sh.example` - Template (safe to version)
 - `etc/etl.properties.example` - Template (safe to version)
 
+### Cron and log configuration
+
+- **`etc/cron.example`** – Example crontab for ETL, export, maintenance. Copy, edit paths, then
+  `crontab /tmp/your-file`. Includes notes for logging to `/var/log/osm-notes-analytics/analytics.log`
+  (same layout as sibling projects osm-notes-ingestion, osm-notes-monitoring).
+- **`etc/logrotate.osm-analytics.conf`** – Logrotate config for `/var/log/osm-notes-analytics/analytics.log`.
+  Install with: `sudo cp etc/logrotate.osm-analytics.conf /etc/logrotate.d/osm-analytics`. Ensures daily
+  rotation and 14 days retention (rotated files: `analytics.log-YYYYMMDD.gz`).
+
 **Priority order:**
 
 1. Environment variables (highest)

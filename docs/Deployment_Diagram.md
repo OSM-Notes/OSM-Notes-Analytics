@@ -226,18 +226,19 @@ gantt
 **Standard Production Schedule:**
 
 ```cron
-# ETL: Incremental updates every 15 minutes
-*/15 * * * * export CLEAN=false ; export LOG_LEVEL=INFO ; export DBNAME=notes ; export DB_USER=notes ; /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh >> /var/log/osm-notes-etl.log 2>&1
+# ETL + export (recommended): same layout as sibling projects (osm-notes-ingestion, osm-notes-monitoring).
+# One-time: create /var/log/osm-notes-analytics/ and install etc/logrotate.osm-analytics.conf (see etc/cron.example).
+*/15 * * * * cd /home/notes/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
-# Datamarts: Update daily at 2 AM (after ETL completes)
-0 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/datamartUsers/datamartUsers.sh >> /var/log/osm-notes-datamarts.log 2>&1
-30 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/datamartCountries/datamartCountries.sh >> /var/log/osm-notes-datamarts.log 2>&1
+# Or use /tmp if you prefer no /var/log setup:
+# */15 * * * * export CLEAN=false ; export LOG_LEVEL=INFO ; export DBNAME=notes ; export DB_USER=notes ; /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh >> /tmp/osm-notes-etl.log 2>&1
 
-# JSON Export: Every 15 minutes (after datamarts update)
-*/15 * * * * /home/notes/OSM-Notes-Analytics/bin/dwh/exportDatamartsToJSON.sh >> /var/log/osm-notes-export.log 2>&1
+# Datamarts: ETL.sh updates them; optional separate jobs:
+# 0 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/datamartUsers/datamartUsers.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
+# 30 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/datamartCountries/datamartCountries.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
 # Maintenance: Weekly cleanup and optimization
-0 3 * * 0 psql -U notes -d notes_dwh -c "VACUUM ANALYZE dwh.facts;" >> /var/log/osm-notes-maintenance.log 2>&1
+0 3 * * 0 psql -U notes -d notes_dwh -c "VACUUM ANALYZE dwh.facts;" >> /var/log/osm-notes-analytics/analytics.log 2>&1
 30 3 * * 0 find /tmp/ETL_* -type d -mtime +7 -exec rm -rf {} \; 2>/dev/null || true
 ```
 
@@ -437,8 +438,13 @@ tail -f /tmp/ETL_*/ETL.log
 # Copy cron template
 cp etc/cron.example /tmp/osm-notes-cron
 
-# Edit with your paths
+# Edit with your paths (and optional /var/log/osm-notes-analytics setup; see comments in cron.example)
 nano /tmp/osm-notes-cron
+
+# Optional: create log directory and install logrotate (same layout as osm-notes-ingestion, osm-notes-monitoring)
+# sudo mkdir -p /var/log/osm-notes-analytics && sudo chown notes:maptimebogota /var/log/osm-notes-analytics
+# sudo touch /var/log/osm-notes-analytics/analytics.log && sudo chown notes:maptimebogota /var/log/osm-notes-analytics/analytics.log
+# sudo cp etc/logrotate.osm-analytics.conf /etc/logrotate.d/osm-analytics
 
 # Install cron
 crontab /tmp/osm-notes-cron
@@ -447,7 +453,7 @@ crontab /tmp/osm-notes-cron
 crontab -l
 ```
 
-See [Cron Setup Guide](Cron_Setup.md) for detailed cron configuration.
+See [Cron Setup Guide](Cron_Setup.md) for detailed cron configuration and log setup.
 
 ### Step 7: Verify Deployment
 
@@ -671,7 +677,7 @@ psql -U notes -d notes_dwh < /backups/dwh_20250115.sql
 
 ```bash
 # Check validation errors
-grep -i "validation" /var/log/osm-notes-export.log
+grep -i "validation" /var/log/osm-notes-analytics/analytics.log
 
 # Re-export manually
 ./bin/dwh/exportDatamartsToJSON.sh

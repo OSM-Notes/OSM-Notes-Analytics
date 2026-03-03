@@ -115,6 +115,41 @@ You should see output like:
 0 4 1 * * /home/notes/OSM-Notes-Analytics/bin/dwh/ml_retrain.sh >> /tmp/ml-retrain.log 2>&1
 ```
 
+### Step 5 (optional): Log directory and rotation in /var/log
+
+If you want ETL + export output in `/var/log` (same layout as sibling projects
+osm-notes-ingestion, osm-notes-monitoring), do this once as root:
+
+1. **Create log directory** (same style as sibling projects):
+
+   ```bash
+   sudo mkdir -p /var/log/osm-notes-analytics
+   sudo chown notes:maptimebogota /var/log/osm-notes-analytics
+   sudo chmod 2775 /var/log/osm-notes-analytics
+   sudo touch /var/log/osm-notes-analytics/analytics.log
+   sudo chown notes:maptimebogota /var/log/osm-notes-analytics/analytics.log
+   sudo chmod 640 /var/log/osm-notes-analytics/analytics.log
+   ```
+
+   (If your server has no group `maptimebogota`, use `notes:notes` and adjust the cron user’s primary group.)
+
+2. **Install logrotate** so the log is rotated daily (e.g. `analytics.log-YYYYMMDD.gz`):
+
+   ```bash
+   sudo cp /path/to/OSM-Notes-Analytics/etc/logrotate.osm-analytics.conf /etc/logrotate.d/osm-analytics
+   sudo chmod 644 /etc/logrotate.d/osm-analytics
+   ```
+
+   See `etc/logrotate.osm-analytics.conf` for details. Logrotate is run daily by `cron.daily`.
+
+3. **Point cron at the log**: in your crontab, use:
+
+   ```bash
+   >> /var/log/osm-notes-analytics/analytics.log 2>&1
+   ```
+
+   for the ETL + export line. Full example in `etc/cron.example`.
+
 ---
 
 ## Configuration

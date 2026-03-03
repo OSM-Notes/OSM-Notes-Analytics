@@ -799,7 +799,11 @@ For automated analytics updates:
 */15 * * * * ~/OSM-Notes-Analytics/bin/dwh/ETL.sh
 
 # Option B: ETL + export to GitHub Pages (runs export only if ETL succeeds)
-*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-analytics.log 2>&1
+# Log to /tmp (no setup):
+*/15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-analytics.log 2>&1
+# Or log to /var/log (same layout as sibling projects osm-notes-ingestion, osm-notes-monitoring).
+# One-time setup as root: see etc/cron.example and etc/logrotate.osm-analytics.conf.
+# */15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 ```
 
 **Key features of JSON export:**
