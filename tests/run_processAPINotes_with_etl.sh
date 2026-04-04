@@ -58,8 +58,9 @@ readonly ETL_SCRIPT
 PROCESS_API_SCRIPT="${INGESTION_ROOT}/bin/process/processAPINotes.sh"
 readonly PROCESS_API_SCRIPT
 
-# Database names for hybrid test with separate databases
-readonly ANALYTICS_DBNAME="osm_notes_analytics_remote_test"
+# Database names for hybrid test (allow override for API integration tests, e.g. ANALYTICS_DBNAME=osm_notes_api_test)
+ANALYTICS_DBNAME="${ANALYTICS_DBNAME:-osm_notes_analytics_remote_test}"
+readonly ANALYTICS_DBNAME
 
 # Function to show help
 show_help() {
@@ -90,12 +91,14 @@ Environment variables:
   DB_USER_DWH    Database user for Analytics database
   DB_HOST        Database host
   DB_PORT        Database port (default: 5432)
+  ANALYTICS_DBNAME  Analytics/DWH database name (default: osm_notes_analytics_remote_test).
+                    Set to same as DBNAME (e.g. osm_notes_api_test) for single-DB API integration tests.
 
   Note: DB_USER is NOT used in this project (it's only valid in OSM-Notes-Ingestion project)
 
-Note: This script uses TWO separate databases:
-  - Ingestion DB: Uses DBNAME from properties.sh (default: notes)
-  - Analytics DB: osm_notes_analytics_remote_test (created automatically)
+Note: This script uses two databases (can be the same if ANALYTICS_DBNAME=DBNAME):
+  - Ingestion DB: Uses DBNAME from properties.sh or env (default: notes)
+  - Analytics DB: ANALYTICS_DBNAME from env (default: osm_notes_analytics_remote_test, created automatically)
 
 This configuration enables testing of Foreign Data Wrappers (FDW) functionality.
 
@@ -105,6 +108,9 @@ Examples:
 
   # Run with custom database
   DBNAME=my_test_db ./run_processAPINotes_with_etl.sh
+
+  # Run for OSM-Notes-API integration tests (single DB with notes + dwh)
+  DBNAME=osm_notes_api_test ANALYTICS_DBNAME=osm_notes_api_test ./run_processAPINotes_with_etl.sh
 
   # Run with debug logging
   LOG_LEVEL=DEBUG ./run_processAPINotes_with_etl.sh
