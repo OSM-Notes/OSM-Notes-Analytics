@@ -344,15 +344,25 @@ environment):
 
 ### Database Configuration
 
-- **`DBNAME`**: PostgreSQL database name (default: `notes_dwh`)
-- **`DB_USER`**: PostgreSQL user (default: `notes`)
+- **`DBNAME_INGESTION`**: Source database with base tables (default: `notes`)
+- **`DBNAME_DWH`**: Analytics database with `dwh` schema (default: `notes_dwh`)
+- **`DB_USER_INGESTION`**, **`DB_USER_DWH`**: PostgreSQL users (defaults: `notes`)
+- **`FDW_INGESTION_*`**: Foreign Data Wrapper target when ingestion and DWH use different databases
+  (see `bin/dwh/ETL.sh`)
 
 ### Processing Configuration
 
 - **`MAX_THREADS`**: Parallel processing threads (auto-calculated from CPU cores, max 16)
-- **`LOOP_SIZE`**: Notes processed per loop (default: `10000`)
-- **`MAX_NOTES`**: Max notes from API (default: `10000`)
-- **`MIN_NOTES_FOR_PARALLEL`**: Minimum notes for parallel processing (default: `10`)
+
+### PostgreSQL Session (ETL)
+
+- **`PSQL_STATEMENT_TIMEOUT`**, **`PSQL_LOCK_TIMEOUT`**, **`PSQL_IDLE_IN_TRANSACTION_TIMEOUT`**: Passed
+  to `psql` by `ETL.sh` (see `etc/properties.sh.example`)
+
+### Datamart Users
+
+- **`MAX_USERS_PER_CYCLE`**, **`CATCHUP_THRESHOLD`**, optional **`MAX_USERS_PER_CYCLE_CATCHUP`**,
+  **`CATCHUP_MULTIPLIER`**: See `bin/dwh/datamartUsers/datamartUsers.sh`
 
 ### Export Configuration
 
@@ -361,7 +371,6 @@ environment):
 ### Other Configuration
 
 - **`CLEAN`**: Clean temporary files (default: `true`)
-- **`EMAILS`**: Email addresses for reports (default: `username@domain.com`)
 
 Defined in `etc/etl.properties` (created from `etc/etl.properties.example`):
 

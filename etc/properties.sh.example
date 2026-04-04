@@ -6,7 +6,7 @@
 # Then edit etc/properties.sh with your database credentials.
 #
 # Author: Andres Gomez
-# Version: 2025-08-18
+# Version: 2026-04-04
 
 # Database configuration.
 #
@@ -62,80 +62,11 @@ if [[ -z "${FDW_INGESTION_PASSWORD:-}" ]]; then
  declare -r FDW_INGESTION_PASSWORD="${FDW_INGESTION_PASSWORD:-}"
 fi
 
-# Email configuration for reports.
-declare EMAILS="${EMAILS:-notes@osm.lat}"
-
-# OpenStreetMap API configuration.
-# shellcheck disable=SC2034
-declare OSM_API="${OSM_API:-https://api.openstreetmap.org/api/0.6}"
-
-# OpenStreetMap Planet dump URL.
-# shellcheck disable=SC2034
-if [[ -z "${PLANET:-}" ]]; then
- declare -r PLANET="https://planet.openstreetmap.org"
-fi
-
-# Overpass interpreter URL. Used to download the countries and maritime boundaries.
-# shellcheck disable=SC2034
-if [[ -z "${OVERPASS_INTERPRETER:-}" ]]; then
- declare -r OVERPASS_INTERPRETER="https://overpass-api.de/api/interpreter"
-fi
-
-# Rate limiting configuration.
-# Wait between loops when downloading boundaries, to prevent "Too many requests".
-# shellcheck disable=SC2034
-if [[ -z "${SECONDS_TO_WAIT:-}" ]]; then
- declare -r SECONDS_TO_WAIT="30"
-fi
-
-# Processing configuration.
-# Quantity of notes to process per loop, to get the location of the note.
-# shellcheck disable=SC2034
-if [[ -z "${LOOP_SIZE:-}" ]]; then
- declare -r LOOP_SIZE="10000"
-fi
-
-# Maximum number of notes to download from the API.
-# shellcheck disable=SC2034
-if [[ -z "${MAX_NOTES:-}" ]]; then
- declare -r MAX_NOTES="10000"
-fi
-
 # Parallel processing configuration.
 # Number of threads to use in parallel processing.
 # It should be less than the number of cores of the server.
 # shellcheck disable=SC2034
 declare MAX_THREADS="4"
-
-# Delay between launching parallel processes to prevent system overload.
-# This helps stagger process creation and reduces memory pressure spikes.
-# shellcheck disable=SC2034
-if [[ -z "${PARALLEL_PROCESS_DELAY:-}" ]]; then
- declare -r PARALLEL_PROCESS_DELAY="2"
-fi
-
-# XSLT performance profiling configuration.
-# Enable profiling to analyze and optimize XSLT transformations.
-# Profile files are saved with .profile extension for analysis.
-# shellcheck disable=SC2034
-if [[ -z "${ENABLE_XSLT_PROFILING:-}" ]]; then
- declare -r ENABLE_XSLT_PROFILING="${ENABLE_XSLT_PROFILING:-false}"
-fi
-
-# XSLT processing maximum recursion depth
-# Used for complex notes with long HTML/text to avoid recursion limit errors
-# shellcheck disable=SC2034
-if [[ -z "${XSLT_MAX_DEPTH:-}" ]]; then
- declare -r XSLT_MAX_DEPTH="4000"
-fi
-
-# Minimum number of notes to enable parallel processing.
-# If the number of notes is less than this threshold, processing will be sequential.
-# This helps avoid the overhead of parallelization for small datasets.
-# shellcheck disable=SC2034
-if [[ -z "${MIN_NOTES_FOR_PARALLEL:-}" ]]; then
- declare -r MIN_NOTES_FOR_PARALLEL="10"
-fi
 
 # Set MAX_THREADS based on available cores, with limits
 if command -v nproc > /dev/null 2>&1; then
@@ -176,13 +107,6 @@ fi
 # shellcheck disable=SC2034
 if [[ -z "${PSQL_IDLE_IN_TRANSACTION_TIMEOUT:-}" ]]; then
  declare -r PSQL_IDLE_IN_TRANSACTION_TIMEOUT="${PSQL_IDLE_IN_TRANSACTION_TIMEOUT:-10min}"
-fi
-
-# Use READ ONLY transactions for queries that only read from ingestion tables
-# This helps reduce lock contention and improves concurrency
-# shellcheck disable=SC2034
-if [[ -z "${PSQL_READONLY_FOR_INGESTION:-}" ]]; then
- declare -r PSQL_READONLY_FOR_INGESTION="${PSQL_READONLY_FOR_INGESTION:-true}"
 fi
 
 # Datamart Users processing configuration

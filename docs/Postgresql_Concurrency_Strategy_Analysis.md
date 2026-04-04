@@ -219,17 +219,17 @@ transaction, but SELECT queries within them can be executed in READ ONLY sub-tra
 **Add variables**:
 
 ```bash
-# PostgreSQL timeouts for ETL queries
+# PostgreSQL timeouts for ETL queries (supported in etc/properties.sh)
 PSQL_STATEMENT_TIMEOUT="${PSQL_STATEMENT_TIMEOUT:-30min}"
 PSQL_LOCK_TIMEOUT="${PSQL_LOCK_TIMEOUT:-10s}"
 PSQL_IDLE_IN_TRANSACTION_TIMEOUT="${PSQL_IDLE_IN_TRANSACTION_TIMEOUT:-10min}"
 
-# Use READ ONLY transactions for ingestion table queries
-PSQL_READONLY_FOR_INGESTION="${PSQL_READONLY_FOR_INGESTION:-true}"
-
 # Application name for PostgreSQL connections
 PSQL_APPNAME="${PSQL_APPNAME:-osm_notes_etl}"
 ```
+
+**Note:** READ ONLY transactions for ingestion-bound queries (see Phase 2 below) are not exposed in
+`properties.sh`; they remain a future enhancement.
 
 ---
 

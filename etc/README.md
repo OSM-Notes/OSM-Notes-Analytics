@@ -60,7 +60,7 @@ Git. Only the `.example` template files are versioned in the repository.
 
 ### properties.sh
 
-**Purpose:** Main configuration file for database connection and general processing parameters.
+**Purpose:** Main configuration file for database connection and Analytics-specific parameters.
 
 **Location:** `etc/properties.sh`
 
@@ -69,115 +69,37 @@ Git. Only the `.example` template files are versioned in the repository.
 #### 1. Database Configuration
 
 ```bash
-# Database name (should match the ingestion system database)
-# Recommended: Use DBNAME_INGESTION and DBNAME_DWH for clarity
-DBNAME_INGESTION="notes_dwh"
+# Ingestion (source) and Analytics (DWH) databases — often the same DB in simple setups
+DBNAME_INGESTION="notes"
 DBNAME_DWH="notes_dwh"
-# Legacy/compatibility: Use DBNAME when both databases are the same
-DBNAME="notes_dwh"
 
-# Database user with read/write access to DWH schema
-DB_USER="notes"
+# PostgreSQL users for each database
+DB_USER_INGESTION="notes"
+DB_USER_DWH="notes"
 ```
+
+**Foreign Data Wrapper (FDW):** When `DBNAME_INGESTION` and `DBNAME_DWH` differ, ETL configures an
+FDW from the Analytics database to the Ingestion database. Set `FDW_INGESTION_HOST`,
+`FDW_INGESTION_PORT`, `FDW_INGESTION_USER`, and `FDW_INGESTION_PASSWORD` as needed.
 
 **Important Notes:**
 
-- The database name must match the database used by the OSM-Notes-Ingestion system
-- The database user needs permissions to:
-  - Read from `public` schema (base tables)
-  - Create objects in `dwh` schema
-  - Create and manage staging schema
+- Base tables must exist (populated by OSM-Notes-Ingestion).
+- The DWH user needs permission to read base tables and create objects in `dwh` and `staging`.
 
-#### 2. Email Configuration
+#### 2. Parallel Processing
 
 ```bash
-# Email addresses for reports and notifications (comma-separated)
-EMAILS="notes@osm.lat"
-```
-
-**Note:** Email notifications are configured in `etl.properties` (`ETL_NOTIFICATION_ENABLED`,
-`ETL_NOTIFICATION_EMAIL`). This variable is inherited from the shared configuration but not
-currently used by Analytics scripts.
-
-#### 3. API Configuration (Inherited, Not Used)
-
-```bash
-# OpenStreetMap API endpoint
-OSM_API="https://api.openstreetmap.org/api/0.6"
-
-# Planet dump URL
-PLANET="https://planet.openstreetmap.org"
-
-# Overpass API endpoint for downloading boundaries
-OVERPASS_INTERPRETER="https://overpass-api.de/api/interpreter"
-```
-
-**Note:** These settings are used by the OSM-Notes-Ingestion system (not Analytics). They are
-inherited from the shared `properties.sh` file but are not used by any Analytics scripts. You can
-ignore these for Analytics-only deployments.
-
-#### 4. Rate Limiting (Inherited, Not Used)
-
-```bash
-# Seconds to wait between API requests to avoid "Too Many Requests" errors
-SECONDS_TO_WAIT="30"
-```
-
-**Note:** Used by the Ingestion system, not Analytics. Can be ignored for Analytics-only
-deployments.
-
-#### 5. Processing Configuration
-
-```bash
-# Number of notes to process per batch (inherited from shared config)
-LOOP_SIZE="10000"
-
-# Maximum notes to download from API (Ingestion only, not used by Analytics)
-MAX_NOTES="10000"
-```
-
-**Note:** `LOOP_SIZE` is inherited but not actively used by Analytics ETL (which uses
-`ETL_BATCH_SIZE` from `etl.properties`). `MAX_NOTES` is used only by the Ingestion system.
-
-#### 6. Parallel Processing
-
-```bash
-# Maximum number of parallel threads (auto-detected, capped at 16)
+# Maximum parallel threads (auto-detected from CPU cores, capped at 16)
 MAX_THREADS="4"
-
-# Delay between launching parallel processes (seconds)
-PARALLEL_PROCESS_DELAY="2"
-
-# Minimum notes required to enable parallel processing
-MIN_NOTES_FOR_PARALLEL="10"
 ```
 
-**Auto-detection:**
+**Auto-detection:** Uses `nproc`, caps at 16, falls back to 4 if detection fails.
 
-- Automatically detects CPU cores using `nproc`
-- Caps at 16 threads for production stability
-- Falls back to 4 threads if detection fails
+**Tuning:** Batch sizing and ETL parallelism are controlled in `etc/etl.properties`
+(`ETL_BATCH_SIZE`, `ETL_MAX_PARALLEL_JOBS`). Match `ETL_MAX_PARALLEL_JOBS` to your CPU budget.
 
-**Tuning Guide:**
-
-- **2-4 threads**: For systems with limited CPU
-- **8-16 threads**: For high-performance servers
-- **Increase PARALLEL_PROCESS_DELAY** if experiencing memory pressure
-
-#### 7. XSLT Processing (Inherited, Not Used)
-
-```bash
-# Enable XSLT profiling for performance analysis
-ENABLE_XSLT_PROFILING="false"
-
-# Maximum recursion depth for XSLT transformations
-XSLT_MAX_DEPTH="4000"
-```
-
-**Note:** XSLT processing is used by the Ingestion system for XML transformation, not by Analytics.
-These settings can be ignored for Analytics-only deployments.
-
-#### 8. Cleanup Configuration
+#### 3. Cleanup Configuration
 
 ```bash
 # Clean up temporary files after successful execution
@@ -186,6 +108,34 @@ CLEAN="true"
 
 - **true**: Delete temporary files (recommended for production)
 - **false**: Keep temporary files (useful for debugging)
+
+#### 4. JSON Export
+
+```bash
+JSON_OUTPUT_DIR="./output/json"
+```
+
+Used by `bin/dwh/exportDatamartsToJSON.sh` (and related export scripts).
+
+#### 5. PostgreSQL Timeouts (ETL)
+
+```bash
+PSQL_STATEMENT_TIMEOUT="2h"
+PSQL_LOCK_TIMEOUT="10s"
+PSQL_IDLE_IN_TRANSACTION_TIMEOUT="10min"
+```
+
+Used by `bin/dwh/ETL.sh` when building `psql` session settings.
+
+#### 6. Datamart Users (ETL)
+
+```bash
+MAX_USERS_PER_CYCLE="4000"
+CATCHUP_THRESHOLD="10000"
+# Optional: MAX_USERS_PER_CYCLE_CATCHUP=...  CATCHUP_MULTIPLIER=...
+```
+
+See `bin/dwh/datamartUsers/datamartUsers.sh` and [Environment Variables](../bin/dwh/Environment_Variables.md).
 
 ### etl.properties
 
@@ -384,7 +334,7 @@ ETL_XML_MEMORY_LIMIT_MB=2048
 ETL_XSLT_MAX_DEPTH=4000
 ```
 
-Matches `XSLT_MAX_DEPTH` in `properties.sh`.
+Used by ETL XML/XSLT paths when enabled in `etl.properties`.
 
 ## Customization Guide
 
@@ -400,10 +350,10 @@ Matches `XSLT_MAX_DEPTH` in `properties.sh`.
 1. **Set database credentials:**
 
    ```bash
-   DBNAME_INGESTION="notes_dwh"
+   DBNAME_INGESTION="notes"
    DBNAME_DWH="notes_dwh"
-   DBNAME="notes_dwh"  # Use when both databases are the same
-   DB_USER="notes"
+   DB_USER_INGESTION="notes"
+   DB_USER_DWH="notes"
    ```
 
 1. **Adjust parallel processing:**
@@ -427,8 +377,6 @@ psql -d your_database_name -U your_username -c "SELECT version();"
 
 ```bash
 MAX_THREADS="16"
-LOOP_SIZE="50000"
-PARALLEL_PROCESS_DELAY="1"
 ```
 
 **etl.properties:**
@@ -445,8 +393,6 @@ MAX_MEMORY_USAGE=90
 
 ```bash
 MAX_THREADS="2"
-LOOP_SIZE="5000"
-PARALLEL_PROCESS_DELAY="5"
 ```
 
 **etl.properties:**

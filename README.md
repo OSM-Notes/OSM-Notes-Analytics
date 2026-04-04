@@ -1145,12 +1145,13 @@ This analytics system depends on the **OSM-Notes-Ingestion** ingestion system:
 ### Database Configuration (`etc/properties.sh`)
 
 ```bash
-# Database configuration
-DBNAME="notes_dwh"
-DB_USER="notes"
+# Database configuration (see etc/properties.sh.example for FDW and full list)
+DBNAME_INGESTION="notes"
+DBNAME_DWH="notes_dwh"
+DB_USER_INGESTION="notes"
+DB_USER_DWH="notes"
 
-# Processing configuration
-LOOP_SIZE="10000"
+# Processing
 MAX_THREADS="4"
 ```
 
