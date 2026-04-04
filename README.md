@@ -246,23 +246,26 @@ Before starting, ensure you have:
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/OSM-Notes/OSM-Notes-Analytics.git
+git clone --recurse-submodules https://github.com/OSM-Notes/OSM-Notes-Analytics.git
 cd OSM-Notes-Analytics
 ```
 
-**What this does:** Downloads the analytics repository to your local machine.
+**What this does:** Downloads the analytics repository and the **OSM-Notes-Common** submodule
+(`lib/osm-common/`). Scripts depend on that shared code; the submodule is **required**, not optional.
 
-**Verify:** Check that the directory was created:
-
-```bash
-ls -la OSM-Notes-Analytics/
-# Should show: bin/, docs/, sql/, etc/, lib/, etc.
-```
-
-**Note:** If you need the shared libraries (OSM-Notes-Common submodule), initialize it:
+If you cloned without submodules, initialize them before running any scripts:
 
 ```bash
 git submodule update --init --recursive
+```
+
+**Verify:** From inside the repository root (after `cd`), confirm the layout:
+
+```bash
+ls -la
+# Should show: bin/, docs/, sql/, etc/, lib/, etc.
+ls -la lib/osm-common/
+# Should contain bash_logger.sh, commonFunctions.sh, schemas/, etc.
 ```
 
 ### Step 2: Configure Database
