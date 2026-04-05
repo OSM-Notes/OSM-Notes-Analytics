@@ -83,18 +83,17 @@ UPDATE /* Notes-ETL */ dwh.dimension_countries
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Showing modified countries' AS Task;
--- Shows countries renamed.
-COPY (
- SELECT /* Notes-ETL */ DISTINCT d.country_name AS OldCountryName,
-  c.country_name AS NewCountryName
- FROM countries c
-  JOIN dwh.dimension_countries d
-  ON d.country_id = c.country_id
- WHERE c.country_name <> d.country_name
-  OR c.country_name_es <> d.country_name_es
-  OR c.country_name_en <> d.country_name_en
-)
-TO '/tmp/countries_changed.csv' WITH DELIMITER ',' CSV HEADER -- noqa: PRS
+-- Countries renamed (same rows as before; listed in psql output).
+-- Server-side COPY TO file requires pg_write_server_files; use client \copy for a CSV file, e.g.:
+-- \copy (SELECT DISTINCT ...) TO 'countries_changed.csv' WITH DELIMITER ',' CSV HEADER
+SELECT /* Notes-ETL */ DISTINCT d.country_name AS OldCountryName,
+ c.country_name AS NewCountryName
+FROM countries c
+ JOIN dwh.dimension_countries d
+ ON d.country_id = c.country_id
+WHERE c.country_name <> d.country_name
+ OR c.country_name_es <> d.country_name_es
+ OR c.country_name_en <> d.country_name_en
 ;
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
