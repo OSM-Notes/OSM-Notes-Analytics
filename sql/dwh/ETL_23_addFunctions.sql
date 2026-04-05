@@ -340,4 +340,3 @@ COMMENT ON FUNCTION dwh.get_season_id IS 'Returns season id based on date and la
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Extra objects created' AS Task;
-
