@@ -251,7 +251,8 @@ cd OSM-Notes-Analytics
 ```
 
 **What this does:** Downloads the analytics repository and the **OSM-Notes-Common** submodule
-(`lib/osm-common/`). Scripts depend on that shared code; the submodule is **required**, not optional.
+(`lib/osm-common/`). Scripts depend on that shared code; the submodule is **required**, not
+optional.
 
 If you cloned without submodules, initialize them before running any scripts:
 

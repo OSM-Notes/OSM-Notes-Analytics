@@ -117,8 +117,8 @@ You should see output like:
 
 ### Step 5 (optional): Log directory and rotation in /var/log
 
-If you want ETL + export output in `/var/log` (same layout as sibling projects
-osm-notes-ingestion, osm-notes-monitoring), do this once as root:
+If you want ETL + export output in `/var/log` (same layout as sibling projects osm-notes-ingestion,
+osm-notes-monitoring), do this once as root:
 
 1. **Create log directory** (same style as sibling projects):
 
@@ -131,7 +131,8 @@ osm-notes-ingestion, osm-notes-monitoring), do this once as root:
    sudo chmod 640 /var/log/osm-notes-analytics/analytics.log
    ```
 
-   (If your server has no group `maptimebogota`, use `notes:notes` and adjust the cron user’s primary group.)
+   (If your server has no group `maptimebogota`, use `notes:notes` and adjust the cron user’s
+   primary group.)
 
 2. **Install logrotate** so the log is rotated daily (e.g. `analytics.log-YYYYMMDD.gz`):
 

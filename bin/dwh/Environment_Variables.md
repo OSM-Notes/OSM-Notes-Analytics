@@ -356,8 +356,8 @@ environment):
 
 ### PostgreSQL Session (ETL)
 
-- **`PSQL_STATEMENT_TIMEOUT`**, **`PSQL_LOCK_TIMEOUT`**, **`PSQL_IDLE_IN_TRANSACTION_TIMEOUT`**: Passed
-  to `psql` by `ETL.sh` (see `etc/properties.sh.example`)
+- **`PSQL_STATEMENT_TIMEOUT`**, **`PSQL_LOCK_TIMEOUT`**, **`PSQL_IDLE_IN_TRANSACTION_TIMEOUT`**:
+  Passed to `psql` by `ETL.sh` (see `etc/properties.sh.example`)
 
 ### Datamart Users
 
