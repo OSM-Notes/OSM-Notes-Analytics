@@ -2,7 +2,7 @@
 -- Handles new users, username changes (SCD2), and new countries.
 --
 -- Author: Andres Gomez (AngocA)
--- Version: 2025-10-21
+-- Version: 2026-04-05
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Updates dimension users (SCD2)' AS Task;
@@ -12,9 +12,10 @@ INSERT INTO dwh.dimension_users
  (user_id, username, valid_from, is_current)
  SELECT /* Notes-ETL */ c.user_id, c.username, NOW(), TRUE
  FROM users c
- WHERE c.user_id NOT IN (
-  SELECT /* Notes-ETL */ u.user_id
+ WHERE NOT EXISTS (
+  SELECT /* Notes-ETL */ 1
   FROM dwh.dimension_users u
+  WHERE u.user_id = c.user_id
   )
 ;
 
@@ -64,9 +65,10 @@ INSERT INTO dwh.dimension_countries
   c.country_name_en, iso.iso_alpha2, iso.iso_alpha3, TRUE
  FROM countries c
   LEFT JOIN dwh.iso_country_codes iso ON c.country_id = iso.osm_country_id
- WHERE c.country_id NOT IN (
-  SELECT /* Notes-ETL */ country_id
-  FROM dwh.dimension_countries
+ WHERE NOT EXISTS (
+  SELECT /* Notes-ETL */ 1
+  FROM dwh.dimension_countries dc
+  WHERE dc.country_id = c.country_id
  )
 ;
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,

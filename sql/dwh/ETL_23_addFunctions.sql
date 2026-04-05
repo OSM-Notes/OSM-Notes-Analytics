@@ -77,6 +77,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS dimension_username_current_uniq
  WHERE is_current;
 COMMENT ON INDEX dwh.dimension_username_current_uniq IS 'Unique username (current)';
 
+-- Non-partial index on user_id for all SCD2 rows. Partial unique indexes above only
+-- include is_current rows; anti-joins (NOT EXISTS) need to detect any row by user_id.
+CREATE INDEX IF NOT EXISTS dimension_users_user_id_lookup_idx
+ ON dwh.dimension_users (user_id);
+COMMENT ON INDEX dwh.dimension_users_user_id_lookup_idx IS
+  'Lookup by OSM user_id (all versions). Used by dimension refresh and NOT EXISTS probes.';
+
 CREATE UNIQUE INDEX dimension_country_id_uniq
  ON dwh.dimension_countries
  (country_id);
