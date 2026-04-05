@@ -17,6 +17,8 @@ INSERT INTO dwh.dimension_users
   FROM dwh.dimension_users u
   WHERE u.user_id = c.user_id
   )
+  -- Match NOT IN semantics: NULL NOT IN (...) is unknown (row excluded); NOT EXISTS would insert NULL keys.
+  AND c.user_id IS NOT NULL
 ;
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
@@ -70,6 +72,8 @@ INSERT INTO dwh.dimension_countries
   FROM dwh.dimension_countries dc
   WHERE dc.country_id = c.country_id
  )
+  -- Match NOT IN semantics: NULL NOT IN (...) is unknown (row excluded); NOT EXISTS would insert NULL keys.
+  AND c.country_id IS NOT NULL
 ;
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Updating countries with region (takes a while)' AS Task;
