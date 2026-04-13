@@ -20,8 +20,8 @@
 # * shfmt -w -i 1 -sr -bn ETL.sh
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-01-07
-VERSION="2026-01-07"
+# Version: 2026-04-13
+VERSION="2026-04-13"
 
 #set -xv
 # Fails when a variable is not initialized.
@@ -614,6 +614,51 @@ function __safe_disable_note_activity_metrics_trigger {
  # If function doesn't exist, silently skip (expected behavior during first execution)
 }
 
+# Ensures postgres_fdw exists in the DWH when FDW setup will run (separate ingestion/DWH DBs).
+# CREATE EXTENSION requires superuser unless pre-provisioned; ETL_60_setupFDW.sql would fail late otherwise.
+function __checkPostgresFdwPrerequisite {
+ __log_start
+ if [[ "${DBNAME_INGESTION}" == "${DBNAME_DWH}" ]]; then
+  __logd "Ingestion and DWH share database '${DBNAME_DWH}'; postgres_fdw not required."
+  __log_finish
+  return 0
+ fi
+
+ __logi "Separate ingestion and DWH databases: verifying postgres_fdw in '${DBNAME_DWH}'..."
+
+ local has_fdw
+ local psql_rc
+ set +e
+ has_fdw=$(__psql_with_appname "ETL-prereq-fdw" -d "${DBNAME_DWH}" -Atq -c \
+  "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgres_fdw');" 2>&1)
+ psql_rc=$?
+ set -e
+
+ if [[ ${psql_rc} -ne 0 ]]; then
+  __loge "ERROR: Could not check postgres_fdw in database '${DBNAME_DWH}' (psql exit ${psql_rc})."
+  __loge "${has_fdw}"
+  # shellcheck disable=SC2310  # Function invocation in || condition is intentional - we don't want log_finish to cause exit
+  __log_finish || true
+  return 1
+ fi
+
+ has_fdw=$(echo "${has_fdw}" | tr -d '[:space:]')
+ if [[ "${has_fdw}" != "t" ]]; then
+  __loge "ERROR: postgres_fdw is not installed in database '${DBNAME_DWH}'."
+  __loge "When DBNAME_INGESTION and DBNAME_DWH differ, the ETL requires this extension in the DWH."
+  __loge "Install once as a PostgreSQL superuser, for example:"
+  __loge "  psql -d \"${DBNAME_DWH}\" -c 'CREATE EXTENSION IF NOT EXISTS postgres_fdw;'"
+  __loge "See docs/Installation_Dependencies.md (Foreign Data Wrapper issues) and docs/Hybrid_Strategy_Copy_FDW.md."
+  # shellcheck disable=SC2310  # Function invocation in || condition is intentional - we don't want log_finish to cause exit
+  __log_finish || true
+  return 1
+ fi
+
+ __logi "postgres_fdw is present in '${DBNAME_DWH}'."
+ __log_finish
+ return 0
+}
+
 # Checks prerequisites to run the script.
 function __checkPrereqs {
  __log_start
@@ -629,6 +674,11 @@ function __checkPrereqs {
  set +e
  # Checks prereqs.
  __checkPrereqsCommands
+
+ # shellcheck disable=SC2310  # Function invocation in ! condition is intentional; failures handled explicitly
+ if ! __checkPostgresFdwPrerequisite; then
+  exit "${ERROR_MISSING_LIBRARY}"
+ fi
 
  ## Validate SQL script files using centralized validation
  __logi "Validating SQL script files..."
