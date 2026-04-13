@@ -84,6 +84,13 @@ DB_USER_DWH="notes"
 FDW from the Analytics database to the Ingestion database. Set `FDW_INGESTION_HOST`,
 `FDW_INGESTION_PORT`, `FDW_INGESTION_USER`, and `FDW_INGESTION_PASSWORD` as needed.
 
+On the **DWH** database, a superuser must install `CREATE EXTENSION postgres_fdw` and grant the ETL
+role usage of the wrapper:  
+`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO <DB_USER_DWH>;`  
+Otherwise setup fails with `permission denied for foreign-data wrapper postgres_fdw`. See
+[Hybrid Strategy Guide](../docs/Hybrid_Strategy_Copy_FDW.md) and
+[Installation Dependencies](../docs/Installation_Dependencies.md).
+
 **Important Notes:**
 
 - Base tables must exist (populated by OSM-Notes-Ingestion).

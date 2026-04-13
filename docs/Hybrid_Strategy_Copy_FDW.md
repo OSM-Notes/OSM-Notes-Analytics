@@ -118,6 +118,26 @@ used), the ETL automatically skips FDW setup since tables are directly accessibl
 database. The recommended approach is to use `DBNAME_INGESTION` and `DBNAME_DWH` even when they have
 the same value, for clarity and consistency.
 
+### DWH database: `postgres_fdw` and the ETL role
+
+When databases are separate, `ETL_60_setupFDW.sql` runs in **`DBNAME_DWH`** as the ETL session user
+(typically **`DB_USER_DWH`**). That user must be able to create the foreign server, which requires:
+
+1. **`CREATE EXTENSION postgres_fdw`** in the DWH database (superuser).
+2. **`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO`** the DWH role (`DB_USER_DWH`, e.g.
+   `notes`) **(superuser).**
+
+Without (2), PostgreSQL returns **`permission denied for foreign-data wrapper postgres_fdw`** even
+if the extension already exists. Replace the role name with your `DB_USER_DWH` value (e.g. `notes`):
+
+```sql
+-- Connect as superuser to the Analytics database
+\c notes_dwh  -- your DBNAME_DWH
+
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO notes;
+```
+
 ### Create Read-Only User for FDW
 
 **Important:** This step must be completed **before** running the ETL when using separate databases.
@@ -252,6 +272,19 @@ Auto-detects incremental execution and:
 - Verify read permissions (see "Create Read-Only User for FDW" section above)
 - Verify `FDW_INGESTION_*` variables in `etc/properties.sh`
 - Check that `FDW_INGESTION_PASSWORD` is set correctly or `.pgpass` is configured
+- In **DWH** (`DBNAME_DWH`): ensure `postgres_fdw` is installed **and** the ETL role has
+  **`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw`** (see "DWH database: postgres_fdw and the ETL
+  role" above)
+
+### Error: "permission denied for foreign-data wrapper postgres_fdw"
+
+**Solution:** The ETL role cannot use the `postgres_fdw` wrapper. As superuser on `DBNAME_DWH`:
+
+```sql
+GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO your_dwh_user;
+```
+
+Use the same role as `DB_USER_DWH` / the OS user that runs `ETL.sh`.
 
 ### Error: "permission denied for table note_comments"
 
@@ -317,6 +350,10 @@ The `ETL_60_setupFDW.sql` script configures:
 - Foreign server pointing to Ingestion DB
 - Foreign tables: `notes`, `note_comments`, `note_comments_text`, `users`, `countries`
 - Optimizations: `fetch_size='10000'`, `use_remote_estimate='true'`
+
+**Privileges:** The ETL user on the DWH needs `USAGE` on foreign-data wrapper `postgres_fdw` to run
+this script successfully when it is not a superuser (see "DWH database: postgres_fdw and the ETL role"
+above).
 
 **Estimated overhead:** 15-25% on incremental queries (acceptable for small volumes)
 

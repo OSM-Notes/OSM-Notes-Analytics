@@ -183,6 +183,31 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO notes;
 EOF
 ```
 
+### 4. `postgres_fdw` in the Analytics database (separate databases only)
+
+When `DBNAME_INGESTION` and `DBNAME_DWH` differ, the ETL creates a foreign server and foreign
+tables in the **DWH** database using `postgres_fdw`. Two steps require a PostgreSQL **superuser**
+(or equivalent), because the ETL user is usually **not** a superuser:
+
+1. **Install the extension** in the DWH database (`DBNAME_DWH`, e.g. `notes_dwh`).
+2. **Grant usage of the wrapper** to the role that runs the ETL (`DB_USER_DWH`, e.g. `notes`).
+ Without this, `CREATE SERVER ... FOREIGN DATA WRAPPER postgres_fdw` fails with:
+   `permission denied for foreign-data wrapper postgres_fdw`.
+
+Run as superuser connected to the DWH database:
+
+```sql
+\c notes_dwh  -- use your DBNAME_DWH
+
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
+-- Replace 'notes' with your DB_USER_DWH if different
+GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO notes;
+```
+
+The ETL prerequisite step only checks that the extension exists in `DBNAME_DWH`; it does not grant
+`USAGE` on the wrapper. You must apply the `GRANT` above (once per cluster/DWH role as needed).
+
 ---
 
 ## Project Installation
@@ -358,12 +383,18 @@ psql -U postgres -c "\du notes"
 If using separate databases and FDW:
 
 ```bash
-# Check FDW extension
+# Install extension in DWH (superuser)
 psql -d notes_dwh -c "CREATE EXTENSION IF NOT EXISTS postgres_fdw;"
 
-# Verify FDW server exists
+# Allow the ETL user to create foreign servers (superuser; replace notes with DB_USER_DWH)
+psql -d notes_dwh -c "GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO notes;"
+
+# Verify FDW server exists (after a successful ETL FDW step)
 psql -d notes_dwh -c "SELECT * FROM pg_foreign_server;"
 ```
+
+If you see **`permission denied for foreign-data wrapper postgres_fdw`**, the extension may be
+installed but the `GRANT USAGE` line above was not applied for the role that runs `ETL.sh`.
 
 See [Hybrid Strategy Guide](Hybrid_Strategy_Copy_FDW.md) for detailed FDW setup.
 
