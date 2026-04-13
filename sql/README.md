@@ -220,7 +220,12 @@ enrichment data.
 
 **Usage:** Called during both initial and incremental loads
 
-**Note:** Renamed countries are reported with a `SELECT` (visible in `psql` output). A previous `COPY ... TO '/tmp/...'` was removed because server-side `COPY TO file` requires the PostgreSQL role to have `pg_write_server_files` (or equivalent superuser-like rights). To save the same report as CSV from your machine, run the same query with `psql`'s client-side [`\copy`](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-META-COMMANDS-COPY) (writes to a path on the client, not on the server).
+**Note:** Renamed countries are reported with a `SELECT` (visible in `psql` output). A previous
+`COPY ... TO '/tmp/...'` was removed because server-side `COPY TO file` requires the PostgreSQL role
+to have `pg_write_server_files` (or equivalent superuser-like rights). To save the same report as
+CSV from your machine, run the same query with `psql`'s client-side
+[`\copy`](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-META-COMMANDS-COPY) (writes
+to a path on the client, not on the server).
 
 ### Phase 3: Staging (3x)
 

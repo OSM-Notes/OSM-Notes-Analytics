@@ -185,13 +185,13 @@ EOF
 
 ### 4. `postgres_fdw` in the Analytics database (separate databases only)
 
-When `DBNAME_INGESTION` and `DBNAME_DWH` differ, the ETL creates a foreign server and foreign
-tables in the **DWH** database using `postgres_fdw`. Two steps require a PostgreSQL **superuser**
-(or equivalent), because the ETL user is usually **not** a superuser:
+When `DBNAME_INGESTION` and `DBNAME_DWH` differ, the ETL creates a foreign server and foreign tables
+in the **DWH** database using `postgres_fdw`. Two steps require a PostgreSQL **superuser** (or
+equivalent), because the ETL user is usually **not** a superuser:
 
 1. **Install the extension** in the DWH database (`DBNAME_DWH`, e.g. `notes_dwh`).
 2. **Grant usage of the wrapper** to the role that runs the ETL (`DB_USER_DWH`, e.g. `notes`).
- Without this, `CREATE SERVER ... FOREIGN DATA WRAPPER postgres_fdw` fails with:
+   Without this, `CREATE SERVER ... FOREIGN DATA WRAPPER postgres_fdw` fails with:
    `permission denied for foreign-data wrapper postgres_fdw`.
 
 Run as superuser connected to the DWH database:

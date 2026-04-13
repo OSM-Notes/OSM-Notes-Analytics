@@ -273,8 +273,8 @@ Auto-detects incremental execution and:
 - Verify `FDW_INGESTION_*` variables in `etc/properties.sh`
 - Check that `FDW_INGESTION_PASSWORD` is set correctly or `.pgpass` is configured
 - In **DWH** (`DBNAME_DWH`): ensure `postgres_fdw` is installed **and** the ETL role has
-  **`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw`** (see "DWH database: postgres_fdw and the ETL
-  role" above)
+  **`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw`** (see "DWH database: postgres_fdw and the
+  ETL role" above)
 
 ### Error: "permission denied for foreign-data wrapper postgres_fdw"
 
@@ -352,8 +352,8 @@ The `ETL_60_setupFDW.sql` script configures:
 - Optimizations: `fetch_size='10000'`, `use_remote_estimate='true'`
 
 **Privileges:** The ETL user on the DWH needs `USAGE` on foreign-data wrapper `postgres_fdw` to run
-this script successfully when it is not a superuser (see "DWH database: postgres_fdw and the ETL role"
-above).
+this script successfully when it is not a superuser (see "DWH database: postgres_fdw and the ETL
+role" above).
 
 **Estimated overhead:** 15-25% on incremental queries (acceptable for small volumes)
 
