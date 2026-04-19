@@ -20,8 +20,8 @@
 # * shfmt -w -i 1 -sr -bn ETL.sh
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-13
-VERSION="2026-04-13"
+# Version: 2026-04-20
+VERSION="2026-04-20"
 
 #set -xv
 # Fails when a variable is not initialized.
@@ -176,6 +176,8 @@ fi
 # PostgreSQL SQL script files.
 # Check ingestion base tables.
 declare -r POSTGRES_10_CHECK_BASE_TABLES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_10_checkBaseTables.sql"
+# Ingestion Planet --base completion marker (public.properties.base_load_complete).
+declare -r POSTGRES_10B_CHECK_BASE_LOAD_COMPLETE="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_10b_checkIngestionBaseLoadComplete.sql"
 # Check DWH base tables.
 declare -r POSTGRES_11_CHECK_DWH_BASE_TABLES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_11_checkDWHTables.sql"
 # Drop datamart objects.
@@ -686,6 +688,7 @@ function __checkPrereqs {
  # Create array of SQL files to validate
  local SQL_FILES=(
   "${POSTGRES_10_CHECK_BASE_TABLES}"
+  "${POSTGRES_10B_CHECK_BASE_LOAD_COMPLETE}"
   "${POSTGRES_11_CHECK_DWH_BASE_TABLES}"
   "${POSTGRES_12_DROP_DATAMART_OBJECTS}"
   "${POSTGRES_13_DROP_DWH_OBJECTS}"
@@ -759,6 +762,28 @@ function __checkIngestionBaseTables {
  fi
 
  __logi "=== INGESTION BASE TABLES VALIDATION PASSED ==="
+ __log_finish
+ return 0
+}
+
+# Requires public.properties.base_load_complete=true on DBNAME_INGESTION (OSM-Notes-Ingestion Planet --base).
+function __checkIngestionBaseLoadComplete {
+ __log_start
+ __logi "=== CHECKING INGESTION base_load_complete ==="
+ set +e
+ __psql_with_appname -d "${DBNAME_INGESTION}" -v ON_ERROR_STOP=1 \
+  -f "${POSTGRES_10B_CHECK_BASE_LOAD_COMPLETE}" 2>&1
+ RET=${?}
+ set -e
+ if [[ "${RET}" -ne 0 ]]; then
+  __loge "Ingestion base load readiness check failed. Wait for processPlanetNotes.sh --base to finish,"
+  __loge "or set public.properties base_load_complete=true when ingestion data is ready (API-only: insert the row manually; see OSM-Notes-Ingestion processPlanetNotes.sh __record_base_load_complete)."
+  # shellcheck disable=SC2310
+  __log_finish || true
+  return 1
+ fi
+
+ __logi "=== INGESTION base_load_complete VALIDATION PASSED ==="
  __log_finish
  return 0
 }
@@ -2328,6 +2353,16 @@ function main() {
  # The function started with set +e at line 1843, so we maintain that mode
  if [[ ${check_tables_exit_code} -ne 0 ]]; then
   __loge "Base ingestion tables validation failed. ETL cannot proceed."
+  return 1
+ fi
+
+ # shellcheck disable=SC2310
+ set +e
+ __checkIngestionBaseLoadComplete
+ local check_base_load_exit_code=$?
+ set +e
+ if [[ ${check_base_load_exit_code} -ne 0 ]]; then
+  __loge "Ingestion base load readiness check failed. ETL cannot proceed."
   return 1
  fi
 

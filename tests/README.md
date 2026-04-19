@@ -33,7 +33,9 @@ tests/
 │   ├── ETL_enhanced_integration.test.bats
 │   └── datamart_enhanced_integration.test.bats
 ├── sql/                       # Test data setup
-│   └── setup_test_data.sql    # SQL for test database setup
+│   ├── setup_base_tables_data.sql
+│   ├── setup_test_data.sql
+│   └── ensure_test_ingestion_base_load_complete.sql  # ETL prerequisite on TEST_DBNAME (CI/local)
 ├── properties.sh              # Test configuration properties
 ├── test_helper.bash           # Common test utilities and helpers
 ├── run_all_tests.sh          # Run all test suites
@@ -86,6 +88,11 @@ Tests that validate the data warehouse ETL processes and datamarts:
 - PostgreSQL database named `osm_notes_analytics_test` must exist (default for local testing)
 - Database configured in `tests/properties.sh` (defaults to `osm_notes_analytics_test`)
 - PostGIS extension installed
+
+`run_dwh_tests.sh` sets `DBNAME_INGESTION` and `DBNAME_DWH` to `TEST_DBNAME` and applies
+`sql/ensure_test_ingestion_base_load_complete.sql` so the ETL prerequisite
+`public.properties.base_load_complete` is satisfied on that database (test-only; production uses
+OSM-Notes-Ingestion on the real `notes` database).
 
 **Features:**
 

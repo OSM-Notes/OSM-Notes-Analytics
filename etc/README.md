@@ -230,6 +230,11 @@ ETL_VALIDATE_FACTS=true
 - No orphaned records
 - Data consistency across tables
 
+**Ingestion readiness:** The ETL always verifies `public.properties.base_load_complete = true` on
+`DBNAME_INGESTION` before proceeding. OSM-Notes-Ingestion sets this after a successful
+`processPlanetNotes.sh --base` (`__record_base_load_complete`). API-only deployments must insert the
+same key/value when data is ready.
+
 #### 5. Notification Configuration
 
 ```bash

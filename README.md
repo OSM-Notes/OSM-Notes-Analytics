@@ -346,6 +346,17 @@ Each query should return a number > 0. If any table is empty or doesn't exist, y
 - **Count is 0**: Tables exist but empty. Run OSM-Notes-Ingestion to populate data.
 - **Connection error**: Check Step 2 configuration and PostgreSQL service.
 
+**Ingestion readiness (before ETL):** On the **ingestion** database (`DBNAME_INGESTION`, often
+`notes`), OSM-Notes-Ingestion sets `public.properties.base_load_complete = true` after a successful
+`processPlanetNotes.sh --base`. The ETL always checks this before running. Verify:
+
+```bash
+psql -d "${DBNAME_INGESTION:-notes}" -tAc "SELECT value FROM public.properties WHERE key = 'base_load_complete';"
+```
+
+Expected: `true`. API-only deployments must insert the same key/value when base data is ready (see
+`sql/dwh/ETL_10b_checkIngestionBaseLoadComplete.sql`).
+
 ## Data Warehouse Setup
 
 ### Step 4: Run ETL Process

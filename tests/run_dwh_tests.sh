@@ -64,6 +64,21 @@ else
  export TEST_DBPASSWORD="${TEST_DBPASSWORD:-}"
 fi
 
+# Single test database: ETL must read ingestion + DWH from TEST_DBNAME in CI/local test runs.
+export DBNAME_INGESTION="${DBNAME_INGESTION:-${TEST_DBNAME}}"
+export DBNAME_DWH="${DBNAME_DWH:-${TEST_DBNAME}}"
+
+# ETL always checks public.properties.base_load_complete on DBNAME_INGESTION.
+log_info "Applying test ingestion marker base_load_complete on database ${TEST_DBNAME}..."
+if [[ -n "${TEST_DBHOST:-}" ]]; then
+ PGPASSWORD="${TEST_DBPASSWORD:-postgres}" psql -h "${TEST_DBHOST}" -p "${TEST_DBPORT:-5432}" \
+  -U "${TEST_DBUSER:-postgres}" -d "${TEST_DBNAME}" -v ON_ERROR_STOP=1 \
+  -f "${PROJECT_ROOT}/tests/sql/ensure_test_ingestion_base_load_complete.sql"
+else
+ psql -d "${TEST_DBNAME}" -v ON_ERROR_STOP=1 \
+  -f "${PROJECT_ROOT}/tests/sql/ensure_test_ingestion_base_load_complete.sql"
+fi
+
 # Check if BATS is installed
 if ! command -v bats &> /dev/null; then
  log_error "BATS is not installed. Please install it first:"

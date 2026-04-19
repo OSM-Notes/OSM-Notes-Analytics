@@ -149,6 +149,7 @@ load ../../test_helper
 # Test that all SQL files are valid
 @test "ETL SQL files should be valid" {
  local SQL_FILES=(
+  "sql/dwh/ETL_10b_checkIngestionBaseLoadComplete.sql"
   "sql/dwh/ETL_11_checkDWHTables.sql"
   "sql/dwh/ETL_12_removeDatamartObjects.sql"
   "sql/dwh/ETL_13_removeDWHObjects.sql"

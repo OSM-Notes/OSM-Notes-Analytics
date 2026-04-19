@@ -337,6 +337,13 @@ These variables control the ETL process behavior:
   # Then run incremental to process 2015+
   ```
 
+### Ingestion readiness (always enforced)
+
+Before running the warehouse steps, `ETL.sh` checks `public.properties.base_load_complete = true` on
+`DBNAME_INGESTION`, as set by OSM-Notes-Ingestion after a successful `processPlanetNotes.sh --base`.
+For API-only ingestion, insert the same property when the base tables are ready (see
+`sql/dwh/ETL_10b_checkIngestionBaseLoadComplete.sql`).
+
 ## 📋 Properties File Variables
 
 Defined in `etc/properties.sh` (created from `etc/properties.sh.example`, can be overridden by

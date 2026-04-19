@@ -168,7 +168,17 @@ ls -la etc/etl.properties
    # See: https://github.com/OSM-Notes/OSM-Notes-Ingestion
    ```
 
-2. **Create configuration files:**
+2. **Verify ingestion base load marker on `DBNAME_INGESTION` (not the DWH):**
+
+   ```bash
+   psql -d "${DBNAME_INGESTION:-notes}" -tAc \
+     "SELECT value FROM public.properties WHERE key = 'base_load_complete';"
+   ```
+
+   Expected: `true`. Set by OSM-Notes-Ingestion after `processPlanetNotes.sh --base`, or insert
+   manually for API-only setups. See `sql/dwh/ETL_10b_checkIngestionBaseLoadComplete.sql`.
+
+3. **Create configuration files:**
 
    ```bash
    cp etc/properties.sh.example etc/properties.sh
@@ -176,7 +186,7 @@ ls -la etc/etl.properties
    nano etc/properties.sh  # Edit with your database credentials
    ```
 
-3. **Check PostgreSQL is running:**
+4. **Check PostgreSQL is running:**
    ```bash
    sudo systemctl status postgresql
    sudo systemctl start postgresql  # If not running
