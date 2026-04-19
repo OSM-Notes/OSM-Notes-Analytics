@@ -213,6 +213,10 @@ psql -d "${DBNAME:-notes_dwh}" -c "SELECT pid, application_name, state, now() - 
 psql -d "${DBNAME:-notes_dwh}" -c "SELECT pid, application_name, state, now() - state_change AS duration, query FROM pg_stat_activity WHERE application_name LIKE 'datamartUsers-%' ORDER BY application_name;"
 ```
 
+See [ETL_Runtime_Monitoring.md](ETL_Runtime_Monitoring.md) for **freshness vs source** queries,
+**incremental facts** detection (`process_notes_actions_into_dwh`), and a **phase guess** from
+`query` text. Runnable copy: `sql/monitoring/etl_runtime_queries.sql`.
+
 **Solutions:**
 
 1. **Increase timeouts for large operations:**

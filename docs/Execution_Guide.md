@@ -164,6 +164,10 @@ tail -40f $(ls -1rtd /tmp/ETL_* | tail -1)/ETL.log
 ls -ltr /tmp/ETL_*/
 ```
 
+For **SQL-based monitoring** (freshness vs ingestion, `pg_stat_activity`, mapping long-running
+queries to ETL phases), see [ETL_Runtime_Monitoring.md](ETL_Runtime_Monitoring.md) and
+`sql/monitoring/etl_runtime_queries.sql`.
+
 ### Recovery
 
 The ETL has built-in recovery mechanisms:
