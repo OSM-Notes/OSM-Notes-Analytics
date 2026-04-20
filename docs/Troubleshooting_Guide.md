@@ -192,6 +192,21 @@ ls -la etc/etl.properties
    sudo systemctl start postgresql  # If not running
    ```
 
+### Problem: FDW — "permission denied for table note_comments"
+
+**Symptoms:**
+
+- ETL or `EXPLAIN` against foreign tables fails with `permission denied for table note_comments`
+- Similar errors for other base tables on the **ingestion** database when using `postgres_fdw`
+
+**Cause:** The role used in the DWH **user mapping** (`FDW_INGESTION_USER`) must have `SELECT` (and
+schema `USAGE`) on those tables in **`DBNAME_INGESTION`**, not only in the warehouse.
+
+**Solution:** Follow [Hybrid_Strategy_Copy_FDW.md](Hybrid_Strategy_Copy_FDW.md) — troubleshooting
+**«Error: permission denied for table note_comments»** (grants on ingestion + optional
+`ALTER DEFAULT PRIVILEGES`). For wrapper-level errors, see [Installation_Dependencies.md](Installation_Dependencies.md)
+(`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw`).
+
 ### Problem: ETL Takes Too Long
 
 **Symptoms:**
