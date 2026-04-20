@@ -90,8 +90,8 @@ FROM (
 
 **Interpretation:**
 
-- `calendar_days_behind` is a **calendar-day gap** between the latest comment date at source and
-  the latest fact date in the DWH (not “wall-clock ETA”).
+- `calendar_days_behind` is a **calendar-day gap** between the latest comment date at source and the
+  latest fact date in the DWH (not “wall-clock ETA”).
 - While `CALL staging.process_notes_actions_into_dwh()` is running a large catch-up, this gap should
   **trend down** after each successful run (or toward zero on a steady incremental).
 
