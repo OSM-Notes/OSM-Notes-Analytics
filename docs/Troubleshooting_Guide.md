@@ -204,7 +204,8 @@ schema `USAGE`) on those tables in **`DBNAME_INGESTION`**, not only in the wareh
 
 **Solution:** Follow [Hybrid_Strategy_Copy_FDW.md](Hybrid_Strategy_Copy_FDW.md) — troubleshooting
 **«Error: permission denied for table note_comments»** (grants on ingestion + optional
-`ALTER DEFAULT PRIVILEGES`). For wrapper-level errors, see [Installation_Dependencies.md](Installation_Dependencies.md)
+`ALTER DEFAULT PRIVILEGES`). For wrapper-level errors, see
+[Installation_Dependencies.md](Installation_Dependencies.md)
 (`GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw`).
 
 ### Problem: ETL Takes Too Long
