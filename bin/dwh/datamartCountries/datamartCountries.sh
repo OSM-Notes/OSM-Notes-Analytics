@@ -698,7 +698,7 @@ function __processNotesCountriesParallel {
   return 0
  else
   __loge "ERROR: Datamart countries population had ${total_failed} failed country(ies)"
-  __loge "Processed ${actually_processed}/${total_countries} countries successfully"
+  __loge "Queue drained: ${actually_processed}/${total_countries} countries attempted (includes failures; each failed country was still removed from the queue)"
   __loge "⏱️  TIME: Parallel country processing took ${total_time} seconds (with ${total_failed} failures)"
   __log_finish
   rm -f "${work_queue_file}" "${queue_lock_file}" 2> /dev/null || true

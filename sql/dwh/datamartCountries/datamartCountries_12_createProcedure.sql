@@ -1750,9 +1750,13 @@ AS $proc$
     (m_recent_activity_score * 0.3)
   );
 
-  -- New vs resolved ratio (last 30 days)
+  -- New vs resolved ratio (last 30 days). Column is DECIMAL(5,2): max 999.99 (same sentinel as
+  -- the "no resolutions" branch). Cap so extreme create/resolve skew cannot overflow.
   IF (m_notes_resolved_last_30_days > 0) THEN
-    m_new_vs_resolved_ratio := (m_notes_created_last_30_days::DECIMAL / m_notes_resolved_last_30_days);
+    m_new_vs_resolved_ratio := LEAST(
+      (m_notes_created_last_30_days::DECIMAL / m_notes_resolved_last_30_days),
+      999.99
+    );
   ELSE
     IF (m_notes_created_last_30_days > 0) THEN
       m_new_vs_resolved_ratio := 999.99; -- Infinite ratio (no resolutions)
