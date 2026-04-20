@@ -2,7 +2,7 @@
 title: "Installation and Dependencies Guide"
 description: "Complete guide to install dependencies and set up OSM-Notes-Analytics for development"
 version: "1.0.0"
-last_updated: "2026-01-26"
+last_updated: "2026-04-20"
 author: "AngocA"
 tags:
   - "installation"
@@ -30,7 +30,8 @@ production.
 5. [Project Installation](#project-installation)
 6. [Configuration](#configuration)
 7. [Verification](#verification)
-8. [Troubleshooting](#troubleshooting)
+8. [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -342,6 +343,45 @@ ls -la bin/dwh/*.sh
 
 ---
 
+## Optional: User datamart catch-up (shell)
+
+After installation and a successful `ETL.sh` run, `datamartUsers.sh` only processes up to
+`MAX_USERS_PER_CYCLE` users per invocation (with higher limits in catch-up mode when the backlog is
+large). See [Parallel_Processing.md](../bin/dwh/datamartUsers/Parallel_Processing.md) and
+[Environment_Variables.md](../bin/dwh/Environment_Variables.md).
+
+To **chain multiple cycles from the command line** without modifying repository code—each run starts
+as soon as the previous one finishes—use a `while` loop that matches the same “pending work”
+definition as the script (dimension users still `modified` and present in `dwh.facts`):
+
+```bash
+cd /path/to/OSM-Notes-Analytics
+
+# Load DBNAME_DWH and connection defaults if you use properties.sh (same as ETL/cron)
+set -a && source etc/properties.sh && set +a
+
+PENDING_Q="
+SELECT COUNT(DISTINCT f.action_dimension_id_user)
+FROM dwh.facts f
+JOIN dwh.dimension_users u ON f.action_dimension_id_user = u.dimension_user_id
+WHERE u.modified = TRUE;
+"
+
+while [[ "$(psql -d "${DBNAME_DWH:-notes_dwh}" -Atq -c "$PENDING_Q")" -gt 0 ]]; do
+  ./bin/dwh/datamartUsers/datamartUsers.sh || exit $?
+done
+echo "No remaining modified users in this backlog (per facts + dimension_users)."
+```
+
+**Operational notes:**
+
+- Run **one** `datamartUsers.sh` at a time; the script enforces a lock.
+- To process more users per iteration, export `MAX_USERS_PER_CYCLE`, `CATCHUP_MULTIPLIER`, or
+  `MAX_USERS_PER_CYCLE_CATCHUP` in the same shell before the loop (see Parallel_Processing.md).
+- Interrupt with Ctrl+C; if a run exits non-zero, the loop stops—fix the error before resuming.
+
+---
+
 ## Troubleshooting
 
 ### Ingestion Database Not Found
@@ -407,7 +447,8 @@ After installation:
 1. **Read Entry Points**: `bin/dwh/Entry_Points.md` - Which scripts to use
 2. **Review Environment Variables**: `bin/dwh/Environment_Variables.md` - Configuration options
 3. **Run ETL**: `./bin/dwh/ETL.sh` - Initial data warehouse load
-4. **Read Documentation**: `docs/README.md` - Complete documentation index
+4. **Large user datamart backlog**: Optional shell loop in [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
+5. **Read Documentation**: `docs/README.md` - Complete documentation index
 
 ---
 
