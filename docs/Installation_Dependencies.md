@@ -447,7 +447,8 @@ After installation:
 1. **Read Entry Points**: `bin/dwh/Entry_Points.md` - Which scripts to use
 2. **Review Environment Variables**: `bin/dwh/Environment_Variables.md` - Configuration options
 3. **Run ETL**: `./bin/dwh/ETL.sh` - Initial data warehouse load
-4. **Large user datamart backlog**: Optional shell loop in [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
+4. **Large user datamart backlog**: Optional shell loop in
+   [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
 5. **Read Documentation**: `docs/README.md` - Complete documentation index
 
 ---
