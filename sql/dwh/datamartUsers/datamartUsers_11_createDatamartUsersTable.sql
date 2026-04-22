@@ -346,10 +346,6 @@ ALTER TABLE dwh.badges_per_users
  FOREIGN KEY (id_user)
  REFERENCES dwh.datamartUsers (dimension_user_id);
 
--- Insert values
--- TODO datamart - populate badges.
-INSERT INTO dwh.badges (badge_name) VALUES
- ('Test');
 
 -- Contributor types (name: original/legacy; name_en: English for UI/export).
 ALTER TABLE dwh.contributor_types ADD COLUMN IF NOT EXISTS contributor_type_name_en VARCHAR(64) NULL;

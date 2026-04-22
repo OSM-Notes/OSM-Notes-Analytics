@@ -13,13 +13,13 @@
 -- ============================================================================
 -- Basic Query: Count users with only one contribution
 -- ============================================================================
--- Original query from ToDo/ToDos.md lines 86-94
-SELECT COUNT(1) AS users_with_single_contribution
+-- Source: original analytics backlog query
+SELECT COUNT(*) AS users_with_single_contribution
 FROM (
   SELECT f.action_dimension_id_user AS user_id
   FROM dwh.facts f
   GROUP BY f.action_dimension_id_user
-  HAVING COUNT(1) = 1
+  HAVING COUNT(*) = 1
 ) AS single_contributors;
 
 -- ============================================================================
@@ -29,10 +29,11 @@ FROM (
 WITH user_contributions AS (
   SELECT
     f.action_dimension_id_user AS user_id,
-    COUNT(1) AS contribution_count
+    COUNT(*) AS contribution_count
   FROM dwh.facts f
   GROUP BY f.action_dimension_id_user
 ),
+
 contribution_buckets AS (
   SELECT
     CASE
@@ -48,6 +49,7 @@ contribution_buckets AS (
     contribution_count
   FROM user_contributions
 ),
+
 level_stats AS (
   SELECT
     contribution_level,
@@ -56,12 +58,14 @@ level_stats AS (
   FROM contribution_buckets
   GROUP BY contribution_level
 ),
+
 total_stats AS (
   SELECT
     COUNT(*) AS total_users,
     SUM(contribution_count) AS grand_total_contributions
   FROM user_contributions
 )
+
 SELECT
   ls.contribution_level,
   ls.user_count,
@@ -89,10 +93,11 @@ ORDER BY
 WITH user_contributions AS (
   SELECT
     f.action_dimension_id_user AS user_id,
-    COUNT(1) AS contribution_count
+    COUNT(*) AS contribution_count
   FROM dwh.facts f
   GROUP BY f.action_dimension_id_user
 )
+
 SELECT
   COUNT(*) AS total_users,
   COUNT(*) FILTER (WHERE contribution_count = 1) AS users_with_single_contribution,
@@ -116,10 +121,11 @@ CREATE OR REPLACE VIEW dwh.v_user_contribution_distribution AS
 WITH user_contributions AS (
   SELECT
     f.action_dimension_id_user AS user_id,
-    COUNT(1) AS contribution_count
+    COUNT(*) AS contribution_count
   FROM dwh.facts f
   GROUP BY f.action_dimension_id_user
 ),
+
 contribution_buckets AS (
   SELECT
     CASE
@@ -135,6 +141,7 @@ contribution_buckets AS (
     contribution_count
   FROM user_contributions
 ),
+
 level_stats AS (
   SELECT
     contribution_level,
@@ -143,12 +150,14 @@ level_stats AS (
   FROM contribution_buckets
   GROUP BY contribution_level
 ),
+
 total_stats AS (
   SELECT
     COUNT(*) AS total_users,
     SUM(contribution_count) AS grand_total_contributions
   FROM user_contributions
 )
+
 SELECT
   ls.contribution_level,
   ls.user_count,
@@ -235,4 +244,3 @@ $$ LANGUAGE plpgsql;
 
 -- Example 4: Get detailed breakdown
 -- Run the "Enhanced Query: Distribution of users by contribution level" query above
-

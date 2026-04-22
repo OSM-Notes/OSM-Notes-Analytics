@@ -86,5 +86,4 @@ When adding new queries to this directory:
 
 ## Related Documentation
 
-- Original query source: `ToDo/ToDos.md` lines 86-94
-- TODO reference: `ToDo/TODO_LIST.md` - DOC-001
+- Task and sprint tracking: `ToDo/Progress_Tracker.md`, `ToDo/README.md`

@@ -180,7 +180,7 @@ All notable changes to this project will be documented in this file.
 - Added `bin/dwh/datamartUsers/PARALLEL_PROCESSING.md`: Complete documentation of parallel
   processing system
 - Added `sql/dwh/ml/README.md`: pgml installation and usage guide
-- Updated `ToDo/TODO_LIST.md`: All datamart tasks marked as completed
+- Updated ToDo tracking (`ToDo/Progress_Tracker.md`): All datamart tasks marked as completed
 - Removed obsolete files: `ToDo/ToDos.md`, `ToDo/DATAMARTS_IMPLEMENTATION_PLAN.md`
 
 ---
@@ -251,8 +251,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **Action Plan Consolidation**: Consolidated Action Plan into TODO_LIST
-- **Documentation Updates**: Simplified documentation in ProgressTracker and README files
+- **Action Plan Consolidation**: Consolidated action plan into ToDo tracking documents
+- **Documentation Updates**: Simplified documentation in `Progress_Tracker.md` and ToDo README files
 - **Submodule Updates**: Updated subproject references
 
 ### Removed

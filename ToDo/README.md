@@ -1,41 +1,15 @@
 # ToDo Directory
 
-This directory contains all TODO items, action plans, and progress tracking for the
-OSM-Notes-Analytics project.
+This directory contains progress tracking and workflow notes for the OSM-Notes-Analytics project.
+Task backlogs are maintained in `Progress_Tracker.md` and, for larger items, GitHub issues.
 
 ---
 
 ## Files Overview
 
-### 📋 TODO_LIST.md
+### Progress_Tracker.md
 
-**Purpose**: Consolidated TODO list with all identified tasks  
-**Use for**:
-
-- Current tasks and priorities
-- Task status tracking
-- Detailed task breakdown
-- Complete project roadmap
-
-**How to use**:
-
-1. Find tasks by priority or category
-2. Mark [🔄] when starting work
-3. Mark [✅] when completed
-4. Add notes on implementation details
-
-**Status Markers**:
-
-- `[ ]` Not started
-- `[🔄]` In progress
-- `[✅]` Completed
-- `[❌]` Cancelled/Not needed
-
----
-
-### 🎯 ProgressTracker.md
-
-**Purpose**: Quick daily/weekly progress view  
+**Purpose**: Sprint focus, weekly log, quick stats, next items, blockers  
 **Use for**:
 
 - Sprint planning
@@ -50,9 +24,14 @@ OSM-Notes-Analytics project.
 3. Update quick stats table
 4. Track blockers and decisions
 
-**Update frequency**: Daily or as tasks complete
+**Status markers** (when you use checklists in this file or in issues):
 
----
+- `[ ]` Not started
+- `[🔄]` In progress
+- `[✅]` Completed
+- `[❌]` Cancelled/Not needed
+
+**Update frequency**: Daily or as tasks complete
 
 ---
 
@@ -60,8 +39,8 @@ OSM-Notes-Analytics project.
 
 ### Starting a New Sprint
 
-1. Review `TODO_LIST.md` for next priority items
-2. Update `Progress_Tracker.md` with sprint goals
+1. Review `Progress_Tracker.md` for next priority items
+2. Set sprint goals in `Progress_Tracker.md`
 3. Create GitHub issues for major tasks (optional)
 4. Mark items as [🔄] in progress
 
@@ -69,49 +48,49 @@ OSM-Notes-Analytics project.
 
 1. Work on tasks from current sprint
 2. Update `Progress_Tracker.md` with daily progress
-3. Mark completed items [✅] in `TODO_LIST.md`
+3. Mark completed items [✅] in `Progress_Tracker.md` or linked issues
 4. Document blockers in `Progress_Tracker.md`
 
 ### Sprint Review
 
-1. Update statistics in both files
-2. Log completed items in `Progress_Tracker.md`
-3. Plan next sprint in `Progress_Tracker.md`
+1. Update statistics in `Progress_Tracker.md`
+2. Log completed items
+3. Plan the next sprint
 4. Review and adjust priorities if needed
 
 ### Adding New Tasks
 
-1. Add to appropriate section in `TODO_LIST.md`
+1. Add an entry or checklist item in `Progress_Tracker.md`, or open a GitHub issue
 2. Assign priority level
-3. Update statistics
-4. Consider adding to current sprint if critical
+3. Update statistics if you use the quick stats table
+4. Pull critical work into the current sprint when needed
 
 ---
 
 ## Priority Guidelines
 
-### 🔴 Critical
+### Critical
 
 - Breaking bugs or data quality issues
 - Test failures preventing deployment
 - Critical missing functionality
 - **Timeline**: Fix immediately
 
-### 🟡 High
+### High
 
 - Important missing features
 - Significant accuracy improvements
 - High-impact metrics
 - **Timeline**: Fix within 1-2 weeks
 
-### 🟠 Medium
+### Medium
 
 - Enhancements and optimizations
 - Code quality improvements
 - Documentation updates
 - **Timeline**: Fix within 1-2 months
 
-### 🟢 Low
+### Low
 
 - Nice-to-have features
 - Future enhancements
@@ -135,7 +114,7 @@ OSM-Notes-Analytics project.
 
 ### Git Workflow
 
-When working on tasks from TODO_LIST:
+When working on tracked tasks:
 
 ```bash
 # Create branch for task
@@ -147,16 +126,13 @@ git checkout -b fix/test-failures-datamarts
 # Commit with reference
 git commit -m "Fix: datamart calculation tests
 
-Resolves TODO_LIST Test #1
 Fixes failing tests in resolution metrics
 Updates test expectations to match actual data
 
 Related files:
 - tests/unit/bash/datamart_resolution_metrics.test.bats"
 
-# Update TODO_LIST.md
-# Mark [✅] Test #1
-# Update ProgressTracker.md
+# Update Progress_Tracker.md or the linked GitHub issue
 ```
 
 ### GitHub Issues (Optional)
@@ -166,8 +142,8 @@ For major tasks, create GitHub issues:
 ```markdown
 Title: Add resolution time aggregates to datamarts
 
-**Reference**: TODO_LIST.md - Metrics #1  
-**Priority**: 🟡 High
+**Reference**: ToDo/Progress_Tracker.md (link or section)  
+**Priority**: High
 
 **Description**: Missing resolution time analytics in datamarts.
 
@@ -209,10 +185,10 @@ Based on analysis in `docs/DASHBOARD_ANALYSIS.md`:
 ## Tips
 
 1. **Be realistic**: Don't mark items as done unless fully complete
-2. **Document blockers**: If stuck, note why in ProgressTracker
-3. **Update regularly**: Keep both files in sync
+2. **Document blockers**: If stuck, note why in `Progress_Tracker.md`
+3. **Update regularly**: Keep the tracker and issues in sync
 4. **Use references**: Link commits, PRs, and issues
-5. **Celebrate wins**: Log completed items in ProgressTracker
+5. **Celebrate wins**: Log completed items in `Progress_Tracker.md`
 6. **Adjust priorities**: Move urgent items up as needed
 7. **Break down large tasks**: Split into smaller, actionable items
 
@@ -222,10 +198,9 @@ Based on analysis in `docs/DASHBOARD_ANALYSIS.md`:
 
 If you discover new bugs or have feature ideas:
 
-1. Add to appropriate file in this directory
-2. Create entry in `TODO_LIST.md` with priority
-3. Update statistics
-4. Consider creating GitHub issue for visibility
+1. Add them to `Progress_Tracker.md` or create a GitHub issue
+2. Assign priority
+3. Update quick stats if you maintain them
 
 ---
 

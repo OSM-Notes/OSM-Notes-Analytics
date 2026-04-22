@@ -23,8 +23,7 @@
 
 ### Week
 
-- **Monday**: Created ProgressTracker.md based on Ingestion structure (ActionPlan.md consolidado en
-  TODO_LIST.md)
+- **Monday**: Created `Progress_Tracker.md` based on Ingestion structure
 - **Monday**: Identified 4 test files with modifications pending
 - **Monday**: Documented 5 missing critical metrics from dashboard analysis
 - **Monday**: Investigated test failures - found that tests require DBNAME to be configured
@@ -174,7 +173,7 @@ _None currently identified_
 
 ## Quick Reference Links
 
-- TODO List Consolidado: `ToDo/TODO_LIST.md`
+- Task tracking: `ToDo/Progress_Tracker.md` (this file)
 - Dashboard Analysis: `docs/DASHBOARD_ANALYSIS.md`
 
 ---
