@@ -164,6 +164,21 @@ These are the **only scripts** that should be executed directly:
      MAX_AGE_DAYS=7 ./bin/dwh/exportAndPushJSONToGitHub.sh
      ```
 
+### Machine learning and optional CSV (production)
+
+- **`bin/dwh/ml_retrain.sh`** — Trains or retrains pgml models when the database has enough data;
+  **cron**: often monthly. Requires PostgreSQL 14+, `pgml`, and files under `sql/dwh/ml`. See the main
+  `README.md` Quick Start **Step 9** and [`sql/dwh/ml/README.md`](../../sql/dwh/ml/README.md).
+
+- **`bin/dwh/ml_batch_classify.sh`** — Runs `dwh.predict_note_classification_pgml` in batches (env
+  `ML_BATCH_SIZE`, default 500). **Cron**: often hourly after ETL. Same prerequisites as above plus
+  `ml_03_predictWithPgML.sql` applied.
+
+- **`bin/dwh/exportAndPushCSVToGitHub.sh`** — Exports closed notes to CSV (one per country) and
+  pushes to the OSM-Notes-Data repo (AI / analysis, not the web viewer). See
+  [`sql/dwh/export/README.md`](../../sql/dwh/export/README.md). **Cron**: often monthly; see
+  `etc/cron.example`.
+
 ### Maintenance Scripts
 
 8. **`bin/dwh/cleanupDWH.sh`** - data warehouse cleanup script

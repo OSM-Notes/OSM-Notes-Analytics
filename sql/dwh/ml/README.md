@@ -3,6 +3,9 @@
 This directory contains SQL scripts for implementing Machine Learning classification of OSM notes
 using **pgml** (PostgreSQL Machine Learning).
 
+**Production path:** follow the main repository [README.md](../../README.md) **Quick Start — Step 9**
+for install order, cron (training + batch classification), and links back here for pgml system setup.
+
 ## Overview
 
 **pgml** allows us to train and use ML models directly in PostgreSQL, eliminating the need for

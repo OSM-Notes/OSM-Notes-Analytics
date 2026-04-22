@@ -87,6 +87,12 @@ HOME=/home/notes
 # ==========================================
 # MACHINE LEARNING TASKS
 # ==========================================
+# Requires: PostgreSQL 14+, pgml installed, and SQL steps in sql/dwh/ml + README Quick Start Step 9.
+#
+# Hourly (or adjust): batch classification into dwh.note_type_classifications
+# Tunes load with ML_BATCH_SIZE (default 500 in the script).
+0 * * * * /home/notes/OSM-Notes-Analytics/bin/dwh/ml_batch_classify.sh >> /tmp/ml-batch.log 2>&1
+# 0 * * * * ML_BATCH_SIZE=1000 /home/notes/OSM-Notes-Analytics/bin/dwh/ml_batch_classify.sh >> /tmp/ml-batch.log 2>&1
 
 # Monthly: Intelligent ML training/retraining (1st day of month at 4 AM)
 # Script automatically detects system state and decides what to do:

@@ -97,7 +97,8 @@ data.
 ### For System Administrators
 
 1. **Deployment** (45 min)
-   - This README - Setup and deployment (20 min)
+   - This README - Setup and deployment, including [Step 9 (ML)](#step-9-machine-learning-pgml) (20
+     min)
    - [bin/dwh/ENTRY_POINTS.md](bin/dwh/Entry_Points.md) - Script entry points (15 min)
    - [bin/dwh/ENVIRONMENT_VARIABLES.md](bin/dwh/Environment_Variables.md) - Configuration (10 min)
 
@@ -144,6 +145,10 @@ project:
   - Content quality: comment length, URL/mention detection, engagement metrics
   - Community health: active notes, backlog, age distribution, recent activity
 - **Comprehensive Testing**: 197 automated tests (90%+ function coverage)
+- **Machine learning (pgml)**: In-database note classification into
+  `dwh.note_type_classifications` (requires PostgreSQL 14+; see [Quick Start — Step 9](#step-9-machine-learning-pgml))
+- **Optional CSV export**: Closed notes per country for analysis/AI context via
+  `exportAndPushCSVToGitHub.sh` (see [Step 10](#step-10-export-closed-notes-to-csv-optional))
 
 ## GDPR Compliance
 
@@ -178,6 +183,9 @@ For complete installation instructions, see
 - **Bash** 4.0 or higher
 - **Standard UNIX utilities**: grep, awk, sed, curl, jq
 - **Parallel processing**: GNU parallel (for parallel ETL execution)
+- **Machine learning (pgml)**: PostgreSQL **14+** on the server that hosts the DWH, plus a
+  system-level [pgml](https://postgresml.org/) install (not a standard `apt` package). The core
+  ETL and datamarts still run on PostgreSQL 12+; use 14+ if you follow [Step 9](#step-9-machine-learning-pgml).
 
 ### Internal Repository Requirements
 
@@ -226,14 +234,18 @@ This guide walks you through the complete process from scratch to having exporta
   - [Step 6: Create and Populate Datamarts](#step-6-create-and-populate-datamarts)
   - [Step 7: Verify Datamart Creation](#step-7-verify-datamart-creation)
   - [Step 8: Export to JSON (Optional)](#step-8-export-to-json-optional)
+  - [Step 9: Machine Learning (pgml)](#step-9-machine-learning-pgml)
+  - [Step 10: Export Closed Notes to CSV (Optional)](#step-10-export-closed-notes-to-csv-optional)
 - [Quick Troubleshooting](#quick-troubleshooting)
 - [Incremental Updates](#incremental-updates)
 
 ### Process Overview
 
-```
-1. Base Data       → 2. ETL/DWH        → 3. Datamarts      → 4. JSON Export
-   (notes)            (facts, dims)       (aggregations)      (web viewer)
+```text
+1. Base data → 2. ETL / DWH → 3. Datamarts → 4. JSON export (viewer)
+                 ↓
+5. ML (pgml): train models, batch-classify notes → dwh.note_type_classifications
+6. (Optional) CSV export: closed notes per country → OSM-Notes-Data (AI / analysis)
 ```
 
 ### Prerequisites Check
@@ -752,6 +764,75 @@ output/json/
 See [JSON Export Documentation](bin/dwh/Export_JSON_README.md) and
 [Atomic Validation Export](docs/Atomic_Validation_Export.md) for complete details.
 
+### Step 9: Machine Learning (pgml)
+
+**What this does:** Trains in-database classifiers and stores predictions in
+`dwh.note_type_classifications` (category, action recommendation, priority score, etc.).
+
+**Why it matters:** Enables assisted triage and analytics on note *content* without a separate Python
+ML service. Everything runs in PostgreSQL via [pgml](https://postgresml.org/).
+
+**Requirements:**
+
+- **PostgreSQL 14+** on the DWH instance (pgml does not support PostgreSQL 12/13)
+- System-level pgml build, `CREATE EXTENSION pgml`, and Python/ML dependencies — see
+  **[`sql/dwh/ml/README.md`](sql/dwh/ml/README.md)** (installation is non-trivial: Rust build,
+  `shared_preload_libraries`, `pip` packages for the Python version pgml uses)
+
+**One-time setup (after Steps 4–7 have populated the DWH and datamarts):**
+
+1. Install and enable pgml (server + `CREATE EXTENSION`) per [`sql/dwh/ml/README.md`](sql/dwh/ml/README.md).
+2. Apply SQL in order: `ml_00_check_prerequisites.sql`, `ml_01_setupPgML.sql`, then
+   **`ml_02_trainPgMLModels.sql`** (or run **`bin/dwh/ml_retrain.sh`** once; it creates views and
+   trains when enough data exist).
+3. Apply **`ml_03_predictWithPgML.sql`** so the batch function `dwh.predict_note_classification_pgml`
+   exists.
+
+**Operational scripts (intended for cron):**
+
+| Script | Role |
+| ------ | ---- |
+| [`bin/dwh/ml_retrain.sh`](bin/dwh/ml_retrain.sh) | (Re)trains models when data thresholds are met; safe to run monthly. |
+| [`bin/dwh/ml_batch_classify.sh`](bin/dwh/ml_batch_classify.sh) | Runs a batch of predictions into `dwh.note_type_classifications`; schedule regularly after ETL. |
+
+Example (manual batch):
+
+```bash
+cd /path/to/OSM-Notes-Analytics
+./bin/dwh/ml_batch_classify.sh
+# or: ML_BATCH_SIZE=1000 ./bin/dwh/ml_batch_classify.sh
+```
+
+`DBNAME_DWH` is read from `etc/properties.sh` (same as other `bin/dwh` scripts). See
+**[Scheduling with Cron](#scheduling-with-cron)** for example `crontab` lines and
+**[`etc/cron.example`](etc/cron.example)**.
+
+**Further reading:** [`sql/dwh/ml/README.md`](sql/dwh/ml/README.md),
+[`docs/ML_Implementation_Plan.md`](docs/ML_Implementation_Plan.md) (higher-level strategy).
+
+### Step 10: Export Closed Notes to CSV (Optional)
+
+**What this does:** Exports **closed notes to CSV (one file per country)** and pushes them to the
+**OSM-Notes-Data** repository. Column order is optimized for **AI / external analysis** (not for
+the web viewer, which uses JSON from Step 8).
+
+**Why it matters:** Optional dataset publication; independent of JSON export.
+
+**Prerequisites:** Clone [OSM-Notes-Data](https://github.com/OSM-Notes/OSM-Notes-Data) next to the
+project (e.g. `~/OSM-Notes-Data`), `etc/properties.sh` with `DBNAME_DWH` (and credentials as needed).
+
+```bash
+cd bin/dwh
+./exportAndPushCSVToGitHub.sh
+```
+
+**Configuration and limits** (e.g. `MAX_NOTES_PER_COUNTRY`): see
+**[`sql/dwh/export/README.md`](sql/dwh/export/README.md)**. **Cron example:** `etc/cron.example`
+(runs monthly on the 15th by default to leave time for ETL to finish the month).
+
+**Not** in the default `*/15` ETL+JSON line — schedule CSV separately if you need it (typically
+monthly).
+
 ## Quick Troubleshooting
 
 If you encounter issues during setup, here are quick solutions:
@@ -798,6 +879,9 @@ cd bin/dwh
 # 3. Export JSON (optional)
 ./exportDatamartsToJSON.sh
 
+# 4. ML batch classification (optional, if Step 9 is configured)
+# ./ml_batch_classify.sh
+
 # Note: The export script validates all JSON files before moving them to the final destination.
 # If validation fails, it keeps existing files and exits with an error, ensuring data integrity.
 ```
@@ -807,19 +891,32 @@ cd bin/dwh
 The ETL process **automatically updates datamarts** (datamartCountries, datamartUsers,
 datamartGlobal) at the end of each run. Separate cron jobs for datamarts are **not needed**.
 
-For automated analytics updates:
+**Production `crontab` building blocks** (copy paths and DB env vars; full template:
+**[`etc/cron.example`](etc/cron.example)**):
 
 ```bash
-# Option A: ETL only (if you don't need JSON export to GitHub Pages)
-*/15 * * * * ~/OSM-Notes-Analytics/bin/dwh/ETL.sh
+# Core: incremental ETL (every 15 minutes)
+*/15 * * * * export CLEAN=false LOG_LEVEL=INFO DBNAME_INGESTION=notes DBNAME_DWH=notes_dwh DB_USER=notes ; /path/OSM-Notes-Analytics/bin/dwh/ETL.sh
 
-# Option B: ETL + export to GitHub Pages (runs export only if ETL succeeds)
-# Log to /tmp (no setup):
+# ETL + JSON to GitHub Pages (export only if ETL succeeds) — same as Option B in Quick Start
+# Log to /tmp (no extra setup):
 */15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-analytics.log 2>&1
-# Or log to /var/log (same layout as sibling projects osm-notes-ingestion, osm-notes-monitoring).
-# One-time setup as root: see etc/cron.example and etc/logrotate.osm-analytics.conf.
-# */15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
+# Or: /var/log via etc/logrotate.osm-analytics.conf (see etc/cron.example)
+
+# ML — batch classification (after models exist; tune frequency vs load)
+# Example: hourly, 500 notes per run (override with ML_BATCH_SIZE=1000)
+0 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ml_batch_classify.sh >> /tmp/ml-batch.log 2>&1
+
+# ML — model training / retraining (monthly; can exit early if retrain not needed)
+# 0 4 1 * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ml_retrain.sh >> /tmp/ml-retrain.log 2>&1
+
+# Optional CSV: closed notes per country → OSM-Notes-Data (often monthly, not every 15 min)
+# 0 2 15 * * /path/OSM-Notes-Analytics/bin/dwh/exportAndPushCSVToGitHub.sh
 ```
+
+`ml_batch_classify.sh` and `ml_retrain.sh` read `DBNAME_DWH` from the environment or from
+`etc/properties.sh` (see [Step 9](#step-9-machine-learning-pgml)). Install pgml and complete SQL
+setup **before** enabling ML cron lines.
 
 **Key features of JSON export:**
 
@@ -840,19 +937,23 @@ OSM-Notes-Analytics/
 │   │   ├── README.md      # DWH scripts documentation
 │   │   ├── datamartCountries/
 │   │   │   └── datamartCountries.sh
-│   │   └── datamartUsers/
-│   │       └── datamartUsers.sh
+│   │   ├── datamartUsers/
+│   │   │   └── datamartUsers.sh
+│   │   ├── ml_retrain.sh        # ML training / retrain (cron)
+│   │   └── ml_batch_classify.sh # ML batch predict (cron)
 │   └── README.md          # Scripts documentation
 ├── etc/                    # Configuration files
 │   ├── properties.sh      # Database configuration
 │   ├── etl.properties     # ETL configuration
+│   ├── cron.example       # Example crontab: ETL, JSON, CSV, ML
 │   └── README.md          # Configuration documentation
 ├── sql/                    # SQL scripts
 │   ├── dwh/               # DWH DDL and procedures
 │   │   ├── ETL_*.sql      # ETL scripts
 │   │   ├── Staging_*.sql  # Staging procedures
 │   │   ├── datamartCountries/  # Country datamart SQL
-│   │   └── datamartUsers/      # User datamart SQL
+│   │   ├── datamartUsers/      # User datamart SQL
+│   │   └── ml/            # pgml: setup, train, predict SQL
 │   └── README.md          # SQL documentation
 ├── scripts/                # Utility scripts
 │   └── README.md          # Scripts documentation
