@@ -11,6 +11,9 @@
 
 set -euo pipefail
 
+# Minimal/containers and some sudo setups use a short PATH; cmake/gcc live in /usr/bin.
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:${PATH}}"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -92,6 +95,8 @@ apt-get install -y \
  libopenblas-dev \
  libgomp1
 
+hash -r 2> /dev/null || true
+
 # Verify linkers are available
 if ! command -v ld &> /dev/null; then
  echo -e "${RED}Error: Linker 'ld' not found after installing binutils${NC}"
@@ -110,7 +115,11 @@ if ! command -v cmake &> /dev/null; then
  echo "Install with: apt-get install -y cmake"
  exit 1
 fi
-echo "cmake found: $(command -v cmake) ($(cmake --version | head -1))"
+# cmake-rs (used by xgboost-sys) honors CMAKE; use an absolute path to avoid ENOENT under tight PATH.
+CMAKE_BIN="$(command -v cmake)"
+export CMAKE="$CMAKE_BIN"
+echo "cmake found: ${CMAKE} ($(cmake --version | head -1))"
+echo "Exported CMAKE=${CMAKE} for Rust build scripts"
 
 # Check if Rust is installed
 echo -e "${YELLOW}Checking Rust installation...${NC}"
@@ -545,26 +554,33 @@ echo -e "${YELLOW}Installing Python ML packages...${NC}"
 echo "Note: pgml requires numpy, scipy, xgboost, lightgbm, and scikit-learn"
 echo "These packages must be installed for the Python version that pgml was compiled with."
 
-# Detect Python version used by pgml (usually Python 3.10)
-PYTHON_VERSION=""
-if command -v python3.10 &> /dev/null; then
- PYTHON_VERSION="3.10"
- echo "Detected Python 3.10, installing packages for this version..."
-elif command -v python3.11 &> /dev/null; then
- PYTHON_VERSION="3.11"
- echo "Detected Python 3.11, installing packages for this version..."
+# Python for pip: same interpreter pgml was built against (override: export PYTHON_CMD=python3.13)
+if [[ -n "${PYTHON_CMD:-}" ]] && command -v "${PYTHON_CMD}" &> /dev/null; then
+ :
 elif command -v python3 &> /dev/null; then
- PYTHON_VERSION="3"
- echo "Using default Python 3, installing packages..."
+ PYTHON_CMD="python3"
+elif command -v python3.13 &> /dev/null; then
+ PYTHON_CMD="python3.13"
+elif command -v python3.12 &> /dev/null; then
+ PYTHON_CMD="python3.12"
+elif command -v python3.11 &> /dev/null; then
+ PYTHON_CMD="python3.11"
+elif command -v python3.10 &> /dev/null; then
+ PYTHON_CMD="python3.10"
 fi
 
-if [[ -n "$PYTHON_VERSION" ]]; then
- PYTHON_CMD="python${PYTHON_VERSION}"
+PYTHON_MINOR=""
+if [[ -n "$PYTHON_CMD" ]]; then
+ PYTHON_MINOR="$("${PYTHON_CMD}" -c 'import sys; print("%d.%d" % (sys.version_info[0:2]))' 2> /dev/null || echo "?")"
+ echo "Using Python for pip: ${PYTHON_CMD} (${PYTHON_MINOR})"
+fi
+
+if [[ -n "$PYTHON_CMD" ]]; then
  PIP_CMD="${PYTHON_CMD} -m pip"
 
  echo "Installing numpy, scipy, xgboost, lightgbm, and scikit-learn using ${PIP_CMD}..."
  if ${PIP_CMD} install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn 2> /dev/null; then
-  echo -e "${GREEN}✓ Python ML packages installed successfully for Python ${PYTHON_VERSION}${NC}"
+  echo -e "${GREEN}✓ Python ML packages installed successfully (${PYTHON_CMD})${NC}"
  else
   echo -e "${YELLOW}⚠ Warning: Failed to install Python packages with pip${NC}"
   echo "You may need to install them manually:"
@@ -572,16 +588,16 @@ if [[ -n "$PYTHON_VERSION" ]]; then
  fi
 else
  echo -e "${YELLOW}⚠ Warning: Python 3 not found, skipping Python package installation${NC}"
- echo "Install Python packages manually:"
- echo "  sudo python3.10 -m pip install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
+ echo "Install Python packages manually, e.g.:"
+ echo "  sudo python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
 fi
 
 # Verify Python packages are accessible
 echo ""
 echo -e "${YELLOW}Verifying Python packages...${NC}"
-if [[ -n "$PYTHON_VERSION" ]]; then
+if [[ -n "$PYTHON_CMD" ]]; then
  if ${PYTHON_CMD} -c "import numpy, scipy, xgboost, lightgbm, sklearn" 2> /dev/null; then
-  echo -e "${GREEN}✓ Python packages are accessible for Python ${PYTHON_VERSION}${NC}"
+  echo -e "${GREEN}✓ Python packages are accessible (${PYTHON_CMD})${NC}"
  else
   echo -e "${YELLOW}⚠ Warning: Python packages may not be accessible${NC}"
   echo "Try installing with: sudo ${PIP_CMD} install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
@@ -594,30 +610,30 @@ fi
 echo ""
 echo "Next steps:"
 echo "1. Install Python ML packages (if not already installed):"
-if [[ -n "$PYTHON_VERSION" ]]; then
+if [[ -n "$PYTHON_CMD" ]]; then
  echo "   sudo ${PIP_CMD} install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
 else
- echo "   sudo python3.10 -m pip install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
+ echo "   sudo python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir numpy scipy xgboost lightgbm scikit-learn"
 fi
 echo ""
 echo "2. Verify packages are accessible to PostgreSQL:"
-if [[ -n "$PYTHON_VERSION" ]]; then
+if [[ -n "$PYTHON_CMD" ]]; then
  echo "   sudo -u postgres ${PYTHON_CMD} -c 'import numpy, scipy, xgboost, lightgbm, sklearn; print(\"OK\")'"
 else
- echo "   sudo -u postgres python3.10 -c 'import numpy, scipy, xgboost, lightgbm, sklearn; print(\"OK\")'"
+ echo "   sudo -u postgres python3 -c 'import numpy, scipy, xgboost, lightgbm, sklearn; print(\"OK\")'"
 fi
 echo ""
 echo "3. Configure shared_preload_libraries in PostgreSQL:"
 echo "   psql -d postgres -c \"ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements,pgml';\""
 echo "   (Note: If pg_stat_statements is not installed, use: 'pgml')"
 echo ""
-echo "4. Restart PostgreSQL service:"
-echo "   sudo systemctl restart postgresql@14-main"
-echo "   (Adjust version number as needed)"
+echo "4. Restart PostgreSQL service (Debian/Ubuntu typical cluster is main; adjust if needed):"
+echo "   sudo systemctl restart postgresql@${PG_VERSION}-main"
+echo "   Or list units: systemctl list-units 'postgresql@*' --no-legend"
 echo ""
 echo "5. Enable the extension in your database:"
-echo "   sudo -u postgres /usr/lib/postgresql/14/bin/psql -d notes_dwh -c 'CREATE EXTENSION IF NOT EXISTS pgml;'"
+echo "   sudo -u postgres /usr/lib/postgresql/${PG_VERSION}/bin/psql -d notes_dwh -c 'CREATE EXTENSION IF NOT EXISTS pgml;'"
 echo ""
 echo "6. Verify installation:"
-echo "   sudo -u postgres /usr/lib/postgresql/14/bin/psql -d notes_dwh -c 'SELECT pgml.version();'"
+echo "   sudo -u postgres /usr/lib/postgresql/${PG_VERSION}/bin/psql -d notes_dwh -c 'SELECT pgml.version();'"
 echo ""

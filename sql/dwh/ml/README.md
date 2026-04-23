@@ -36,6 +36,44 @@ external Python services. This approach:
 1. **System-level installation** (install pgml extension on server)
 2. **Database-level activation** (enable extension in database)
 
+### Debian/Ubuntu: version and paths (generic)
+
+Use the **same** `psql` connection you use for the DWH instance (adjust host/port if needed).
+
+- **Major version `PG_VER`** (14–17): set explicitly, e.g. `export PG_VER=17`, or derive:
+  `export PG_VER="$(psql -d postgres -Atqc "SELECT current_setting('server_version_num')::int / 10000")"`
+- **Cluster name `PG_CLUSTER`**: usually `main` on Debian/Ubuntu packaged installs (see
+  `systemctl list-units 'postgresql@*' --no-legend` if unsure).
+- **`postgresql.auto.conf`**: the file **does not exist until the first successful `ALTER SYSTEM`**
+  on that cluster. Its path is whatever **`pg_file_settings.sourcefile`** reports for your change (on
+  some Debian/Ubuntu setups `postgresql.conf` lives under `/etc/postgresql/…` while
+  `postgresql.auto.conf` is under **`/var/lib/postgresql/…/main/`** — both are normal).
+
+```bash
+# Directory of the main postgresql.conf (useful for manual edits to postgresql.conf only)
+CONF_DIR="$(sudo -u postgres psql -d postgres -tAc 'SHOW config_file' | xargs dirname)"
+```
+
+- **Restart** (typical multi-version layout):  
+  `sudo systemctl restart "postgresql@${PG_VER}-${PG_CLUSTER}"`  
+  or `sudo systemctl restart postgresql` on single-instance layouts.
+
+### Python: interpreter for pip (`PY`)
+
+pgml uses whatever Python its **build** linked against (on the same host, that is usually the
+distro’s default `python3`, e.g. 3.11 / 3.12 / 3.13 — not necessarily 3.10). If `CREATE EXTENSION
+pgml` or logs mention a version, install pip packages **for that interpreter**.
+
+Set once and reuse in the commands below:
+
+```bash
+export PY=python3
+# Or an explicit minor, if that is what pgml reports (examples: python3.12, python3.13):
+# export PY=python3.13
+```
+
+Use: `sudo "$PY" -m pip ...` and `sudo -u postgres "$PY" -c '...'`.
+
 ### Step 1: System-Level Installation
 
 **This must be done FIRST** - installing pgml at the operating system level:
@@ -78,52 +116,92 @@ sudo apt-get install python3-numpy python3-scipy python3-xgboost
 2. **Configure shared_preload_libraries** (required for model deployment):
 
 ```bash
-# Add pgml to shared_preload_libraries
+# Add pgml to shared_preload_libraries (target the instance that will load pgml)
 psql -d postgres -c "ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements,pgml';"
 # Or if pg_stat_statements is not installed:
 psql -d postgres -c "ALTER SYSTEM SET shared_preload_libraries = 'pgml';"
 
-# IMPORTANT: Check the configuration file to ensure correct format
-sudo cat /var/lib/postgresql/14/main/postgresql.auto.conf | grep shared_preload_libraries
-# Should show: shared_preload_libraries = 'pg_stat_statements,pgml'
+# Verify what PostgreSQL read from config files (14+; no need to open files by hand)
+psql -d postgres -c "SELECT sourcefile, name, setting, applied FROM pg_file_settings WHERE name = 'shared_preload_libraries';"
+# applied = f for this parameter is normal until you restart — it only becomes t after reload.
+# psql may print setting with outer quotes; the stored value must be the comma-separated list only,
+# e.g. pg_stat_statements,pgml (not a second layer of "quotes" inside the value).
+
+# After restart, the active value:
+# psql -d postgres -c "SHOW shared_preload_libraries;"
+
+# Optional: inspect the real postgresql.auto.conf path (use sourcefile — not always dirname(config_file))
+AUTO_CONF="$(psql -d postgres -Atqc "SELECT sourcefile FROM pg_file_settings WHERE name = 'shared_preload_libraries' AND sourcefile LIKE '%postgresql.auto.conf' LIMIT 1;")"
+if [[ -n "$AUTO_CONF" ]] && sudo test -f "$AUTO_CONF"; then
+  sudo grep shared_preload_libraries "$AUTO_CONF"
+else
+  echo "No postgresql.auto.conf row yet — run the ALTER SYSTEM command above first."
+fi
+# In the file, the line should look like: shared_preload_libraries = 'pg_stat_statements,pgml'
 # NOT: shared_preload_libraries = '"pg_stat_statements,pgml"'
 
-# If format is wrong, fix it:
-sudo nano /var/lib/postgresql/14/main/postgresql.auto.conf
-# Change: shared_preload_libraries = '"pg_stat_statements,pgml"'
-# To:     shared_preload_libraries = 'pg_stat_statements,pgml'
+# If the line is wrong, edit that file (path from sourcefile above):
+if [[ -n "$AUTO_CONF" ]] && sudo test -f "$AUTO_CONF"; then
+  sudo "${EDITOR:-nano}" "$AUTO_CONF"
+fi
 
-# Restart PostgreSQL
-sudo systemctl restart postgresql@14-main
+# Restart PostgreSQL (set PG_VER / PG_CLUSTER per "Debian/Ubuntu: version and paths", or use generic restart)
+export PG_CLUSTER="${PG_CLUSTER:-main}"
+sudo systemctl restart "postgresql@${PG_VER}-${PG_CLUSTER}"
+# If that unit does not exist: sudo systemctl restart postgresql
 ```
 
 3. **Install Python packages for the specific Python version** (see troubleshooting section below):
 
 ```bash
-# pgml typically uses Python 3.10, check the error message to confirm
-# Install all required packages:
-sudo python3.10 -m pip install --break-system-packages --ignore-installed --no-cache-dir \
+# Default to distro python3 if PY not set (see "Python: interpreter for pip (PY)")
+export PY="${PY:-python3}"
+sudo "$PY" -m pip install --break-system-packages --ignore-installed --no-cache-dir \
   numpy scipy xgboost lightgbm scikit-learn
 
 # Verify installation
-sudo -u postgres python3.10 -c "import numpy, scipy, xgboost, lightgbm, sklearn; print('OK')"
+sudo -u postgres "$PY" -c "import numpy, scipy, xgboost, lightgbm, sklearn; print('OK')"
 ```
 
 4. **Enable extension in your database**:
 
 ```bash
-# Use the PostgreSQL 14 binary directly (if psql defaults to another version)
-sudo -u postgres /usr/lib/postgresql/14/bin/psql -d notes_dwh -c "CREATE EXTENSION IF NOT EXISTS pgml;"
+# If several PostgreSQL versions are installed, use the client matching PG_VER (see "Debian/Ubuntu: version and paths")
+PSQL_BIN="/usr/lib/postgresql/${PG_VER}/bin/psql"
+sudo -u postgres "$PSQL_BIN" -d notes_dwh -c "CREATE EXTENSION IF NOT EXISTS pgml;"
 
 # Verify
-sudo -u postgres /usr/lib/postgresql/14/bin/psql -d notes_dwh -c "SELECT pgml.version();"
+sudo -u postgres "$PSQL_BIN" -d notes_dwh -c "SELECT pgml.version();"
+# When only one version is installed, plain: sudo -u postgres psql -d notes_dwh ...
 ```
 
 **Note**: The `apt-get` packages may not be sufficient because:
 
 - They may be compiled for a different Python version than what pgml uses
 - `lightgbm` and `scikit-learn` are not available in standard apt repositories
-- You MUST install them with pip for the specific Python version (usually 3.10)
+- You MUST install them with pip for the **same** Python pgml uses (see `PY` above; often the
+  distro default `python3`)
+
+**Rust build: `xgboost-sys` / `is cmake not installed?`**: The C++ build uses CMake. Install it
+(`sudo apt-get install -y cmake`) and ensure it is on `PATH`, or export the absolute path for the
+`cmake` crate: `export CMAKE=/usr/bin/cmake` before `cargo build`. The `install_pgml.sh` script
+installs CMake and sets `CMAKE` automatically.
+
+**PostgreSQL fails to start — `FATAL: could not access file "pg_stat_statements,pgml"`**: PostgreSQL
+is loading **one** library whose name includes the comma (the list was not parsed as two entries).
+This almost always means **bad quoting** in `postgresql.auto.conf` (e.g. nested `"` around the
+whole list). The line must look like this (single-quoted list, **no** extra double quotes inside):
+
+```text
+shared_preload_libraries = 'pg_stat_statements,pgml'
+```
+
+**Not** `shared_preload_libraries = '"pg_stat_statements,pgml"'`. While PostgreSQL is down, edit the
+file as root (path is often under `/var/lib/postgresql/PG_VER/main/` or see `pg_file_settings.sourcefile`
+from a working instance / backup). Then `sudo systemctl start postgresql@PG_VER-main`. If
+`pg_stat_statements` is not installed, use `shared_preload_libraries = 'pgml'` only (and install
+`postgresql-contrib` / enable the extension later if needed). `systemctl` changes require **sudo**
+(or root).
 
 **Troubleshooting**: If you get errors about missing Python modules or numpy source directory:
 
@@ -140,37 +218,35 @@ sudo -u postgres python3 -c "import xgboost; print(xgboost.__version__)" || echo
    `--break-system-packages`:
 
 ```bash
-# First, identify which Python version pgml is using (check the error message)
-# If pgml says "Python version: 3.10.12", you need Python 3.10 packages
-# If pgml says "Python version: 3.11.x", you need Python 3.11 packages
+# First, identify which Python version pgml is using (error message from CREATE EXTENSION / logs).
+# Install pip packages for that exact interpreter (set PY — see "Python: interpreter for pip (PY)").
 
-# CRITICAL: The packages installed via apt may be compiled for a different Python version
-# You MUST install them with pip for the specific Python version pgml is using
+# CRITICAL: apt packages like python3-numpy may target a different runtime than pgml.
 
-# For Python 3.10 (most common case):
-# First, ensure pip is available for Python 3.10
-sudo python3.10 -m ensurepip --upgrade 2>/dev/null || \
-sudo apt-get install python3.10-distutils python3.10-venv
+export PY="${PY:-python3}"
 
-# Install packages specifically for Python 3.10 (all required packages)
-sudo python3.10 -m pip install --break-system-packages --ignore-installed --no-cache-dir \
+# Ensure pip / venv for that interpreter (Debian/Ubuntu: meta-packages track default python3)
+sudo "$PY" -m ensurepip --upgrade 2>/dev/null || \
+sudo apt-get install -y python3-venv python3-dev python3-pip
+
+# Install required wheels
+sudo "$PY" -m pip install --break-system-packages --ignore-installed --no-cache-dir \
   numpy scipy xgboost lightgbm scikit-learn
 
-# Verify installation for Python 3.10
-sudo -u postgres python3.10 -c "import numpy; print('numpy:', numpy.__version__)"
-sudo -u postgres python3.10 -c "import scipy; print('scipy:', scipy.__version__)"
-sudo -u postgres python3.10 -c "import xgboost; print('xgboost:', xgboost.__version__)"
-sudo -u postgres python3.10 -c "import lightgbm; print('lightgbm:', lightgbm.__version__)"
-sudo -u postgres python3.10 -c "import sklearn; print('sklearn:', sklearn.__version__)"
+# Verify (repeat with the same PY)
+sudo -u postgres "$PY" -c "import numpy; print('numpy:', numpy.__version__)"
+sudo -u postgres "$PY" -c "import scipy; print('scipy:', scipy.__version__)"
+sudo -u postgres "$PY" -c "import xgboost; print('xgboost:', xgboost.__version__)"
+sudo -u postgres "$PY" -c "import lightgbm; print('lightgbm:', lightgbm.__version__)"
+sudo -u postgres "$PY" -c "import sklearn; print('sklearn:', sklearn.__version__)"
 
-# If all work, try importing all together
-sudo -u postgres python3.10 -c "import numpy, scipy, xgboost, lightgbm, sklearn; print('All packages available for Python 3.10')"
+sudo -u postgres "$PY" -c "import numpy, scipy, xgboost, lightgbm, sklearn; print('OK')"
 ```
 
 **Important**: If you get errors about `numpy.core._multiarray_umath` or "numpy source directory",
 it means the numpy package is not properly installed for that Python version. The apt packages
-(`python3-numpy`) are compiled for the default Python version (usually 3.12), but pgml might be
-using Python 3.10. You MUST install with pip for the specific Python version.
+(`python3-numpy`) are compiled for one Python version, but pgml may use another. You MUST install
+with pip for the interpreter pgml actually loads (`PY`).
 
 3. **If you get numpy source directory error**, check PYTHONPATH in PostgreSQL environment:
 
@@ -178,14 +254,15 @@ using Python 3.10. You MUST install with pip for the specific Python version.
 # Check PostgreSQL's environment
 sudo -u postgres env | grep PYTHONPATH
 
-# Check systemd service file for PostgreSQL
-sudo systemctl show postgresql@14-main.service | grep Environment
+# Check systemd service file for PostgreSQL (set PG_VER / PG_CLUSTER to match your host)
+UNIT="postgresql@${PG_VER}-${PG_CLUSTER}.service"
+sudo systemctl show "$UNIT" | grep Environment
 # Or check the main service
 sudo systemctl show postgresql.service | grep Environment
 
 # If PYTHONPATH includes numpy source directories, you need to fix it:
 # Option 1: Edit PostgreSQL systemd service override
-sudo systemctl edit postgresql@14-main.service
+sudo systemctl edit "$UNIT"
 # Add:
 # [Service]
 # Environment="PYTHONPATH="
@@ -205,6 +282,10 @@ sudo systemctl restart postgresql
 common locations:
 
 ```bash
+# systemd unit for this cluster (PG_VER / PG_CLUSTER — see "Debian/Ubuntu: version and paths")
+export PG_CLUSTER="${PG_CLUSTER:-main}"
+UNIT="postgresql@${PG_VER}-${PG_CLUSTER}.service"
+
 # Check for numpy source directories in /tmp (common build location)
 find /tmp -name "numpy" -type d 2>/dev/null | head -5
 
@@ -216,10 +297,10 @@ find /tmp -name "numpy" -type d -path "*/pgml-build/*" -exec rm -rf {} + 2>/dev/
 find /tmp -name "numpy" -type d -path "*/target/*" -exec rm -rf {} + 2>/dev/null || true
 
 # Verify the systemd override was applied
-sudo systemctl show postgresql@14-main.service | grep -i environment
+sudo systemctl show "$UNIT" | grep -i environment
 
 # If PYTHONPATH is still set, try unsetting it explicitly
-sudo systemctl edit postgresql@14-main.service
+sudo systemctl edit "$UNIT"
 # Make sure it contains:
 # [Service]
 # Environment="PYTHONPATH="
@@ -230,72 +311,38 @@ sudo systemctl daemon-reload
 sudo systemctl restart postgresql
 ```
 
-**If the problem persists**, the issue might be that pgml was compiled with a different Python
-version. The error message shows which Python version pgml is using (e.g., "Python version:
-3.10.12").
+**If the problem persists**, pgml may have been compiled against a different Python than the one
+you install packages for. The error text usually states which Python version pgml expects.
 
-**Solution**: Recompile pgml with the correct Python version, or install Python packages for the
-version pgml is using:
+**Solution**: install pip packages for **that** interpreter (`export PY=python3.X`), or recompile
+pgml so it links to your intended `python3`:
 
 ```bash
-# 1. Check what Python version pgml is using (from the error message)
-# If it says "Python version: 3.10.12", you need Python 3.10
+# 1. Set PY from the pgml error (example: export PY=python3.13)
+export PY="${PY:-python3}"
+# 2. Install dev/venv packages for that minor on Debian/Ubuntu, e.g.:
+#    sudo apt-get install python3.13-dev python3.13-venv
+#    (replace 3.13 with your minor version)
 
-# 2. Install Python 3.10 if not available
-sudo apt-get install python3.10 python3.10-dev python3.10-distutils
+sudo "$PY" -m pip install --break-system-packages numpy scipy xgboost lightgbm scikit-learn
+sudo -u postgres "$PY" -c "import numpy, scipy, xgboost; print('OK')"
 
-# 3. Install packages for Python 3.10 specifically
-sudo python3.10 -m pip install --break-system-packages numpy scipy xgboost
-
-# 4. Verify packages are accessible
-sudo -u postgres python3.10 -c "import numpy, scipy, xgboost; print('OK')"
-
-# 5. Restart PostgreSQL
 sudo systemctl restart postgresql
-
-# 6. Try creating extension again
 psql -d notes_dwh -c 'CREATE EXTENSION IF NOT EXISTS pgml;'
 ```
 
-**Alternative**: If Python 3.10 is not available, you may need to recompile pgml with Python 3.11:
+**Alternative — re-link pgml to the current default `python3`**: re-run the build on the same
+machine so it picks up the interpreter that will run PostgreSQL:
 
 ```bash
-# Re-run the installation script, which will recompile with current Python
 cd sql/dwh/ml
 sudo ./install_pgml.sh
 ```
 
-**Important Note**: If pgml was compiled with Python 3.10 but your system has Python 3.11, you have
-two options:
-
-1. **Install Python 3.10 and packages for it** (if Python 3.10 is available):
-
-```bash
-# Check if Python 3.10 is available
-python3.10 --version 2>/dev/null || echo "Python 3.10 not found"
-
-# If available, install packages for Python 3.10 (all required packages)
-sudo python3.10 -m pip install --break-system-packages --ignore-installed --no-cache-dir \
-  numpy scipy xgboost lightgbm scikit-learn
-
-# Verify
-sudo -u postgres python3.10 -c "import numpy, scipy, xgboost, lightgbm, sklearn; print('OK')"
-```
-
-2. **Force pgml to use Python 3.11** by ensuring Python 3.11 is the default during compilation:
-
-```bash
-# Make sure Python 3.11 is the default
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-sudo update-alternatives --set python3 /usr/bin/python3.11
-
-# Verify
-python3 --version  # Should show 3.11.x
-
-# Recompile pgml
-cd sql/dwh/ml
-sudo ./install_pgml.sh
-```
+**Version mismatch** (pgml built for Python A, system default is Python B): either install packages
+with `PY` pointing at Python A, or make Python B the one used during `install_pgml.sh` / `cargo`
+(e.g. `update-alternatives` for `python3`, or install `python3-A` and set `PY` for pip), then
+rebuild pgml.
 
 **If the numpy source directory error persists**, it might be that pgml is finding a numpy source
 directory during import. Try:
@@ -353,12 +400,15 @@ docker exec -it postgres-pgml psql -U postgres -d notes_dwh
 - Build tools (make, gcc, etc.) and **CMake** (required to compile XGBoost/LightGBM bundled with pgml)
 
 ```bash
+# Set PG_VER to your PostgreSQL major version (14–17); see "Debian/Ubuntu: version and paths"
+export PG_VER=17
+
 # Install build dependencies (Ubuntu/Debian)
 sudo apt-get update
 sudo apt-get install -y \
   build-essential \
   cmake \
-  postgresql-server-dev-15 \
+  "postgresql-server-dev-${PG_VER}" \
   libpython3-dev \
   python3-pip \
   curl \
@@ -380,7 +430,7 @@ cargo build --release
 sudo make install
 
 # Verify installation
-ls /usr/share/postgresql/15/extension/pgml*
+ls /usr/share/postgresql/*/extension/pgml*
 ```
 
 **For detailed build instructions**, see:
@@ -430,12 +480,18 @@ SELECT pgml.version();
 ### Step 3: Verify Full Installation
 
 ```sql
--- Test pgml functions
+-- Core sanity checks (pgml 2.10+ — older docs sometimes used pgml.available_algorithms(), which
+-- is not present in current extension builds; algorithms are passed by name to pgml.train().)
 SELECT pgml.version();
-SELECT pgml.available_algorithms();
+SELECT pgml.python_version();
+-- Optional: ensure Python deps pgml expects are importable
+SELECT pgml.validate_python_dependencies();
 ```
 
-If you see errors, the system-level installation may be missing.
+If you see errors, the system-level installation or Python packages may be incomplete.
+
+**Algorithms**: see upstream supervised-learning docs and examples (e.g. `xgboost`, `lightgbm`,
+`linear`, `random_forest`) rather than a SQL `available_algorithms()` helper.
 
 ## Setup Steps
 

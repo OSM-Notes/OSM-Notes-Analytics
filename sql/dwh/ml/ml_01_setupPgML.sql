@@ -85,7 +85,13 @@ SELECT
           FROM dwh.facts f2
           WHERE f2.id_note = f.id_note
             AND f2.action_comment = 'commented'
-            AND f2.action_at < f.closed_dimension_id_date) > 0
+            AND f2.action_at < (
+              SELECT MIN(fc.action_at)
+              FROM dwh.facts fc
+              WHERE fc.id_note = f.id_note
+                AND fc.action_comment = 'closed'
+                AND fc.action_at > f.action_at
+            )) > 0
     THEN 'contributes_with_change'
     WHEN f.closed_dimension_id_date IS NOT NULL
     THEN 'doesnt_contribute'
@@ -110,7 +116,13 @@ SELECT
           FROM dwh.facts f2
           WHERE f2.id_note = f.id_note
             AND f2.action_comment = 'commented'
-            AND f2.action_at < f.closed_dimension_id_date) > 0
+            AND f2.action_at < (
+              SELECT MIN(fc.action_at)
+              FROM dwh.facts fc
+              WHERE fc.id_note = f.id_note
+                AND fc.action_comment = 'closed'
+                AND fc.action_at > f.action_at
+            )) > 0
     THEN 'process'
     WHEN f.closed_dimension_id_date IS NOT NULL
     THEN 'close'
