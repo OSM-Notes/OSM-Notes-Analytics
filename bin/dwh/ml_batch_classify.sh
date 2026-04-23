@@ -27,7 +27,8 @@ if [[ -f "${PROJECT_ROOT}/etc/properties.sh.local" ]]; then
  source "${PROJECT_ROOT}/etc/properties.sh.local"
 fi
 
-DBNAME_DWH="${DBNAME_DWH:-notes_dwh}"
+# DBNAME_DWH may be readonly after sourcing etc/properties.sh (declare -r).
+DWH_DB="${DBNAME_DWH:-notes_dwh}"
 PSQL_CMD="${PSQL_CMD:-psql}"
 ML_BATCH_SIZE="${ML_BATCH_SIZE:-500}"
 
@@ -49,11 +50,11 @@ if ((ML_BATCH_SIZE > 1000000)); then
  exit 1
 fi
 
-if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -Aqc "SELECT 1 FROM pg_extension WHERE extname = 'pgml';" 2> /dev/null | grep -qx 1; then
- __loge "pgml extension is not enabled in ${DBNAME_DWH}. Install and enable per sql/dwh/ml/README.md"
+if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "SELECT 1 FROM pg_extension WHERE extname = 'pgml';" 2> /dev/null | grep -qx 1; then
+ __loge "pgml extension is not enabled in ${DWH_DB}. Install and enable per sql/dwh/ml/README.md"
  exit 1
 fi
 
-__logi "Batch classification: database=${DBNAME_DWH} ML_BATCH_SIZE=${ML_BATCH_SIZE}"
-"${PSQL_CMD}" -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 \
+__logi "Batch classification: database=${DWH_DB} ML_BATCH_SIZE=${ML_BATCH_SIZE}"
+"${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
  -c "SELECT * FROM dwh.predict_note_classification_pgml(${ML_BATCH_SIZE});"

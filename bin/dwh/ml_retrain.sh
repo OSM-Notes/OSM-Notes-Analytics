@@ -26,8 +26,8 @@ else
  __loge() { echo "[ERROR] $*"; }
 fi
 
-# Database configuration
-DBNAME_DWH="${DBNAME_DWH:-notes_dwh}"
+# Database configuration (DBNAME_DWH may be readonly if sourced from etc/properties.sh)
+DWH_DB="${DBNAME_DWH:-notes_dwh}"
 PSQL_CMD="${PSQL_CMD:-psql}"
 
 # ML scripts directory
@@ -65,18 +65,18 @@ EOF
 }
 
 check_pgml_extension() {
- if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "SELECT 1 FROM pg_extension WHERE extname = 'pgml';" | grep -q 1; then
-  __loge "pgml extension is not enabled in database ${DBNAME_DWH}"
-  __loge "Run: psql -d ${DBNAME_DWH} -c 'CREATE EXTENSION IF NOT EXISTS pgml;'"
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM pg_extension WHERE extname = 'pgml';" | grep -q 1; then
+  __loge "pgml extension is not enabled in database ${DWH_DB}"
+  __loge "Run: psql -d ${DWH_DB} -c 'CREATE EXTENSION IF NOT EXISTS pgml;'"
   return 1
  fi
  return 0
 }
 
 ensure_training_view() {
- if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "SELECT 1 FROM information_schema.views WHERE table_schema = 'dwh' AND table_name = 'v_note_ml_training_features';" | grep -q 1; then
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM information_schema.views WHERE table_schema = 'dwh' AND table_name = 'v_note_ml_training_features';" | grep -q 1; then
   __logi "Creating training views..."
-  if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -f "${ML_DIR}/ml_01_setupPgML.sql" > /dev/null 2>&1; then
+  if ! "${PSQL_CMD}" -d "${DWH_DB}" -f "${ML_DIR}/ml_01_setupPgML.sql" > /dev/null 2>&1; then
    __loge "Failed to create training views"
    return 1
   fi
@@ -87,7 +87,7 @@ ensure_training_view() {
 check_core_tables() {
  # Check if facts and dimensions exist and have data
  local facts_count
- facts_count=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ facts_count=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM dwh.facts
 		WHERE action_comment = 'opened'
@@ -100,11 +100,11 @@ check_core_tables() {
  fi
 
  # Check dimensions exist
- if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "SELECT 1 FROM dwh.dimension_days LIMIT 1;" > /dev/null 2>&1; then
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM dwh.dimension_days LIMIT 1;" > /dev/null 2>&1; then
   return 1
  fi
 
- if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "SELECT 1 FROM dwh.dimension_applications LIMIT 1;" > /dev/null 2>&1; then
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM dwh.dimension_applications LIMIT 1;" > /dev/null 2>&1; then
   return 1
  fi
 
@@ -116,13 +116,13 @@ check_datamarts_populated() {
  local countries_count
  local users_count
 
- countries_count=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ countries_count=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM dwh.datamartcountries
 		WHERE resolution_rate IS NOT NULL;
 	" 2> /dev/null | tr -d ' ' || echo "0")
 
- users_count=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ users_count=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM dwh.datamartusers
 		WHERE user_response_time IS NOT NULL;
@@ -139,7 +139,7 @@ check_datamarts_populated() {
 check_models_exist() {
  # Check if any models are already trained
  local model_count
- model_count=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ model_count=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM pgml.deployed_models
 		WHERE project_name LIKE 'note_classification%';
@@ -159,7 +159,7 @@ check_retraining_needed() {
  local total_samples
  local new_percentage
 
- days_since_training=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ days_since_training=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COALESCE(EXTRACT(DAY FROM NOW() - MAX(created_at))::INTEGER, 999)
 		FROM pgml.deployed_models
 		WHERE project_name LIKE 'note_classification%';
@@ -170,7 +170,7 @@ check_retraining_needed() {
  fi
 
  # Check for new training data
- new_samples=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ new_samples=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM dwh.v_note_ml_training_features
 		WHERE main_category IS NOT NULL
@@ -181,7 +181,7 @@ check_retraining_needed() {
 		  );
 	" 2> /dev/null | tr -d ' ' || echo "0")
 
- total_samples=$("${PSQL_CMD}" -d "${DBNAME_DWH}" -t -c "
+ total_samples=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
 		FROM dwh.v_note_ml_training_features
 		WHERE main_category IS NOT NULL;
@@ -209,7 +209,7 @@ train_models() {
  local start_time
  start_time=$(date +%s)
 
- if "${PSQL_CMD}" -d "${DBNAME_DWH}" -f "${script_file}" > /dev/null 2>&1; then
+ if "${PSQL_CMD}" -d "${DWH_DB}" -f "${script_file}" > /dev/null 2>&1; then
   local end_time
   end_time=$(date +%s)
   local duration=$((end_time - start_time))
@@ -220,7 +220,7 @@ train_models() {
 
   # Show model metrics
   __logi "Model metrics:"
-  "${PSQL_CMD}" -d "${DBNAME_DWH}" -c "
+  "${PSQL_CMD}" -d "${DWH_DB}" -c "
 			SELECT
 				project_name,
 				ROUND((metrics->>'accuracy')::numeric * 100, 2) as accuracy_pct,
@@ -259,7 +259,7 @@ main() {
  fi
 
  __logi "ML Model Training Script (Intelligent Mode)"
- __logi "Database: ${DBNAME_DWH}"
+ __logi "Database: ${DWH_DB}"
 
  # Step 1: Check pgml extension
  # shellcheck disable=SC2310  # Function invocation in ! condition is intentional for error handling
