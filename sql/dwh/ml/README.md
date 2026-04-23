@@ -3,8 +3,9 @@
 This directory contains SQL scripts for implementing Machine Learning classification of OSM notes
 using **pgml** (PostgreSQL Machine Learning).
 
-**Production path:** follow the main repository [README.md](../../README.md) **Quick Start — Step 9**
-for install order, cron (training + batch classification), and links back here for pgml system setup.
+**Production path:** follow the main repository [README.md](../../README.md) **Quick Start — Step
+9** for install order, cron (training + batch classification), and links back here for pgml system
+setup.
 
 ## Overview
 
@@ -45,8 +46,8 @@ Use the **same** `psql` connection you use for the DWH instance (adjust host/por
 - **Cluster name `PG_CLUSTER`**: usually `main` on Debian/Ubuntu packaged installs (see
   `systemctl list-units 'postgresql@*' --no-legend` if unsure).
 - **`postgresql.auto.conf`**: the file **does not exist until the first successful `ALTER SYSTEM`**
-  on that cluster. Its path is whatever **`pg_file_settings.sourcefile`** reports for your change (on
-  some Debian/Ubuntu setups `postgresql.conf` lives under `/etc/postgresql/…` while
+  on that cluster. Its path is whatever **`pg_file_settings.sourcefile`** reports for your change
+  (on some Debian/Ubuntu setups `postgresql.conf` lives under `/etc/postgresql/…` while
   `postgresql.auto.conf` is under **`/var/lib/postgresql/…/main/`** — both are normal).
 
 ```bash
@@ -61,8 +62,8 @@ CONF_DIR="$(sudo -u postgres psql -d postgres -tAc 'SHOW config_file' | xargs di
 ### Python: interpreter for pip (`PY`)
 
 pgml uses whatever Python its **build** linked against (on the same host, that is usually the
-distro’s default `python3`, e.g. 3.11 / 3.12 / 3.13 — not necessarily 3.10). If `CREATE EXTENSION
-pgml` or logs mention a version, install pip packages **for that interpreter**.
+distro’s default `python3`, e.g. 3.11 / 3.12 / 3.13 — not necessarily 3.10). If
+`CREATE EXTENSION pgml` or logs mention a version, install pip packages **for that interpreter**.
 
 Set once and reuse in the commands below:
 
@@ -179,8 +180,8 @@ sudo -u postgres "$PSQL_BIN" -d notes_dwh -c "SELECT pgml.version();"
 
 - They may be compiled for a different Python version than what pgml uses
 - `lightgbm` and `scikit-learn` are not available in standard apt repositories
-- You MUST install them with pip for the **same** Python pgml uses (see `PY` above; often the
-  distro default `python3`)
+- You MUST install them with pip for the **same** Python pgml uses (see `PY` above; often the distro
+  default `python3`)
 
 **Rust build: `xgboost-sys` / `is cmake not installed?`**: The C++ build uses CMake. Install it
 (`sudo apt-get install -y cmake`) and ensure it is on `PATH`, or export the absolute path for the
@@ -189,19 +190,19 @@ installs CMake and sets `CMAKE` automatically.
 
 **PostgreSQL fails to start — `FATAL: could not access file "pg_stat_statements,pgml"`**: PostgreSQL
 is loading **one** library whose name includes the comma (the list was not parsed as two entries).
-This almost always means **bad quoting** in `postgresql.auto.conf` (e.g. nested `"` around the
-whole list). The line must look like this (single-quoted list, **no** extra double quotes inside):
+This almost always means **bad quoting** in `postgresql.auto.conf` (e.g. nested `"` around the whole
+list). The line must look like this (single-quoted list, **no** extra double quotes inside):
 
 ```text
 shared_preload_libraries = 'pg_stat_statements,pgml'
 ```
 
 **Not** `shared_preload_libraries = '"pg_stat_statements,pgml"'`. While PostgreSQL is down, edit the
-file as root (path is often under `/var/lib/postgresql/PG_VER/main/` or see `pg_file_settings.sourcefile`
-from a working instance / backup). Then `sudo systemctl start postgresql@PG_VER-main`. If
-`pg_stat_statements` is not installed, use `shared_preload_libraries = 'pgml'` only (and install
-`postgresql-contrib` / enable the extension later if needed). `systemctl` changes require **sudo**
-(or root).
+file as root (path is often under `/var/lib/postgresql/PG_VER/main/` or see
+`pg_file_settings.sourcefile` from a working instance / backup). Then
+`sudo systemctl start postgresql@PG_VER-main`. If `pg_stat_statements` is not installed, use
+`shared_preload_libraries = 'pgml'` only (and install `postgresql-contrib` / enable the extension
+later if needed). `systemctl` changes require **sudo** (or root).
 
 **Troubleshooting**: If you get errors about missing Python modules or numpy source directory:
 
@@ -311,8 +312,8 @@ sudo systemctl daemon-reload
 sudo systemctl restart postgresql
 ```
 
-**If the problem persists**, pgml may have been compiled against a different Python than the one
-you install packages for. The error text usually states which Python version pgml expects.
+**If the problem persists**, pgml may have been compiled against a different Python than the one you
+install packages for. The error text usually states which Python version pgml expects.
 
 **Solution**: install pip packages for **that** interpreter (`export PY=python3.X`), or recompile
 pgml so it links to your intended `python3`:
@@ -397,7 +398,8 @@ docker exec -it postgres-pgml psql -U postgres -d notes_dwh
 - PostgreSQL 14+ development headers
 - Rust compiler (pgml is written in Rust)
 - Python 3.8+ with development headers
-- Build tools (make, gcc, etc.) and **CMake** (required to compile XGBoost/LightGBM bundled with pgml)
+- Build tools (make, gcc, etc.) and **CMake** (required to compile XGBoost/LightGBM bundled with
+  pgml)
 
 ```bash
 # Set PG_VER to your PostgreSQL major version (14–17); see "Debian/Ubuntu: version and paths"

@@ -7,21 +7,20 @@ schema in PostgreSQL, separate from OSM-Notes-Ingestion’s `core` contract.
 
 The shared table is `public.schema_version` (same structure as Ingestion’s contract table):
 
-- `component`: primary key, identifier (`'dwh'` for this project’s warehouse contract; Ingestion uses
-  `'core'`)
+- `component`: primary key, identifier (`'dwh'` for this project’s warehouse contract; Ingestion
+  uses `'core'`)
 - `version`: `MAJOR.MINOR.PATCH` string
 - `updated_at`: last change time for that component’s version value
 
 **Implementation:** the row for `dwh` is created or updated by
 [`sql/dwh/ensure_dwh_schema_version.sql`](../sql/dwh/ensure_dwh_schema_version.sql). It is executed
 from [`bin/dwh/ETL.sh`](../bin/dwh/ETL.sh) in `__ensureDwhSchemaVersion`, **on every ETL run** in
-`main()` after `__checkBaseTables` / `__createBaseTables` and before fact loading (`__initialFactsParallel`
-or `__processNotesETL`). So the contract is applied for both first-time DWH creation (after the full
-`__createBaseTables` step, which includes
+`main()` after `__checkBaseTables` / `__createBaseTables` and before fact loading
+(`__initialFactsParallel` or `__processNotesETL`). So the contract is applied for both first-time
+DWH creation (after the full `__createBaseTables` step, which includes
 [`ETL_20_createDWHTables.sql`](../sql/dwh/ETL_20_createDWHTables.sql) among other steps) and for
-existing databases, without a full rebuild. The
-`CREATE TABLE IF NOT EXISTS` matches Ingestion so mixed or Analytics-only databases behave the same
-without clobbering the `core` row.
+existing databases, without a full rebuild. The `CREATE TABLE IF NOT EXISTS` matches Ingestion so
+mixed or Analytics-only databases behave the same without clobbering the `core` row.
 
 ## Current version (initial)
 
@@ -40,9 +39,8 @@ applicable).
 - **PATCH**: Non-contract changes (query plans, index tuning, comments, bug fixes that do not alter
   the observable schema contract).
 
-The JSON export / viewer versioning (`.json_export_version`, `metadata.schema_version` in
-exports) is **separate**; it tracks export shape for the web viewer, not the PostgreSQL `dwh`
-contract.
+The JSON export / viewer versioning (`.json_export_version`, `metadata.schema_version` in exports)
+is **separate**; it tracks export shape for the web viewer, not the PostgreSQL `dwh` contract.
 
 ## Consumers (e.g. OSM-Notes-API)
 
@@ -70,14 +68,16 @@ if ! __assert_dwh_schema_compatible; then
 fi
 ```
 
-**Expected range (illustration):** see [`etc/schema_compatibility.sh`](../etc/schema_compatibility.sh):
+**Expected range (illustration):** see
+[`etc/schema_compatibility.sh`](../etc/schema_compatibility.sh):
 
-- `__set_dwh_schema_contract_range` — sets `SCHEMA_DWH_COMPONENT`, `EXPECTED_DWH_SCHEMA_MIN`, `EXPECTED_DWH_SCHEMA_MAX`
+- `__set_dwh_schema_contract_range` — sets `SCHEMA_DWH_COMPONENT`, `EXPECTED_DWH_SCHEMA_MIN`,
+  `EXPECTED_DWH_SCHEMA_MAX`
 - `__assert_dwh_schema_compatible` — optional guard for shell tooling: compares the DB row for
   `component = 'dwh'` to that range (same wildcard rules as Ingestion’s `1.x.x` upper bound)
 
-OSM-Notes-Ingestion’s `etc/schema_compatibility.sh` documents **`core` only**; the DWH contract lives
-in **this** repository. `lib/osm-common` does not ship a duplicate of this file; depend on
+OSM-Notes-Ingestion’s `etc/schema_compatibility.sh` documents **`core` only**; the DWH contract
+lives in **this** repository. `lib/osm-common` does not ship a duplicate of this file; depend on
 OSM-Notes-Analytics or vendor `etc/schema_compatibility.sh` when implementing API checks.
 
 ## Manual verification (psql)
@@ -91,4 +91,7 @@ After a successful ETL, you should see a row with `component = dwh` and the curr
 
 ## Related
 
-- Ingestion (base DB contract): [OSM-Notes-Ingestion `docs/Schema_Versioning.md`](https://github.com/OSM-Notes/OSM-Notes-Ingestion/blob/main/docs/Schema_Versioning.md) (if your deployment uses a separate ingestion DB, it has its own `public.schema_version` and `core` row only there).
+- Ingestion (base DB contract):
+  [OSM-Notes-Ingestion `docs/Schema_Versioning.md`](https://github.com/OSM-Notes/OSM-Notes-Ingestion/blob/main/docs/Schema_Versioning.md)
+  (if your deployment uses a separate ingestion DB, it has its own `public.schema_version` and
+  `core` row only there).

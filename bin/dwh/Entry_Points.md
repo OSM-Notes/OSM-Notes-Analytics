@@ -167,8 +167,8 @@ These are the **only scripts** that should be executed directly:
 ### Machine learning and optional CSV (production)
 
 - **`bin/dwh/ml_retrain.sh`** — Trains or retrains pgml models when the database has enough data;
-  **cron**: often monthly. Requires PostgreSQL 14+, `pgml`, and files under `sql/dwh/ml`. See the main
-  `README.md` Quick Start **Step 9** and [`sql/dwh/ml/README.md`](../../sql/dwh/ml/README.md).
+  **cron**: often monthly. Requires PostgreSQL 14+, `pgml`, and files under `sql/dwh/ml`. See the
+  main `README.md` Quick Start **Step 9** and [`sql/dwh/ml/README.md`](../../sql/dwh/ml/README.md).
 
 - **`bin/dwh/ml_batch_classify.sh`** — Runs `dwh.predict_note_classification_pgml` in batches (env
   `ML_BATCH_SIZE`, default 500). **Cron**: often hourly after ETL. Same prerequisites as above plus

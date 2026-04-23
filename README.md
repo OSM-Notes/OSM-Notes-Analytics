@@ -145,8 +145,8 @@ project:
   - Content quality: comment length, URL/mention detection, engagement metrics
   - Community health: active notes, backlog, age distribution, recent activity
 - **Comprehensive Testing**: 197 automated tests (90%+ function coverage)
-- **Machine learning (pgml)**: In-database note classification into
-  `dwh.note_type_classifications` (requires PostgreSQL 14+; see [Quick Start — Step 9](#step-9-machine-learning-pgml))
+- **Machine learning (pgml)**: In-database note classification into `dwh.note_type_classifications`
+  (requires PostgreSQL 14+; see [Quick Start — Step 9](#step-9-machine-learning-pgml))
 - **Optional CSV export**: Closed notes per country for analysis/AI context via
   `exportAndPushCSVToGitHub.sh` (see [Step 10](#step-10-export-closed-notes-to-csv-optional))
 
@@ -184,8 +184,9 @@ For complete installation instructions, see
 - **Standard UNIX utilities**: grep, awk, sed, curl, jq
 - **Parallel processing**: GNU parallel (for parallel ETL execution)
 - **Machine learning (pgml)**: PostgreSQL **14+** on the server that hosts the DWH, plus a
-  system-level [pgml](https://postgresml.org/) install (not a standard `apt` package). The core
-  ETL and datamarts still run on PostgreSQL 12+; use 14+ if you follow [Step 9](#step-9-machine-learning-pgml).
+  system-level [pgml](https://postgresml.org/) install (not a standard `apt` package). The core ETL
+  and datamarts still run on PostgreSQL 12+; use 14+ if you follow
+  [Step 9](#step-9-machine-learning-pgml).
 
 ### Internal Repository Requirements
 
@@ -773,8 +774,8 @@ See [JSON Export Documentation](bin/dwh/Export_JSON_README.md) and
 **What this does:** Trains in-database classifiers and stores predictions in
 `dwh.note_type_classifications` (category, action recommendation, priority score, etc.).
 
-**Why it matters:** Enables assisted triage and analytics on note *content* without a separate Python
-ML service. Everything runs in PostgreSQL via [pgml](https://postgresml.org/).
+**Why it matters:** Enables assisted triage and analytics on note _content_ without a separate
+Python ML service. Everything runs in PostgreSQL via [pgml](https://postgresml.org/).
 
 **Requirements:**
 
@@ -785,18 +786,19 @@ ML service. Everything runs in PostgreSQL via [pgml](https://postgresml.org/).
 
 **One-time setup (after Steps 4–7 have populated the DWH and datamarts):**
 
-1. Install and enable pgml (server + `CREATE EXTENSION`) per [`sql/dwh/ml/README.md`](sql/dwh/ml/README.md).
+1. Install and enable pgml (server + `CREATE EXTENSION`) per
+   [`sql/dwh/ml/README.md`](sql/dwh/ml/README.md).
 2. Apply SQL in order: `ml_00_check_prerequisites.sql`, `ml_01_setupPgML.sql`, then
    **`ml_02_trainPgMLModels.sql`** (or run **`bin/dwh/ml_retrain.sh`** once; it creates views and
    trains when enough data exist).
-3. Apply **`ml_03_predictWithPgML.sql`** so the batch function `dwh.predict_note_classification_pgml`
-   exists.
+3. Apply **`ml_03_predictWithPgML.sql`** so the batch function
+   `dwh.predict_note_classification_pgml` exists.
 
 **Operational scripts (intended for cron):**
 
-| Script | Role |
-| ------ | ---- |
-| [`bin/dwh/ml_retrain.sh`](bin/dwh/ml_retrain.sh) | (Re)trains models when data thresholds are met; safe to run monthly. |
+| Script                                                         | Role                                                                                            |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [`bin/dwh/ml_retrain.sh`](bin/dwh/ml_retrain.sh)               | (Re)trains models when data thresholds are met; safe to run monthly.                            |
 | [`bin/dwh/ml_batch_classify.sh`](bin/dwh/ml_batch_classify.sh) | Runs a batch of predictions into `dwh.note_type_classifications`; schedule regularly after ETL. |
 
 Example (manual batch):
@@ -817,13 +819,14 @@ cd /path/to/OSM-Notes-Analytics
 ### Step 10: Export Closed Notes to CSV (Optional)
 
 **What this does:** Exports **closed notes to CSV (one file per country)** and pushes them to the
-**OSM-Notes-Data** repository. Column order is optimized for **AI / external analysis** (not for
-the web viewer, which uses JSON from Step 8).
+**OSM-Notes-Data** repository. Column order is optimized for **AI / external analysis** (not for the
+web viewer, which uses JSON from Step 8).
 
 **Why it matters:** Optional dataset publication; independent of JSON export.
 
 **Prerequisites:** Clone [OSM-Notes-Data](https://github.com/OSM-Notes/OSM-Notes-Data) next to the
-project (e.g. `~/OSM-Notes-Data`), `etc/properties.sh` with `DBNAME_DWH` (and credentials as needed).
+project (e.g. `~/OSM-Notes-Data`), `etc/properties.sh` with `DBNAME_DWH` (and credentials as
+needed).
 
 ```bash
 cd bin/dwh
