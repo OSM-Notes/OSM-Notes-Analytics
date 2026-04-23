@@ -350,13 +350,14 @@ docker exec -it postgres-pgml psql -U postgres -d notes_dwh
 - PostgreSQL 14+ development headers
 - Rust compiler (pgml is written in Rust)
 - Python 3.8+ with development headers
-- Build tools (make, gcc, etc.)
+- Build tools (make, gcc, etc.) and **CMake** (required to compile XGBoost/LightGBM bundled with pgml)
 
 ```bash
 # Install build dependencies (Ubuntu/Debian)
 sudo apt-get update
 sudo apt-get install -y \
   build-essential \
+  cmake \
   postgresql-server-dev-15 \
   libpython3-dev \
   python3-pip \

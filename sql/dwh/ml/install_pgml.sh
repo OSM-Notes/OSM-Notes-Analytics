@@ -3,8 +3,8 @@
 # This script compiles and installs pgml in your existing PostgreSQL installation
 #
 # Prerequisites:
-# - PostgreSQL 15+ installed
-# - Build tools (build-essential)
+# - PostgreSQL 14+ installed
+# - Build tools (build-essential), cmake (required by xgboost-sys / lightgbm-sys crates)
 # - Python 3 development headers
 #
 # Usage: sudo ./install_pgml.sh
@@ -76,6 +76,7 @@ echo -e "${YELLOW}Installing build dependencies...${NC}"
 apt-get update
 apt-get install -y \
  build-essential \
+ cmake \
  binutils \
  lld \
  "postgresql-server-dev-${PG_VERSION}" \
@@ -103,6 +104,13 @@ if ! command -v ld.lld &> /dev/null; then
 else
  echo "LLD linker found: $(which ld.lld)"
 fi
+
+if ! command -v cmake &> /dev/null; then
+ echo -e "${RED}Error: cmake is required to build pgml (xgboost/lightgbm) but was not found${NC}"
+ echo "Install with: apt-get install -y cmake"
+ exit 1
+fi
+echo "cmake found: $(command -v cmake) ($(cmake --version | head -1))"
 
 # Check if Rust is installed
 echo -e "${YELLOW}Checking Rust installation...${NC}"
