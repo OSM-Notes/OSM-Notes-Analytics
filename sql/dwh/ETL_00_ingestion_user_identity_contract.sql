@@ -1,0 +1,22 @@
+-- Contract: OSM user identity in the Analytics / DWH stack
+--
+-- Source of truth for logical contributor identity and open user_id↔identity
+-- links is the **OSM-Notes-Ingestion** core PostgreSQL schema (same database that
+-- holds public.users, public.note_comments, and schema_version.core >= 1.2.0).
+-- Tables: osm_user_identity, osm_user_id_link, osm_identity_suggestion (hints),
+--         osm_identity_lifecycle_event (audit).
+-- Read API–friendly views (defined in Ingestion):
+--   v_osm_user_id_current_identity
+--   v_osm_user_id_current_with_username
+--
+-- OSM-Notes-Analytics does not own or duplicate these base tables. For DWH
+-- facts, join facts on id_user to v_osm_user_id_current_with_username (dblink
+-- or same DB), or ETL–replicate links into a *derived* fact/dimension if a
+-- separate warehouse is required. Treat osm_identity_suggestion as
+-- non–authoritative.
+--
+-- Author: Andres Gomez (AngocA)
+-- Version: 2026-04-23
+--
+SELECT 1
+WHERE false;
