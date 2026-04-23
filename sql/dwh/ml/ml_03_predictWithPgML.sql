@@ -314,7 +314,9 @@ WHERE id_note = 12345;  -- Example note ID
 -- ============================================================================
 -- 6. Batch Prediction Function
 -- ============================================================================
--- Create a function to predict and store classifications for new notes
+-- Create a function to predict and store classifications for new notes.
+-- notes_with_high_confidence in RETURNS is always 0 for now; future: count via
+-- pgml.predict_proba thresholds (see RETURN QUERY in function body).
 
 CREATE OR REPLACE FUNCTION dwh.predict_note_classification_pgml(
   p_batch_size INTEGER DEFAULT 100
@@ -476,10 +478,10 @@ BEGIN
 
   GET DIAGNOSTICS v_processed = ROW_COUNT;
 
-  -- Second column: reserved for a future count using pgml.predict_proba thresholds
+  -- Second column: intentionally 0 until we count high-confidence rows via pgml.predict_proba.
   RETURN QUERY SELECT v_processed, 0::INTEGER;
 END;
 $$;
 
 COMMENT ON FUNCTION dwh.predict_note_classification_pgml IS
-  'Batch-classify notes with pgml (same feature order as section 4). Returns inserted row count; second value is reserved for probability-based high-confidence counts.';
+  'Batch-classify notes with pgml (same feature order as section 4). Returns (notes_processed, notes_with_high_confidence). The second column is always 0 for now; reserved for a future high-confidence count using pgml.predict_proba.';
