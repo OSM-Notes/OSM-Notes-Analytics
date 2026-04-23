@@ -25,6 +25,17 @@ load ../../test_helper
  [[ "${output}" == "1" ]]
 }
 
+@test "__assert_dwh_schema_compatible should reject invalid SCHEMA_DWH_COMPONENT" {
+ run bash -c "
+  source \"${SCRIPT_BASE_DIRECTORY}/etc/schema_compatibility.sh\"
+  export SCHEMA_DWH_COMPONENT=\"dwh' OR 1=1\"
+  export DBNAME_DWH=nonexistent
+  __assert_dwh_schema_compatible
+ "
+ [[ "${status}" -ne 0 ]]
+ [[ "${output}" == *"Invalid SCHEMA_DWH_COMPONENT"* ]]
+}
+
 @test "ensure_dwh_schema_version.sql should exist and reference dwh component" {
  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ensure_dwh_schema_version.sql" ]]
  run grep -q "VALUES ('dwh'" "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ensure_dwh_schema_version.sql"

@@ -39,6 +39,16 @@ else
  __loge() { echo "[ERROR] $*"; }
 fi
 
+# Reject any non-integer or out-of-range value so it cannot be injected into -c SQL.
+if ! [[ "${ML_BATCH_SIZE}" =~ ^[1-9][0-9]*$ ]]; then
+ __loge "ML_BATCH_SIZE must be a positive integer (digits only, no leading zeros)"
+ exit 1
+fi
+if ((ML_BATCH_SIZE > 1000000)); then
+ __loge "ML_BATCH_SIZE must be at most 1000000"
+ exit 1
+fi
+
 if ! "${PSQL_CMD}" -d "${DBNAME_DWH}" -t -Aqc "SELECT 1 FROM pg_extension WHERE extname = 'pgml';" 2> /dev/null | grep -qx 1; then
  __loge "pgml extension is not enabled in ${DBNAME_DWH}. Install and enable per sql/dwh/ml/README.md"
  exit 1

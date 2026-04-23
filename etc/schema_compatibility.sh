@@ -60,6 +60,13 @@ function __set_dwh_schema_contract_range() {
  esac
 }
 
+# Returns 0 if S is a safe public.schema_version.component value for SQL string literals
+# (alphanumeric, underscore, hyphen; 1..64 chars). Rejects quotes, semicolons, and whitespace.
+function __dwh_schema_component_id_valid() {
+ local S="${1:-}"
+ [[ -n "${S}" ]] && [[ "${S}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ ]]
+}
+
 # Asserts the DWH database public.schema_version row for component 'dwh' is within the expected
 # SemVer range. Mirrors OSM-Notes-Ingestion __assert_schema_compatible for the 'core' component.
 #
@@ -88,6 +95,11 @@ function __assert_dwh_schema_compatible() {
  COMPONENT="${SCHEMA_DWH_COMPONENT:-dwh}"
  MIN_VERSION="${EXPECTED_DWH_SCHEMA_MIN:-1.0.0}"
  MAX_VERSION="${EXPECTED_DWH_SCHEMA_MAX:-}"
+
+ if ! __dwh_schema_component_id_valid "${COMPONENT}"; then
+  echo "ERROR: Invalid SCHEMA_DWH_COMPONENT (alphanumeric, underscore, hyphen; 1-64 chars): ${COMPONENT}" >&2
+  return 1
+ fi
 
  DB_VERSION=$("${PSQL}" -d "${DB}" -Atq -c \
   "SELECT version FROM public.schema_version WHERE component='${COMPONENT}';" 2> /dev/null | head -1 || true)
