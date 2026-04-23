@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Batch note classification using trained pgml models (dwh.predict_note_classification_pgml).
 # Run after ETL/datamarts and training; safe to schedule from cron.
