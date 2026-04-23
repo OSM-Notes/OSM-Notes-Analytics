@@ -55,6 +55,18 @@ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "SELECT 1 FROM pg_extension WHERE extn
  exit 1
 fi
 
+if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "
+SELECT 1 FROM pg_proc p
+JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE n.nspname = 'dwh' AND p.proname = 'predict_note_classification_pgml'
+LIMIT 1;
+" 2> /dev/null | grep -qx 1; then
+ __loge "Function dwh.predict_note_classification_pgml is not in ${DWH_DB}. Apply the prediction SQL first:"
+ __loge "  ${PSQL_CMD} -d ${DWH_DB} -v ON_ERROR_STOP=1 -f ${PROJECT_ROOT}/sql/dwh/ml/ml_03_predictWithPgML.sql"
+ __loge "See sql/dwh/ml/README.md (ml_01 setup and trained models required before batch classify)."
+ exit 1
+fi
+
 __logi "Batch classification: database=${DWH_DB} ML_BATCH_SIZE=${ML_BATCH_SIZE}"
 "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
  -c "SELECT * FROM dwh.predict_note_classification_pgml(${ML_BATCH_SIZE});"
