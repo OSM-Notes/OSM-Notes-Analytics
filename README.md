@@ -216,6 +216,10 @@ Database: notes_dwh          # Or "notes" when same DB for ingestion+DWH
 For complete schema documentation, see [DWH Star Schema ERD](docs/DWH_Star_Schema_ERD.md) and
 [Data Dictionary](docs/DWH_Star_Schema_Data_Dictionary.md).
 
+**DWH contract (SemVer):** the ETL records an independent `public.schema_version` row for
+`component = 'dwh'` (separate from Ingestion’s `core` when both exist). See
+[docs/Schema_Versioning_DWH.md](docs/Schema_Versioning_DWH.md).
+
 ## Quick Start
 
 This guide walks you through the complete process from scratch to having exportable JSON datamarts.

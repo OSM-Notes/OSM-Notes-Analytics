@@ -187,6 +187,8 @@ declare -r POSTGRES_13_DROP_DWH_OBJECTS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_13
 
 # Create DWH tables.
 declare -r POSTGRES_22_CREATE_DWH_TABLES="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql"
+# DWH schema contract (public.schema_version component dwh); idempotent.
+declare -r POSTGRES_ENSURE_DWH_SCHEMA_VERSION="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ensure_dwh_schema_version.sql"
 # Create fact partitions.
 declare -r POSTGRES_22A_CREATE_FACT_PARTITIONS="${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_21_createFactPartitions.sql"
 # Populates regions per country.
@@ -693,6 +695,7 @@ function __checkPrereqs {
   "${POSTGRES_12_DROP_DATAMART_OBJECTS}"
   "${POSTGRES_13_DROP_DWH_OBJECTS}"
   "${POSTGRES_22_CREATE_DWH_TABLES}"
+  "${POSTGRES_ENSURE_DWH_SCHEMA_VERSION}"
   "${POSTGRES_22A_CREATE_FACT_PARTITIONS}"
   "${POSTGRES_23_GET_WORLD_REGIONS}"
   "${POSTGRES_24_ADD_FUNCTIONS}"
@@ -815,6 +818,26 @@ function __checkBaseTables {
 
  __logi "=== DWH TABLES CHECK COMPLETED ==="
  __log_finish
+}
+
+# Ensures public.schema_version exists and the dwh contract row is set (see docs/Schema_Versioning_DWH.md).
+function __ensureDwhSchemaVersion {
+ __log_start
+ __logi "Ensuring DWH schema version contract (public.schema_version, component=dwh)..."
+ set +e
+ __psql_with_appname -d "${DBNAME_DWH}" -v ON_ERROR_STOP=1 \
+  -f "${POSTGRES_ENSURE_DWH_SCHEMA_VERSION}" 2>&1
+ local ensure_exit_code=$?
+ set -e
+ if [[ ${ensure_exit_code} -ne 0 ]]; then
+  __loge "ERROR: Failed to apply DWH schema version SQL (exit code: ${ensure_exit_code})"
+  # shellcheck disable=SC2310
+  __log_finish || true
+  return 1
+ fi
+ __logi "DWH schema version contract OK"
+ __log_finish
+ return 0
 }
 
 # Creates DWH tables (dimensions and facts) for initial load.
@@ -2408,6 +2431,9 @@ function main() {
    __psql_with_appname -d "${DBNAME_DWH}" -c "CREATE SCHEMA IF NOT EXISTS dwh;" 2>&1 || true
   fi
   set -E
+  if ! __ensureDwhSchemaVersion; then
+   return 1
+  fi
   __logi "About to call __initialFactsParallel"
   __initialFactsParallel # Use parallel version
   local initial_facts_exit_code=$?
@@ -2670,6 +2696,9 @@ function main() {
    __psql_with_appname -d "${DBNAME_DWH}" -c "CREATE SCHEMA IF NOT EXISTS dwh;" 2>&1 || true
   fi
   set -E
+  if ! __ensureDwhSchemaVersion; then
+   return 1
+  fi
   __logi "About to call __processNotesETL"
   __processNotesETL
   local process_notes_exit_code=$?

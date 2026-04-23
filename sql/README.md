@@ -147,6 +147,14 @@ SQL scripts follow a structured naming pattern:
 - Optimized data types
 - Basic constraints (enhanced in Phase 4)
 
+#### ensure_dwh_schema_version.sql
+
+**Purpose:** Idempotently ensures `public.schema_version` exists and upserts the **`dwh`** SemVer
+contract (independent of Ingestion’s `core` row). **Not** part of the numbered `ETL_2x` file order;
+it is applied by `bin/dwh/ETL.sh` (`__ensureDwhSchemaVersion`) on **every** ETL run so existing
+databases get updates without a full rebuild. See
+[Schema_Versioning_DWH.md](../docs/Schema_Versioning_DWH.md).
+
 #### ETL_22_getWorldRegion.sql
 
 **Purpose:** Populates world regions for countries.

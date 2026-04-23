@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **DWH schema contract**: SemVer in `public.schema_version` for `component = dwh` (independent of
+  OSM-Notes-Ingestion `core`); `sql/dwh/ensure_dwh_schema_version.sql`, applied each ETL run from
+  `bin/dwh/ETL.sh`; documentation in `docs/Schema_Versioning_DWH.md`; consumer range helpers in
+  `etc/schema_compatibility.sh`
+
 ## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
 
 ### Added

@@ -1025,6 +1025,8 @@ For detailed navigation paths by role, see
 - **[bin/dwh/ENTRY_POINTS.md](../bin/dwh/Entry_Points.md)** (15 min) - Script entry points
 - **[bin/dwh/ENVIRONMENT_VARIABLES.md](../bin/dwh/Environment_Variables.md)** (10 min) -
   Configuration
+- **[Schema_Versioning_DWH.md](./Schema_Versioning_DWH.md)** (10 min) - `public.schema_version` for
+  `dwh` (vs Ingestion `core`); see `etc/schema_compatibility.sh`
 
 **Step 2: Operations** (60 min)
 

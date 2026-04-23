@@ -47,6 +47,7 @@ load ../../test_helper
   "__processNotesETL"
   "__initialFacts"
   "__initialFactsParallel"
+  "__ensureDwhSchemaVersion"
   "__show_help"
  )
 
@@ -72,6 +73,7 @@ load ../../test_helper
   # In CI, we might not have a real PostgreSQL server, so skip actual database operations
   # but verify that the SQL files exist and are valid
   [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ETL_20_createDWHTables.sql" ]]
+  [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/ensure_dwh_schema_version.sql" ]]
   [[ -f "${SCRIPT_BASE_DIRECTORY}/sql/dwh/Staging_32_createStagingObjects.sql" ]]
 
   # Verify SQL files contain valid SQL syntax (basic check)

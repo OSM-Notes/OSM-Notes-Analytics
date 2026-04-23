@@ -50,6 +50,13 @@ nano etc/etl.properties
   `sudo cp etc/logrotate.osm-analytics.conf /etc/logrotate.d/osm-analytics`. Ensures daily rotation
   and 14 days retention (rotated files: `analytics.log-YYYYMMDD.gz`).
 
+### Schema compatibility (DWH)
+
+- **`etc/schema_compatibility.sh`** – Declares the acceptable SemVer **range** for
+  `public.schema_version` where `component = dwh` (e.g. for OSM-Notes-API). See
+  [docs/Schema_Versioning_DWH.md](../docs/Schema_Versioning_DWH.md). Ingestion’s `core` contract
+  remains documented in OSM-Notes-Ingestion.
+
 **Priority order:**
 
 1. Environment variables (highest)

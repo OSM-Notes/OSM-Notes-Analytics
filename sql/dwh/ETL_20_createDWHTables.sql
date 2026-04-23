@@ -350,3 +350,8 @@ COMMENT ON TABLE dwh.properties IS 'Properties table for ETL';
 COMMENT ON COLUMN dwh.properties.key IS 'Property name (PRIMARY KEY)';
 COMMENT ON COLUMN dwh.properties.value IS 'Property value';
 
+-- DWH database schema contract: public.schema_version (component dwh) is applied by
+-- sql/dwh/ensure_dwh_schema_version.sql from bin/dwh/ETL.sh __ensureDwhSchemaVersion after
+-- __createBaseTables completes (initial create) and on every ETL for existing DBs. See
+-- docs/Schema_Versioning_DWH.md.
+
