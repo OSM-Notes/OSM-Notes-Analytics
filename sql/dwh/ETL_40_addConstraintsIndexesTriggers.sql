@@ -356,6 +356,40 @@ CREATE TRIGGER update_days_to_resolution
 COMMENT ON TRIGGER update_days_to_resolution ON dwh.facts IS
   'Updates the number of days between creation and resolution dates';
 
+-- Bulk initial load inserts facts BEFORE this script creates the trigger, so closed rows never
+-- received days_to_resolution. Incremental loads rely on the trigger above; this backfill fixes
+-- partition loads and any legacy NULLs (idempotent: only updates WHERE ... IS NULL).
+SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
+ 'Backfilling days_to_resolution for closed facts (bulk load path)' AS Task;
+
+UPDATE dwh.facts f
+SET days_to_resolution = dc.date_id - d_open.date_id
+FROM dwh.dimension_days d_open,
+     dwh.dimension_days dc
+WHERE f.action_comment = 'closed'
+  AND f.days_to_resolution IS NULL
+  AND d_open.dimension_day_id = f.opened_dimension_id_date
+  AND dc.dimension_day_id = f.action_dimension_id_date;
+
+SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
+ 'Backfilling days_to_resolution_from_reopen for closed facts (bulk load path)' AS Task;
+
+UPDATE dwh.facts f
+SET days_to_resolution_from_reopen = dc.date_id - reopen.last_reopen_date
+FROM dwh.dimension_days dc,
+LATERAL(
+  SELECT MAX(dr.date_id) AS last_reopen_date
+  FROM dwh.facts fr
+  JOIN dwh.dimension_days dr ON fr.action_dimension_id_date = dr.dimension_day_id
+  WHERE fr.id_note = f.id_note
+    AND fr.action_comment = 'reopened'
+    AND fr.action_at < f.action_at
+) reopen
+WHERE f.action_comment = 'closed'
+  AND f.days_to_resolution_from_reopen IS NULL
+  AND dc.dimension_day_id = f.action_dimension_id_date
+  AND reopen.last_reopen_date IS NOT NULL;
+
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Creating indexes for fact_hashtags bridge table' AS Task;
 
