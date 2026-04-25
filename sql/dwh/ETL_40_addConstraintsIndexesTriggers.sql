@@ -374,21 +374,30 @@ WHERE f.action_comment = 'closed'
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Backfilling days_to_resolution_from_reopen for closed facts (bulk load path)' AS Task;
 
+-- LATERAL in UPDATE may not reference the target alias "f" (invalid reference in PostgreSQL). Use
+-- a second facts alias f2 in the FROM sub-SELECT, then match rows by fact_id.
 UPDATE dwh.facts f
-SET days_to_resolution_from_reopen = dc.date_id - reopen.last_reopen_date
-FROM dwh.dimension_days dc,
-LATERAL(
-  SELECT MAX(dr.date_id) AS last_reopen_date
-  FROM dwh.facts fr
-  JOIN dwh.dimension_days dr ON fr.action_dimension_id_date = dr.dimension_day_id
-  WHERE fr.id_note = f.id_note
-    AND fr.action_comment = 'reopened'
-    AND fr.action_at < f.action_at
-) reopen
-WHERE f.action_comment = 'closed'
-  AND f.days_to_resolution_from_reopen IS NULL
-  AND dc.dimension_day_id = f.action_dimension_id_date
-  AND reopen.last_reopen_date IS NOT NULL;
+SET days_to_resolution_from_reopen = sub.val
+FROM (
+  SELECT
+    f2.fact_id,
+    d_close.date_id - re.last_reopen_date AS val
+  FROM dwh.facts f2
+  CROSS JOIN dwh.dimension_days d_close
+  CROSS JOIN LATERAL (
+    SELECT MAX(dr.date_id) AS last_reopen_date
+    FROM dwh.facts fr
+    JOIN dwh.dimension_days dr ON fr.action_dimension_id_date = dr.dimension_day_id
+    WHERE fr.id_note = f2.id_note
+      AND fr.action_comment = 'reopened'
+      AND fr.action_at < f2.action_at
+  ) re
+  WHERE f2.action_comment = 'closed'
+    AND f2.days_to_resolution_from_reopen IS NULL
+    AND d_close.dimension_day_id = f2.action_dimension_id_date
+    AND re.last_reopen_date IS NOT NULL
+) AS sub
+WHERE f.fact_id = sub.fact_id;
 
 SELECT /* Notes-ETL */ clock_timestamp() AS Processing,
  'Creating indexes for fact_hashtags bridge table' AS Task;
