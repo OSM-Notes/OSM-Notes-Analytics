@@ -11,6 +11,15 @@ All notable changes to this project will be documented in this file.
   `bin/dwh/ETL.sh`; documentation in `docs/Schema_Versioning_DWH.md`; consumer range helpers in
   `etc/schema_compatibility.sh`
 
+### Fixed
+
+- **Initial DWH load / `days_to_resolution`**: Bulk fact load runs before `ETL_40` creates the
+  `update_days_to_resolution` trigger, so closed rows stayed with NULL resolution metrics. After
+  creating the trigger, `sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql` now backfills
+  `days_to_resolution` and `days_to_resolution_from_reopen` for closed facts (idempotent: only
+  `WHERE ... IS NULL`). Incremental inserts still rely on the trigger; existing databases that
+  already loaded facts may apply the same `UPDATE` logic once outside this script if needed.
+
 ## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
 
 ### Added
