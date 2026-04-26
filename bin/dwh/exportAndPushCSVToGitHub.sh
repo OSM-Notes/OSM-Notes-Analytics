@@ -498,6 +498,16 @@ EOF
  return 0
 }
 
+# Rolling CSV mode uses "git commit --amend" to keep a single commit locally. That rewrites
+# the commit hash, so origin/main still points at the pre-amend tip and a normal push is
+# rejected (non-fast-forward). git pull/merge does not fix that reliably. Sync with
+# --force-with-lease, which is safe if no one else pushed in the meantime.
+function __is_rolling_csv_head_commit() {
+ local msg
+ msg=$(git log -1 --pretty=%B 2> /dev/null || true)
+ echo "${msg}" | grep -q "Auto-update.*CSV files"
+}
+
 # Function to commit and push current batch of CSV files
 function __commit_and_push_batch() {
  local batch_start="${1}"
@@ -719,8 +729,13 @@ Total notes: ${TOTAL_NOTES}" 2>&1)
   # Push immediately after commit (since commit and push happen together every N countries)
   print_info "Pushing to GitHub (${EXPORTED_COUNTRIES} countries exported)..."
   local push_output
-  push_output=$(git push origin main 2>&1)
+  push_output=$(git push origin main 2>&1) || true
   local push_exit_code=$?
+  if [[ ${push_exit_code} -ne 0 ]] && echo "${push_output}" | grep -qE "non-fast-forward|diverged" && __is_rolling_csv_head_commit; then
+   print_info "Amended rolling CSV commit: replacing remote tip with push --force-with-lease"
+   push_output=$(git push --force-with-lease origin main 2>&1) || true
+   push_exit_code=$?
+  fi
 
   if [[ ${push_exit_code} -eq 0 ]]; then
    print_success "Pushed successfully (${EXPORTED_COUNTRIES} countries exported)"
@@ -929,12 +944,22 @@ unpushed_commits=$(git log --oneline origin/main..HEAD --grep="Auto-update.*CSV 
 
 if [[ ${unpushed_commits} -gt 0 ]]; then
  print_info "Pushing ${unpushed_commits} remaining commit(s)..."
- if git push origin main 2>&1; then
+ set +e
+ final_push_out=$(git push origin main 2>&1)
+ final_push_ec=$?
+ if [[ ${final_push_ec} -ne 0 ]] && echo "${final_push_out}" | grep -qE "non-fast-forward|diverged" && __is_rolling_csv_head_commit; then
+  print_info "Amended rolling CSV commit: replacing remote tip with push --force-with-lease"
+  final_push_out=$(git push --force-with-lease origin main 2>&1)
+  final_push_ec=$?
+ fi
+ set -e
+ if [[ ${final_push_ec} -eq 0 ]]; then
   STEP2_END=$(date +%s)
   STEP2_DURATION=$((STEP2_END - STEP2_START))
   print_success "All commits pushed successfully in ${STEP2_DURATION}s"
  else
   print_error "Failed to push remaining commits"
+  print_error "Git: ${final_push_out}"
   print_warn "Some commits may not have been pushed. Check git status."
  fi
 else
