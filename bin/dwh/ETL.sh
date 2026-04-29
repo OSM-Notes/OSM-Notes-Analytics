@@ -2653,7 +2653,11 @@ function main() {
   local datamart_duration=$((DATAMART_END_TIME - DATAMART_START_TIME))
   __logi "⏱️  TIME: All datamart scripts total time: ${datamart_duration} seconds"
 
-  # Run JSON export so json_exported is set to TRUE for exported entities (optional, set ETL_RUN_JSON_EXPORT=true to enable)
+  # Optional: export JSON to JSON_OUTPUT_DIR (default ./output/json) inside this repo.
+  # When production uses cron "ETL.sh && exportAndPushJSONToGitHub.sh", leave this false:
+  # the push script runs exportDatamartsToJSON against the OSM-Notes-Data clone (users, countries,
+  # indexes, metadata, global_stats). Enable ETL_RUN_JSON_EXPORT only if you need a local JSON tree
+  # without publishing (e.g. debugging or a separate consumer path).
   if [[ "${ETL_RUN_JSON_EXPORT:-false}" == "true" ]] && [[ -x "${EXPORT_DATAMARTS_TO_JSON_SCRIPT}" ]]; then
    __logi "Running JSON export (json_exported will be set for exported users/countries)..."
    set +e

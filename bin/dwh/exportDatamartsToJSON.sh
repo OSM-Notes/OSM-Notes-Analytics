@@ -283,12 +283,17 @@ if [[ -d "${OUTPUT_DIR}/users" ]]; then
  cp -rp "${OUTPUT_DIR}/users"/* "${ATOMIC_TEMP_DIR}/users/" 2> /dev/null || true
 fi
 
-# Export only modified users (with optional batch limit)
-MODIFIED_USER_COUNT=0
-if [[ ${JSON_EXPORT_BATCH_SIZE} -gt 0 ]]; then
+# Export only modified users (with optional batch limit).
+# JSON_EXPORT_BATCH_SIZE=0 means no LIMIT (export all pending users in one run).
+declare USER_EXPORT_LIMIT_LINE=""
+if [[ "${JSON_EXPORT_BATCH_SIZE}" -gt 0 ]]; then
+ USER_EXPORT_LIMIT_LINE="LIMIT ${JSON_EXPORT_BATCH_SIZE}"
  echo "  Processing batch of up to ${JSON_EXPORT_BATCH_SIZE} users..."
+else
+ echo "  Processing all pending users (no batch limit)..."
 fi
 
+MODIFIED_USER_COUNT=0
 psql -d "${DBNAME_DWH}" -Atq << SQL_USERS | while IFS='|' read -r user_id username; do
 SELECT
   user_id,
@@ -297,7 +302,7 @@ FROM dwh.datamartusers
 WHERE user_id IS NOT NULL
   AND json_exported = FALSE
 ORDER BY user_id
-LIMIT ${JSON_EXPORT_BATCH_SIZE};
+${USER_EXPORT_LIMIT_LINE};
 SQL_USERS
 
  if [[ -n "${user_id}" ]]; then
@@ -437,19 +442,24 @@ if [[ -d "${OUTPUT_DIR}/countries" ]]; then
  cp -p "${OUTPUT_DIR}/countries"/*.json "${ATOMIC_TEMP_DIR}/countries/" 2> /dev/null || true
 fi
 
-# Export only modified countries (with optional batch limit)
-MODIFIED_COUNTRY_COUNT=0
-if [[ ${JSON_EXPORT_BATCH_SIZE} -gt 0 ]]; then
+# Export only modified countries (with optional batch limit).
+# JSON_EXPORT_BATCH_SIZE=0 means no LIMIT (export all pending countries in one run).
+declare COUNTRY_EXPORT_LIMIT_LINE=""
+if [[ "${JSON_EXPORT_BATCH_SIZE}" -gt 0 ]]; then
+ COUNTRY_EXPORT_LIMIT_LINE="LIMIT ${JSON_EXPORT_BATCH_SIZE}"
  echo "  Processing batch of up to ${JSON_EXPORT_BATCH_SIZE} countries..."
+else
+ echo "  Processing all pending countries (no batch limit)..."
 fi
 
+MODIFIED_COUNTRY_COUNT=0
 psql -d "${DBNAME_DWH}" -Atq << SQL_COUNTRIES | while IFS='|' read -r country_id country_name; do
 SELECT country_id, country_name_en
 FROM dwh.datamartcountries
 WHERE country_id IS NOT NULL
   AND json_exported = FALSE
 ORDER BY country_id
-LIMIT ${JSON_EXPORT_BATCH_SIZE};
+${COUNTRY_EXPORT_LIMIT_LINE};
 SQL_COUNTRIES
 
  if [[ -n "${country_id}" ]]; then
