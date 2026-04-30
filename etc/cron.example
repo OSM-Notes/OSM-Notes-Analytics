@@ -56,6 +56,10 @@ HOME=/home/notes
 # Same, logging to /var/log (same layout as osm-notes-ingestion, osm-notes-monitoring); see log setup above:
 # 45 2 * * * /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh && /home/notes/OSM-Notes-Analytics/bin/dwh/exportAndPushJSONToGitHub.sh >> /var/log/osm-notes-analytics/analytics.log 2>&1
 
+# Optional: monthly — export JSON then collapse OSM-Notes-Data Git history to one commit
+# (needs force-push allowed on GitHub; see bin/dwh/Environment_Variables.md)
+# 30 6 1 * * cd /home/notes/OSM-Notes-Analytics && OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-json-export.log 2>&1
+
 # ==========================================
 # MAINTENANCE TASKS
 # ==========================================

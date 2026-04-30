@@ -11,6 +11,10 @@
 #                          Set to 0 for no limit (full pending export in one run).
 #   SKIP_DATAMART_JSON_EXPORT: If "true", skip running exportDatamartsToJSON (not recommended).
 #   DBNAME_DWH: DWH database name (default: from etc/properties.sh)
+#   OSM_NOTES_DATA_SQUASH_AFTER_EXPORT: If "true", after a successful pipeline run squash
+#     OSM-Notes-Data to a single orphan commit on origin/<branch> (force-with-lease). Use sparingly:
+#     see bin/dwh/squashOSMNotesDataGitHistory.sh. GitHub branch protection must allow force-push or
+#     the squash step fails with a warning and leaves the normal export commits intact.
 #
 # Behavior:
 #   - Syncs OSM-Notes-Data clone, copies JSON schemas
@@ -19,7 +23,7 @@
 #   - Commits and pushes data/, schemas/, and countries README when there are changes
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-28
+# Version: 2026-04-30
 
 set -eu pipefail
 
@@ -460,3 +464,13 @@ fi
 print_success "Export pipeline completed."
 print_info "Allow 1–2 minutes for GitHub Pages to update"
 print_info "Schemas: https://osm-notes.github.io/OSM-Notes-Data/schemas/"
+
+if [[ "${OSM_NOTES_DATA_SQUASH_AFTER_EXPORT:-false}" == "true" ]]; then
+ print_warn "OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true — collapsing OSM-Notes-Data to one Git commit..."
+ squash_script="${ANALYTICS_DIR}/bin/dwh/squashOSMNotesDataGitHistory.sh"
+ if [[ ! -x "${squash_script}" ]]; then
+  print_warn "Squash helper not executable or missing: ${squash_script} (skip squash)."
+ else
+  "${squash_script}" --yes || print_warn "History squash skipped or failed — normal export commits remain on origin."
+ fi
+fi

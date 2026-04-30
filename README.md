@@ -910,6 +910,10 @@ datamartGlobal) at the end of each run. Separate cron jobs for datamarts are **n
 */15 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ETL.sh && ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-analytics.log 2>&1
 # Or: /var/log via etc/logrotate.osm-analytics.conf (see etc/cron.example)
 
+# Optional: monthly squash of OSM-Notes-Data Git history (disk / clone growth); export + orphan commit
+# bin/dwh/Environment_Variables.md — see OSM_NOTES_DATA_SQUASH_AFTER_EXPORT and cron examples
+# 30 6 1 * * cd ~/OSM-Notes-Analytics && OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-analytics.log 2>&1
+
 # ML — batch classification (after models exist; tune frequency vs load)
 # Example: hourly, 500 notes per run (override with ML_BATCH_SIZE=1000)
 0 * * * * cd ~/OSM-Notes-Analytics && ./bin/dwh/ml_batch_classify.sh >> /tmp/ml-batch.log 2>&1
@@ -1331,8 +1335,8 @@ For shared documentation of the complete ecosystem, see:
 - **[OSM Notes Ecosystem](https://github.com/OSM-Notes/OSM-Notes)** - Ecosystem landing page
 - **[Global Glossary](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/Glossary.md)** -
   Terms and definitions
-- **[Complete Installation Guide](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/Installation.md)** -
-  Step-by-step installation of all projects
+- **[Ecosystem installation index](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/Installation.md)** -
+  Suggested dependency order and links to each project’s authoritative install docs
 - **[End-to-End Data Flow](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/Data_Flow.md)** -
   Complete data flow
 - **[Decision Guide](https://github.com/OSM-Notes/OSM-Notes-Common/blob/main/docs/Decision_Guide.md)** -

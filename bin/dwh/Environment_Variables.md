@@ -374,6 +374,32 @@ environment):
 ### Export Configuration
 
 - **`JSON_OUTPUT_DIR`**: Output directory for JSON exports (default: `./output/json`)
+- **`OSM_NOTES_DATA_SQUASH_AFTER_EXPORT`**: If `true`, `exportAndPushJSONToGitHub.sh` invokes
+  `bin/dwh/squashOSMNotesDataGitHistory.sh --yes` after a successful export to replace
+  `OSM-Notes-Data` history with **one orphan commit** and `git push --force-with-lease` (drops past
+  JSON revision history locally and on GitHub). **Rarely recommended on every cron run**: use for
+  maintenance or large-repo cleanup. Requires GitHub branch settings to permit force-push where
+  applicable. Other machines with a clone must `git fetch origin && git reset --hard origin/main`
+  afterward.
+
+**Cron examples (run as `notes`, adjust paths)**
+
+```cron
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Frequent JSON export + push — no Git history squash
+15 */6 * * * cd /home/notes/OSM-Notes-Analytics && ./bin/dwh/exportAndPushJSONToGitHub.sh >>/var/log/osm-notes-json-export.log 2>&1
+
+# Optional: monthly (day 1, 06:30) export then squash Git history to a single commit on origin/main
+30 6 1 * * cd /home/notes/OSM-Notes-Analytics && OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true ./bin/dwh/exportAndPushJSONToGitHub.sh >>/var/log/osm-notes-json-export.log 2>&1
+```
+
+Standalone squash-only (only if `/home/notes/OSM-Notes-Data` already matches what you intend to publish; prefers the combined monthly line above):
+
+```cron
+0 7 1 * * cd /home/notes/OSM-Notes-Analytics && ./bin/dwh/squashOSMNotesDataGitHistory.sh --yes >>/var/log/osm-notes-data-squash.log 2>&1
+```
 
 ### Other Configuration
 

@@ -6,10 +6,29 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **OSM-Notes-Data Git history squash (optional)**:
+  - `bin/dwh/squashOSMNotesDataGitHistory.sh`: replace `OSM-Notes-Data` history with a single orphan
+    commit and `git push --force-with-lease` (`--dry-run` / `--yes`)
+  - `exportAndPushJSONToGitHub.sh`: when `OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true`, runs the squash
+    helper after a successful export (fails soft if branch protection blocks force-push)
+  - `bin/dwh/Environment_Variables.md`: documents the variable and **cron examples** (frequent
+    export vs monthly export+squash vs squash-only)
+  - **This repo**: `docs/Installation_Dependencies.md` (optional OSM-Notes-Data publish + squash
+    pointers); `docs/Cron_Setup.md` (optional squash note); `README.md` (Scheduling with Cron);
+    `etc/cron.example` (optional monthly line)
 - **DWH schema contract**: SemVer in `public.schema_version` for `component = dwh` (independent of
   OSM-Notes-Ingestion `core`); `sql/dwh/ensure_dwh_schema_version.sql`, applied each ETL run from
   `bin/dwh/ETL.sh`; documentation in `docs/Schema_Versioning_DWH.md`; consumer range helpers in
   `etc/schema_compatibility.sh`
+
+### Changed
+
+- **Ecosystem installation index** (`lib/osm-common/docs/Installation.md`): replaced the long
+  duplicated walkthrough with a short **dependency order + links** to each repository’s official
+  install/ops docs. Detailed Analytics steps remain in **`docs/Installation_Dependencies.md`** and
+  related files in **OSM-Notes-Analytics**. Related wording updates in **`lib/osm-common`**
+  (`README.md`, `docs/README.md`, `Decision_Guide.md`, `Data_Flow.md`, `Glossary.md`) and in this
+  repo’s **`README.md`** ecosystem link.
 
 ### Fixed
 

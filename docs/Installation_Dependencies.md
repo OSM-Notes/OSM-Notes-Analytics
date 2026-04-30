@@ -2,7 +2,7 @@
 title: "Installation and Dependencies Guide"
 description: "Complete guide to install dependencies and set up OSM-Notes-Analytics for development"
 version: "1.0.0"
-last_updated: "2026-04-20"
+last_updated: "2026-04-30"
 author: "AngocA"
 tags:
   - "installation"
@@ -30,8 +30,9 @@ production.
 5. [Project Installation](#project-installation)
 6. [Configuration](#configuration)
 7. [Verification](#verification)
-8. [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
-9. [Troubleshooting](#troubleshooting)
+8. [Optional: Publish JSON to OSM-Notes-Data](#optional-publish-json-to-osm-notes-data)
+9. [Optional: User datamart catch-up (shell)](#optional-user-datamart-catch-up-shell)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -340,6 +341,51 @@ cat bin/dwh/Entry_Points.md
 # Verify scripts are executable
 ls -la bin/dwh/*.sh
 ```
+
+---
+
+## Optional: Publish JSON to OSM-Notes-Data
+
+The **OSM-Notes-Viewer** consumes static JSON from the **OSM-Notes-Data** repository (often via
+[GitHub Pages](https://osm-notes.github.io/OSM-Notes-Data/)). Analytics is the producer.
+
+### 1. Clone the Data repository
+
+Use the same convention as `exportAndPushJSONToGitHub.sh` (first match wins):
+
+1. `~/OSM-Notes-Data`
+2. `~/github/OSM-Notes-Data`
+
+```bash
+git clone https://github.com/OSM-Notes/OSM-Notes-Data.git ~/OSM-Notes-Data
+# Configure SSH/HTTPS remote and credentials so this user can push to origin/main.
+```
+
+### 2. Export and push from Analytics
+
+```bash
+cd /path/to/OSM-Notes-Analytics
+./bin/dwh/exportAndPushJSONToGitHub.sh
+```
+
+This validates JSON (when `ajv-cli` is available), commits under `data/` and `schemas/`, and pushes.
+See **[`bin/dwh/Export_JSON_README.md`](../bin/dwh/Export_JSON_README.md)** for prerequisites
+(`JSON_OUTPUT_DIR` is handled automatically when the clone path matches).
+
+Verify:
+
+```bash
+curl -sS https://osm-notes.github.io/OSM-Notes-Data/data/metadata.json | head
+```
+
+### 3. Scheduling and optional Git history squash
+
+- **Cron templates**: [`etc/cron.example`](../etc/cron.example), [`Cron_Setup.md`](Cron_Setup.md), and the
+  **Scheduling with Cron** section in the repo [`README.md`](../README.md).
+- **Squash helper** (optional maintenance when the `.git` of OSM-Notes-Data grows; rewrites remote
+  history with `force-with-lease`): [`bin/dwh/squashOSMNotesDataGitHistory.sh`](../bin/dwh/squashOSMNotesDataGitHistory.sh)
+  and variable **`OSM_NOTES_DATA_SQUASH_AFTER_EXPORT`** — full detail and cron examples:
+  **[`Environment_Variables.md`](../bin/dwh/Environment_Variables.md)** (Export Configuration).
 
 ---
 

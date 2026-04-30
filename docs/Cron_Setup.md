@@ -2,7 +2,7 @@
 title: "Cron Setup Guide - OSM Notes Analytics"
 description: "Complete guide for setting up automated ETL execution using cron."
 version: "1.0.0"
-last_updated: "2026-01-25"
+last_updated: "2026-04-30"
 author: "AngocA"
 tags:
   - "installation"
@@ -392,6 +392,20 @@ You can run different ETL operations at different times:
 0 2 * * 0 /home/notes/OSM-Notes-Analytics/bin/dwh/ETL.sh
 ```
 
+### OSM-Notes-Data JSON export and optional Git history squash
+
+Chain JSON export after ETL when you publish to **OSM-Notes-Data** (see
+[Installation_Dependencies.md](Installation_Dependencies.md#optional-publish-json-to-osm-notes-data)).
+Template lines: `etc/cron.example`. If the Data repo’s Git history grows too large and you only care
+about the **current** tree, optionally use `OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true` or
+`bin/dwh/squashOSMNotesDataGitHistory.sh` — **[`bin/dwh/Environment_Variables.md`](../bin/dwh/Environment_Variables.md)**
+(Export Configuration) documents risks (`force-with-lease`, branch protection) and cron examples.
+
+```cron
+# Example: monthly export + single-commit squash (commented in etc/cron.example)
+# 30 6 1 * * cd /home/notes/OSM-Notes-Analytics && OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true ./bin/dwh/exportAndPushJSONToGitHub.sh >> /tmp/osm-json-export.log 2>&1
+```
+
 ### Custom Log Rotation
 
 ETL logs are stored in `/tmp/ETL_XXXXXX/` directories. Automatic cleanup is configured in cron (see
@@ -410,6 +424,8 @@ Run ETL only during business hours:
 
 ## Related Documentation
 
+- **[Installation and Dependencies](Installation_Dependencies.md)**: Optional OSM-Notes-Data publish
+  and squash pointers
 - **[Deployment Diagram](Deployment_Diagram.md)**: Complete deployment architecture and operational
   workflows
 - **[Troubleshooting Guide](Troubleshooting_Guide.md)**: Common cron and deployment issues
