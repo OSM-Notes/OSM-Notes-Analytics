@@ -183,12 +183,12 @@ run_datamart_json_export() {
   return 1
  fi
  print_info "Running exportDatamartsToJSON.sh (output: ${DATA_REPO_DIR}/data, batch size: ${JSON_EXPORT_BATCH_SIZE})..."
+ # Do not assign DBNAME_DWH here: properties.sh declares it readonly; subshell inherits that.
  (
-  cd "${ANALYTICS_DIR}"
-  export DBNAME_DWH="${DBNAME}"
+  cd "${ANALYTICS_DIR}" || exit 1
   export JSON_OUTPUT_DIR="${DATA_REPO_DIR}/data"
   export JSON_EXPORT_BATCH_SIZE
-  exec "${EXPORT_DATAMARTS_SCRIPT}"
+  exec env DBNAME_DWH="${DBNAME}" "${EXPORT_DATAMARTS_SCRIPT}"
  )
 }
 
