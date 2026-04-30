@@ -32,6 +32,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`exportAndPushJSONToGitHub.sh` concurrent runs (cron overlap)**: Removed `rm -f` of the lock path
+  on `EXIT` (unlink while another process can still hold flock on the orphaned inode allowed a second
+  instance to create a new file and pass `flock -n`). Lock file is kept; open with append, refresh
+  contents via the locked fd after `truncate` (or `/proc/self/fd/7`). `cleanup` only closes fd **7**.
 - **Initial DWH load / `days_to_resolution`**: Bulk fact load runs before `ETL_40` creates the
   `update_days_to_resolution` trigger, so closed rows stayed with NULL resolution metrics. After
   creating the trigger, `sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql` now backfills

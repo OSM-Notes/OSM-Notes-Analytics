@@ -23,7 +23,7 @@
 #   - Commits and pushes data/, schemas/, and countries README when there are changes
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-30
+# Version: 2026-05-01
 
 set -eu pipefail
 
@@ -31,7 +31,8 @@ set -eu pipefail
 BASENAME=$(basename -s .sh "${0}")
 readonly BASENAME
 
-# Lock file for single execution
+# Lock file for single execution (advisory flock; do not unlink on exit — see setup_lock).
+
 LOCK="/tmp/${BASENAME}.lock"
 readonly LOCK
 
@@ -361,8 +362,12 @@ EOF
 
 setup_lock() {
  print_warn "Validating single execution."
- exec 7> "${LOCK}"
+ # Advisory lock must stay tied to one inode until this process exits. Do not unlink ${LOCK}
+ # in cleanup: unlink + new open creates a fresh inode while an older instance may still hold
+ # flock on the orphaned inode → overlapping exports under cron (see flock(2)).
+ exec 7>> "${LOCK}"
  if ! flock -n 7; then
+  exec 7>&- 2> /dev/null || true
   print_error "Another instance of ${BASENAME} is already running."
   print_error "Lock file: ${LOCK}"
   if [[ -f "${LOCK}" ]]; then
@@ -372,16 +377,18 @@ setup_lock() {
   exit 1
  fi
 
- cat > "${LOCK}" << EOF
-PID: ${ORIGINAL_PID}
-Process: ${BASENAME}
-Started: ${PROCESS_START_TIME}
-Main script: ${0}
-EOF
+ truncate -s 0 "${LOCK}" 2> /dev/null || {
+  # Same inode already open on fd 7 (truncate by path unavailable on PATH)
+  if [[ -w "/proc/self/fd/7" ]] 2> /dev/null; then
+   : > /proc/self/fd/7
+  fi
+ }
+ printf 'PID: %s\nProcess: %s\nStarted: %s\nMain script: %s\n' \
+  "${ORIGINAL_PID}" "${BASENAME}" "${PROCESS_START_TIME}" "${0}" >&7
 }
 
 cleanup() {
- rm -f "${LOCK}" 2> /dev/null || true
+ exec 7>&- 2> /dev/null || true
 }
 
 trap cleanup EXIT INT TERM
