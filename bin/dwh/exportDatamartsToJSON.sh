@@ -4,7 +4,9 @@
 # This allows the web viewer to read precalculated data without direct database access.
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-30
+# Version: 2026-05-01
+# Cross-filesystem publish: temp under /tmp vs output on /home cannot use rename(2) across
+# non-empty dirs; rsync mirrors the validated tree (--delete aligns dest with staged export).
 # Note: This script now uses SELECT * to dynamically export all columns,
 # including any new year-based columns added to the datamart tables.
 # For users, it also includes contributor_type_name and contributor_type_name_en via JOIN with contributor_types table.
@@ -644,10 +646,10 @@ if [[ ${VALIDATION_ERROR_COUNT} -gt 0 ]]; then
  exit 1
 fi
 
-# All validations passed - atomic move to final destination
+# All validations passed - publish tree (rename same-fs, else rsync for /tmp vs /home)
 echo ""
 # shellcheck disable=SC2312  # Command substitution in echo is intentional; date command is safe
-echo "$(date +%Y-%m-%d\ %H:%M:%S) - All validations passed, moving to final destination..."
+echo "$(date +%Y-%m-%d\ %H:%M:%S) - All validations passed, publishing to final destination..."
 
 # Ensure output directory exists
 mkdir -p "${OUTPUT_DIR}"
@@ -655,8 +657,23 @@ mkdir -p "${OUTPUT_DIR}/users"
 mkdir -p "${OUTPUT_DIR}/countries"
 mkdir -p "${OUTPUT_DIR}/indexes"
 
-# Move files atomically (move is atomic operation)
-mv "${ATOMIC_TEMP_DIR}"/* "${OUTPUT_DIR}/"
+# Same device: renaming is atomic. Different device (typical /tmp vs /home): mv(1) cannot
+# replace populated directories (inter-device copy + unlink target fails → "Directory not empty").
+declare _atomic_st_dev _output_st_dev
+_atomic_st_dev="$(stat -c '%d' "${ATOMIC_TEMP_DIR}" 2> /dev/null || echo 0)"
+_output_st_dev="$(stat -c '%d' "${OUTPUT_DIR}" 2> /dev/null || echo 0)"
+if [[ "${_atomic_st_dev}" == "${_output_st_dev}" ]] && [[ -n "${_atomic_st_dev}" ]] && [[ "${_atomic_st_dev}" != 0 ]]; then
+ mv "${ATOMIC_TEMP_DIR}"/* "${OUTPUT_DIR}/"
+else
+ if ! command -v rsync > /dev/null 2>&1; then
+  echo "" >&2
+  echo "ERROR: temp dir and output dir are on different filesystems but rsync is not installed." >&2
+  echo "Install rsync, or set JSON_OUTPUT_DIR on the same filesystem as the temp base (e.g. under /home)." >&2
+  exit 1
+ fi
+ echo "  Temp and output on different devices — publishing with rsync --delete (${ATOMIC_TEMP_DIR}/ → ${OUTPUT_DIR}/)"
+ rsync -a --delete "${ATOMIC_TEMP_DIR}/" "${OUTPUT_DIR}/"
+fi
 
 # shellcheck disable=SC2312  # Command substitution in echo is intentional; date command is safe
 echo "$(date +%Y-%m-%d\ %H:%M:%S) - JSON export completed successfully"
