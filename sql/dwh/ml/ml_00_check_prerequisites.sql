@@ -148,7 +148,7 @@ FROM (
       WHEN f.comment_length < 50 AND f.total_comments_on_note > 2 THEN 'lack_of_precision'
       WHEN f.comment_length > 200 AND f.has_url = TRUE THEN 'advertising'
       WHEN f.closed_dimension_id_date IS NULL
-           AND EXTRACT(DAY FROM CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
+           AND (CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
       WHEN a.application_name IN ('Maps.me', 'StreetComplete', 'OrganicMaps', 'OnOSM.org')
            AND f.comment_length > 30 THEN 'adds_to_map'
       ELSE 'other'

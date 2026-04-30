@@ -106,7 +106,7 @@ SELECT
   -- Age features (from obsolete note analysis)
   CASE
     WHEN f.closed_dimension_id_date IS NULL
-    THEN EXTRACT(DAY FROM CURRENT_DATE - d.date_id)
+    THEN (CURRENT_DATE - d.date_id)
   END AS days_open,
 
   -- Target variables (for training - based on historical outcomes)
@@ -135,7 +135,7 @@ SELECT
     WHEN f.comment_length < 50 AND f.total_comments_on_note > 2 THEN 'lack_of_precision'
     WHEN f.comment_length > 200 AND f.has_url = TRUE THEN 'advertising'
     WHEN f.closed_dimension_id_date IS NULL
-         AND EXTRACT(DAY FROM CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
+         AND (CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
     WHEN a.application_name IN ('Maps.me', 'StreetComplete', 'OrganicMaps', 'OnOSM.org')
          AND f.comment_length > 30 THEN 'adds_to_map'
     ELSE 'other'
@@ -222,7 +222,7 @@ SELECT
   EXTRACT(HOUR FROM d.date_id) AS hour_of_day,
   EXTRACT(MONTH FROM d.date_id) AS month,
 
-  EXTRACT(DAY FROM CURRENT_DATE - d.date_id) AS days_open
+  (CURRENT_DATE - d.date_id) AS days_open
 
 FROM dwh.facts f
 LEFT JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
