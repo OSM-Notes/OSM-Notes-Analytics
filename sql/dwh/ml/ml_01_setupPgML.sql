@@ -100,7 +100,7 @@ SELECT
 
   -- Temporal features
   EXTRACT(DOW FROM d.date_id) AS day_of_week,
-  EXTRACT(HOUR FROM d.date_id) AS hour_of_day,
+  EXTRACT(HOUR FROM f.action_at) AS hour_of_day,
   EXTRACT(MONTH FROM d.date_id) AS month,
 
   -- Age features (from obsolete note analysis)
@@ -219,7 +219,7 @@ SELECT
   COALESCE(du.id_contributor_type, 0) AS user_contributor_type_id,
 
   EXTRACT(DOW FROM d.date_id) AS day_of_week,
-  EXTRACT(HOUR FROM d.date_id) AS hour_of_day,
+  EXTRACT(HOUR FROM f.action_at) AS hour_of_day,
   EXTRACT(MONTH FROM d.date_id) AS month,
 
   (CURRENT_DATE - d.date_id) AS days_open
