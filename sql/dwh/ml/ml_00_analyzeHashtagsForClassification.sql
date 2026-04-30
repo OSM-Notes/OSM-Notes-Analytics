@@ -174,8 +174,7 @@ LIMIT 50;
 -- ============================================================================
 -- 6. Hashtags for ML Feature Engineering
 -- ============================================================================
--- Create a view or table that can be used for ML feature extraction
--- This provides hashtag-based features for each note
+-- NOTE: Same view is created by ml_01_setupPgML.sql for standalone ML setup.
 
 CREATE OR REPLACE VIEW dwh.v_note_hashtag_features AS
 SELECT

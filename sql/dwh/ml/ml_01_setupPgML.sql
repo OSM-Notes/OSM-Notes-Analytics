@@ -19,7 +19,39 @@ FROM pg_extension
 WHERE extname = 'pgml';
 
 -- ============================================================================
--- 2. Create Training Data View
+-- 2. Hashtag features view (dependency for ML feature joins)
+-- ============================================================================
+-- Also defined in ml_00_analyzeHashtagsForClassification.sql section 6.
+-- Created here so setup works without running the analysis script first
+-- (e.g. ml_retrain.sh / fresh DWH).
+
+CREATE OR REPLACE VIEW dwh.v_note_hashtag_features AS
+SELECT
+  f.id_note,
+  f.opened_dimension_id_date,
+  COUNT(DISTINCT fh.dimension_hashtag_id) AS hashtag_count,
+  ARRAY_AGG(DISTINCT h.hashtag_name ORDER BY h.hashtag_name) AS hashtag_names,
+  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fire%'
+             OR LOWER(h.hashtag_name) LIKE '%bomber%') AS has_fire_keyword,
+  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%air%'
+             OR LOWER(h.hashtag_name) LIKE '%plane%') AS has_air_keyword,
+  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%wheel%'
+             OR LOWER(h.hashtag_name) LIKE '%access%') AS has_access_keyword,
+  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%missing%'
+             OR LOWER(h.hashtag_name) LIKE '%campaign%') AS has_campaign_keyword,
+  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fix%'
+             OR LOWER(h.hashtag_name) LIKE '%correc%') AS has_fix_keyword
+FROM dwh.facts f
+LEFT JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
+LEFT JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
+WHERE f.action_comment = 'opened'
+GROUP BY f.id_note, f.opened_dimension_id_date;
+
+COMMENT ON VIEW dwh.v_note_hashtag_features IS
+  'Hashtag-based features for ML classification. Includes hashtag count, names, and category indicators.';
+
+-- ============================================================================
+-- 3. Create Training Data View
 -- ============================================================================
 -- This view combines all features for ML training
 -- Based on existing analysis patterns documented in ML_Implementation_Plan.md
@@ -145,7 +177,7 @@ COMMENT ON VIEW dwh.v_note_ml_training_features IS
   'Training features for ML classification. Combines metrics, hashtags, applications, geographic, user, and temporal features. Includes target variables based on historical outcomes.';
 
 -- ============================================================================
--- 3. Create Prediction Features View (for new notes)
+-- 4. Create Prediction Features View (for new notes)
 -- ============================================================================
 -- Same features as training, but without target variables
 
