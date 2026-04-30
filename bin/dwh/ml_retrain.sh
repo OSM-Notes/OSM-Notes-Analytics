@@ -76,10 +76,16 @@ check_pgml_extension() {
 ensure_training_view() {
  if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM information_schema.views WHERE table_schema = 'dwh' AND table_name = 'v_note_ml_training_features';" | grep -q 1; then
   __logi "Creating training views..."
-  if ! "${PSQL_CMD}" -d "${DWH_DB}" -f "${ML_DIR}/ml_01_setupPgML.sql" > /dev/null 2>&1; then
+  local setup_log
+  setup_log="$(mktemp)"
+  if ! "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
+   -f "${ML_DIR}/ml_01_setupPgML.sql" > "${setup_log}" 2>&1; then
    __loge "Failed to create training views"
+   cat "${setup_log}" >&2
+   rm -f "${setup_log}"
    return 1
   fi
+  rm -f "${setup_log}"
  fi
  return 0
 }
@@ -209,7 +215,12 @@ train_models() {
  local start_time
  start_time=$(date +%s)
 
- if "${PSQL_CMD}" -d "${DWH_DB}" -f "${script_file}" > /dev/null 2>&1; then
+ local train_log
+ train_log="$(mktemp)"
+
+ if "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 -f "${script_file}" \
+  > "${train_log}" 2>&1; then
+  rm -f "${train_log}"
   local end_time
   end_time=$(date +%s)
   local duration=$((end_time - start_time))
@@ -235,6 +246,9 @@ train_models() {
   return 0
  else
   __loge "❌ ${training_type} failed"
+  __loge "psql output (first failure stops the script when ON_ERROR_STOP=1):"
+  cat "${train_log}" >&2
+  rm -f "${train_log}"
   return 1
  fi
 }

@@ -5,6 +5,8 @@
 -- Date: 2025-12-20
 -- Purpose: Train ML models for note classification
 
+\set ON_ERROR_STOP on
+
 -- ============================================================================
 -- Prerequisites
 -- ============================================================================
@@ -118,10 +120,10 @@ SELECT
   algorithm,
   status,
   created_at,
-  metrics->>'accuracy' as accuracy,
-  metrics->>'f1' as f1_score,
-  metrics->>'precision' as precision,
-  metrics->>'recall' as recall
+  metrics ->> 'accuracy' AS accuracy,
+  metrics ->> 'f1' AS f1_score,
+  metrics ->> 'precision' AS precision,
+  metrics ->> 'recall' AS recall
 FROM pgml.deployed_models
 WHERE project_name LIKE 'note_classification%'
 ORDER BY created_at DESC;
@@ -135,22 +137,23 @@ WITH model_metrics AS (
     project_name,
     algorithm,
     created_at,
-    metrics->>'accuracy' as accuracy,
-    metrics->>'f1' as f1_score,
-    metrics->>'precision' as precision,
-    metrics->>'recall' as recall
+    metrics ->> 'accuracy' AS accuracy,
+    metrics ->> 'f1' AS f1_score,
+    metrics ->> 'precision' AS precision,
+    metrics ->> 'recall' AS recall
   FROM pgml.deployed_models
   WHERE project_name LIKE 'note_classification%'
 )
+
 SELECT
   project_name,
-  ROUND((accuracy::numeric) * 100, 2) as accuracy_pct,
-  ROUND((f1_score::numeric) * 100, 2) as f1_pct,
-  ROUND((precision::numeric) * 100, 2) as precision_pct,
-  ROUND((recall::numeric) * 100, 2) as recall_pct,
+  ROUND((accuracy::numeric) * 100, 2) AS accuracy_pct,
+  ROUND((f1_score::numeric) * 100, 2) AS f1_pct,
+  ROUND((precision::numeric) * 100, 2) AS precision_pct,
+  ROUND((recall::numeric) * 100, 2) AS recall_pct,
   created_at
 FROM model_metrics
-ORDER BY project_name, created_at DESC;
+ORDER BY project_name ASC, created_at DESC;
 
 -- ============================================================================
 -- Notes
@@ -160,4 +163,3 @@ ORDER BY project_name, created_at DESC;
 -- - Best models are automatically deployed
 -- - Can retrain with different hyperparameters for better performance
 -- - Consider class weights for imbalanced datasets
-

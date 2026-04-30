@@ -5,6 +5,8 @@
 -- Date: 2025-12-27
 -- Purpose: Retrain ML models with fresh data
 
+\set ON_ERROR_STOP on
+
 -- ============================================================================
 -- Prerequisites
 -- ============================================================================
@@ -17,22 +19,22 @@
 -- ============================================================================
 
 -- Check when models were last trained
-SELECT 
+SELECT
   project_name,
-  MAX(created_at) as last_trained_at,
-  NOW() - MAX(created_at) as age
+  MAX(created_at) AS last_trained_at,
+  NOW() - MAX(created_at) AS age
 FROM pgml.deployed_models
 WHERE project_name LIKE 'note_classification%'
 GROUP BY project_name;
 
 -- Check how many new training samples are available
-SELECT 
-  COUNT(*) as total_training_samples,
+SELECT
+  COUNT(*) AS total_training_samples,
   COUNT(*) FILTER (WHERE opened_dimension_id_date > (
     SELECT MAX(created_at) - INTERVAL '30 days'
     FROM pgml.deployed_models
     WHERE project_name = 'note_classification_main_category'
-  )) as new_samples_last_30_days
+  )) AS new_samples_last_30_days
 FROM dwh.v_note_ml_training_features
 WHERE main_category IS NOT NULL;
 
@@ -50,7 +52,7 @@ SELECT * FROM pgml.train(
     "n_estimators": 100,
     "max_depth": 6,
     "learning_rate": 0.1
-  }'::jsonb,
+  }'::JSONB,
   test_size => 0.2,
   test_sampling => 'random'
 );
@@ -70,7 +72,7 @@ SELECT * FROM pgml.train(
     "max_depth": 8,
     "learning_rate": 0.05,
     "class_weight": "balanced"
-  }'::jsonb,
+  }'::JSONB,
   test_size => 0.2,
   test_sampling => 'random'
 );
@@ -89,7 +91,7 @@ SELECT * FROM pgml.train(
     "n_estimators": 150,
     "max_depth": 7,
     "learning_rate": 0.1
-  }'::jsonb,
+  }'::JSONB,
   test_size => 0.2,
   test_sampling => 'random'
 );
@@ -99,24 +101,25 @@ SELECT * FROM pgml.train(
 -- ============================================================================
 
 WITH model_comparison AS (
-  SELECT 
+  SELECT
     project_name,
     created_at,
-    metrics->>'accuracy' as accuracy,
-    metrics->>'f1' as f1_score,
-    ROW_NUMBER() OVER (PARTITION BY project_name ORDER BY created_at DESC) as rn
+    metrics ->> 'accuracy' AS accuracy,
+    metrics ->> 'f1' AS f1_score,
+    ROW_NUMBER() OVER (PARTITION BY project_name ORDER BY created_at DESC) AS rn
   FROM pgml.deployed_models
   WHERE project_name LIKE 'note_classification%'
 )
-SELECT 
+
+SELECT
   project_name,
-  MAX(CASE WHEN rn = 1 THEN accuracy END) as new_accuracy,
-  MAX(CASE WHEN rn = 2 THEN accuracy END) as previous_accuracy,
+  MAX(CASE WHEN rn = 1 THEN accuracy END) AS new_accuracy,
+  MAX(CASE WHEN rn = 2 THEN accuracy END) AS previous_accuracy,
   ROUND(
-    ((MAX(CASE WHEN rn = 1 THEN accuracy::numeric END) - 
-      MAX(CASE WHEN rn = 2 THEN accuracy::numeric END)) * 100)::numeric, 
+    ((MAX(CASE WHEN rn = 1 THEN accuracy::NUMERIC END)
+      - MAX(CASE WHEN rn = 2 THEN accuracy::NUMERIC END)) * 100)::NUMERIC,
     2
-  ) as accuracy_change_pct
+  ) AS accuracy_change_pct
 FROM model_comparison
 GROUP BY project_name
 ORDER BY project_name;
