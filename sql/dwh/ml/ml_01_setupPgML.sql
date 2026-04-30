@@ -30,17 +30,17 @@ SELECT
   f.id_note,
   f.opened_dimension_id_date,
   COUNT(DISTINCT fh.dimension_hashtag_id) AS hashtag_count,
-  ARRAY_AGG(DISTINCT h.hashtag_name ORDER BY h.hashtag_name) AS hashtag_names,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fire%'
-             OR LOWER(h.hashtag_name) LIKE '%bomber%') AS has_fire_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%air%'
-             OR LOWER(h.hashtag_name) LIKE '%plane%') AS has_air_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%wheel%'
-             OR LOWER(h.hashtag_name) LIKE '%access%') AS has_access_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%missing%'
-             OR LOWER(h.hashtag_name) LIKE '%campaign%') AS has_campaign_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fix%'
-             OR LOWER(h.hashtag_name) LIKE '%correc%') AS has_fix_keyword
+  ARRAY_AGG(DISTINCT h.description ORDER BY h.description) AS hashtag_names,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%fire%'
+             OR LOWER(h.description) LIKE '%bomber%') AS has_fire_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%air%'
+             OR LOWER(h.description) LIKE '%plane%') AS has_air_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%wheel%'
+             OR LOWER(h.description) LIKE '%access%') AS has_access_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%missing%'
+             OR LOWER(h.description) LIKE '%campaign%') AS has_campaign_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%fix%'
+             OR LOWER(h.description) LIKE '%correc%') AS has_fix_keyword
 FROM dwh.facts f
 LEFT JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
 LEFT JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id

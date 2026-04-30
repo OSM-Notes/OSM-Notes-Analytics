@@ -13,7 +13,7 @@
 -- These could indicate common note categories
 
 SELECT
-  h.hashtag_name,
+  h.description AS hashtag_name,
   COUNT(DISTINCT fh.fact_id) AS usage_count,
   COUNT(DISTINCT f.id_note) AS notes_count,
   COUNT(DISTINCT f.dimension_id_country) AS countries_count,
@@ -23,7 +23,7 @@ FROM dwh.fact_hashtags fh
 JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
 JOIN dwh.facts f ON fh.fact_id = f.fact_id
 WHERE f.action_comment = 'opened'  -- Only opening actions
-GROUP BY h.hashtag_name
+GROUP BY h.description
 ORDER BY usage_count DESC
 LIMIT 100;
 
@@ -59,7 +59,7 @@ WITH note_outcomes AS (
 )
 
 SELECT
-  h.hashtag_name,
+  h.description AS hashtag_name,
   no.outcome,
   COUNT(DISTINCT f.id_note) AS notes_count,
   ROUND(AVG(f.days_to_resolution), 2) AS avg_resolution_days
@@ -68,8 +68,8 @@ JOIN note_outcomes no ON f.id_note = no.id_note
 JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
 JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
 WHERE f.action_comment = 'opened'
-GROUP BY h.hashtag_name, no.outcome
-ORDER BY h.hashtag_name ASC, notes_count DESC;
+GROUP BY h.description, no.outcome
+ORDER BY h.description ASC, notes_count DESC;
 
 -- ============================================================================
 -- 3. Hashtag Categories (Potential Classification)
@@ -77,44 +77,41 @@ ORDER BY h.hashtag_name ASC, notes_count DESC;
 -- Identify hashtags that might indicate specific note types
 -- Based on common patterns and keywords
 
+WITH categorized_hashtags AS (
+  SELECT
+    h.description AS hashtag_name,
+    CASE
+      WHEN LOWER(h.description) LIKE '%fire%'
+           OR LOWER(h.description) LIKE '%bomber%'
+           OR LOWER(h.description) LIKE '%emergency%' THEN 'firefighter'
+      WHEN LOWER(h.description) LIKE '%air%'
+           OR LOWER(h.description) LIKE '%plane%'
+           OR LOWER(h.description) LIKE '%avion%' THEN 'airplane'
+      WHEN LOWER(h.description) LIKE '%wheel%'
+           OR LOWER(h.description) LIKE '%access%'
+           OR LOWER(h.description) LIKE '%silla%' THEN 'wheelchair'
+      WHEN LOWER(h.description) LIKE '%missing%'
+           OR LOWER(h.description) LIKE '%map%'
+           OR LOWER(h.description) LIKE '%campaign%' THEN 'campaign'
+      WHEN LOWER(h.description) LIKE '%fix%'
+           OR LOWER(h.description) LIKE '%correc%'
+           OR LOWER(h.description) LIKE '%error%' THEN 'correction'
+      ELSE 'other'
+    END AS potential_category,
+    f.id_note
+  FROM dwh.facts f
+  JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
+  JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
+  WHERE f.action_comment = 'opened'
+)
+
 SELECT
-  h.hashtag_name,
-  CASE
-    -- Fire/emergency related
-    WHEN LOWER(h.hashtag_name) LIKE '%fire%'
-         OR LOWER(h.hashtag_name) LIKE '%bomber%'
-         OR LOWER(h.hashtag_name) LIKE '%emergency%' THEN 'firefighter'
-
-    -- Transportation/airplane related
-    WHEN LOWER(h.hashtag_name) LIKE '%air%'
-         OR LOWER(h.hashtag_name) LIKE '%plane%'
-         OR LOWER(h.hashtag_name) LIKE '%avion%' THEN 'airplane'
-
-    -- Accessibility related
-    WHEN LOWER(h.hashtag_name) LIKE '%wheel%'
-         OR LOWER(h.hashtag_name) LIKE '%access%'
-         OR LOWER(h.hashtag_name) LIKE '%silla%' THEN 'wheelchair'
-
-    -- Campaign related
-    WHEN LOWER(h.hashtag_name) LIKE '%missing%'
-         OR LOWER(h.hashtag_name) LIKE '%map%'
-         OR LOWER(h.hashtag_name) LIKE '%campaign%' THEN 'campaign'
-
-    -- Fix/correction related
-    WHEN LOWER(h.hashtag_name) LIKE '%fix%'
-         OR LOWER(h.hashtag_name) LIKE '%correc%'
-         OR LOWER(h.hashtag_name) LIKE '%error%' THEN 'correction'
-
-    -- Other categories can be added here
-    ELSE 'other'
-  END AS potential_category,
-  COUNT(DISTINCT f.id_note) AS notes_count
-FROM dwh.facts f
-JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
-JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
-WHERE f.action_comment = 'opened'
-GROUP BY h.hashtag_name, potential_category
-HAVING potential_category != 'other'
+  hashtag_name,
+  potential_category,
+  COUNT(DISTINCT id_note) AS notes_count
+FROM categorized_hashtags
+GROUP BY hashtag_name, potential_category
+HAVING potential_category <> 'other'
 ORDER BY potential_category ASC, notes_count DESC;
 
 -- ============================================================================
@@ -125,7 +122,7 @@ ORDER BY potential_category ASC, notes_count DESC;
 
 SELECT
   a.application_name,
-  h.hashtag_name,
+  h.description AS hashtag_name,
   COUNT(DISTINCT f.id_note) AS notes_count,
   ROUND(COUNT(DISTINCT f.id_note)::DECIMAL
         / (SELECT COUNT(DISTINCT f2.id_note)
@@ -138,7 +135,7 @@ JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
 JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
 WHERE f.action_comment = 'opened'
   AND f.dimension_application_creation IS NOT NULL
-GROUP BY a.application_name, h.hashtag_name
+GROUP BY a.application_name, h.description
 HAVING COUNT(DISTINCT f.id_note) >= 5  -- Only significant hashtags
 ORDER BY a.application_name ASC, notes_count DESC;
 
@@ -151,7 +148,7 @@ ORDER BY a.application_name ASC, notes_count DESC;
 WITH note_hashtags AS (
   SELECT
     f.id_note,
-    h.hashtag_name
+    h.description AS hashtag_name
   FROM dwh.facts f
   JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
   JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
@@ -181,18 +178,18 @@ SELECT
   f.id_note,
   f.opened_dimension_id_date,
   COUNT(DISTINCT fh.dimension_hashtag_id) AS hashtag_count,
-  ARRAY_AGG(DISTINCT h.hashtag_name ORDER BY h.hashtag_name) AS hashtag_names,
+  ARRAY_AGG(DISTINCT h.description ORDER BY h.description) AS hashtag_names,
   -- Category indicators (can be expanded)
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fire%'
-             OR LOWER(h.hashtag_name) LIKE '%bomber%') AS has_fire_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%air%'
-             OR LOWER(h.hashtag_name) LIKE '%plane%') AS has_air_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%wheel%'
-             OR LOWER(h.hashtag_name) LIKE '%access%') AS has_access_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%missing%'
-             OR LOWER(h.hashtag_name) LIKE '%campaign%') AS has_campaign_keyword,
-  BOOLEAN_OR(LOWER(h.hashtag_name) LIKE '%fix%'
-             OR LOWER(h.hashtag_name) LIKE '%correc%') AS has_fix_keyword
+  BOOLEAN_OR(LOWER(h.description) LIKE '%fire%'
+             OR LOWER(h.description) LIKE '%bomber%') AS has_fire_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%air%'
+             OR LOWER(h.description) LIKE '%plane%') AS has_air_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%wheel%'
+             OR LOWER(h.description) LIKE '%access%') AS has_access_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%missing%'
+             OR LOWER(h.description) LIKE '%campaign%') AS has_campaign_keyword,
+  BOOLEAN_OR(LOWER(h.description) LIKE '%fix%'
+             OR LOWER(h.description) LIKE '%correc%') AS has_fix_keyword
 FROM dwh.facts f
 LEFT JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
 LEFT JOIN dwh.dimension_hashtags h ON fh.dimension_hashtag_id = h.dimension_hashtag_id
