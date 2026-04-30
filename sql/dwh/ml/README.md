@@ -176,6 +176,24 @@ sudo -u postgres "$PSQL_BIN" -d notes_dwh -c "SELECT pgml.version();"
 # When only one version is installed, plain: sudo -u postgres psql -d notes_dwh ...
 ```
 
+5. **Grant `pgml` schema to your DWH application role** (if training runs as non-superuser):
+
+`CREATE EXTENSION pgml` is usually run as `postgres`; objects live in schema **`pgml`** and other
+roles have no access by default. If `ml_retrain.sh` connects as a non-superuser (e.g. **`notes`**),
+you may see `permission denied for schema pgml` when calling `pgml.train(...)`.
+
+Run once as superuser on the DWH database (`notes_dwh` or your `DBNAME_DWH`). Replace
+`YOUR_DWH_ROLE` with the role your app uses (match `psql` / `ml_retrain.sh`):
+
+```sql
+GRANT USAGE ON SCHEMA pgml TO YOUR_DWH_ROLE;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA pgml TO YOUR_DWH_ROLE;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA pgml TO YOUR_DWH_ROLE;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pgml TO YOUR_DWH_ROLE;
+```
+
+After a pgml upgrade, re-run these grants if new tables or functions appear under `pgml`.
+
 **Note**: The `apt-get` packages may not be sufficient because:
 
 - They may be compiled for a different Python version than what pgml uses
