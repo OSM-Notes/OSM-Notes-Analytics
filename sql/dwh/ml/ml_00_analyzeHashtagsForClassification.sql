@@ -180,15 +180,15 @@ SELECT
   COUNT(DISTINCT fh.dimension_hashtag_id) AS hashtag_count,
   ARRAY_AGG(DISTINCT h.description ORDER BY h.description) AS hashtag_names,
   -- Category indicators (can be expanded)
-  BOOLEAN_OR(LOWER(h.description) LIKE '%fire%'
+  bool_or(LOWER(h.description) LIKE '%fire%'
              OR LOWER(h.description) LIKE '%bomber%') AS has_fire_keyword,
-  BOOLEAN_OR(LOWER(h.description) LIKE '%air%'
+  bool_or(LOWER(h.description) LIKE '%air%'
              OR LOWER(h.description) LIKE '%plane%') AS has_air_keyword,
-  BOOLEAN_OR(LOWER(h.description) LIKE '%wheel%'
+  bool_or(LOWER(h.description) LIKE '%wheel%'
              OR LOWER(h.description) LIKE '%access%') AS has_access_keyword,
-  BOOLEAN_OR(LOWER(h.description) LIKE '%missing%'
+  bool_or(LOWER(h.description) LIKE '%missing%'
              OR LOWER(h.description) LIKE '%campaign%') AS has_campaign_keyword,
-  BOOLEAN_OR(LOWER(h.description) LIKE '%fix%'
+  bool_or(LOWER(h.description) LIKE '%fix%'
              OR LOWER(h.description) LIKE '%correc%') AS has_fix_keyword
 FROM dwh.facts f
 LEFT JOIN dwh.fact_hashtags fh ON f.fact_id = fh.fact_id
