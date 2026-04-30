@@ -4,7 +4,7 @@
 # This allows the web viewer to read precalculated data without direct database access.
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-01-15
+# Version: 2026-04-30
 # Note: This script now uses SELECT * to dynamically export all columns,
 # including any new year-based columns added to the datamart tables.
 # For users, it also includes contributor_type_name and contributor_type_name_en via JOIN with contributor_types table.
@@ -300,16 +300,16 @@ SELECT
   username
 FROM dwh.datamartusers
 WHERE user_id IS NOT NULL
+  AND user_id >= 1
   AND json_exported = FALSE
 ORDER BY user_id
 ${USER_EXPORT_LIMIT_LINE};
 SQL_USERS
 
  if [[ -n "${user_id}" ]]; then
-  # Validate user_id is a positive integer to prevent SQL injection
-  # This validation ensures user_id contains only digits, making it safe for direct interpolation
-  if ! [[ "${user_id}" =~ ^[0-9]+$ ]]; then
-   echo "  ERROR: Invalid user_id format: ${user_id} (skipping)" >&2
+  # Validate user_id is >= 1 (OSM semantics; aligns with user-profile / user-index JSON Schema minimum)
+  if ! [[ "${user_id}" =~ ^[1-9][0-9]*$ ]]; then
+   echo "  ERROR: Invalid or non-publishable user_id (must be integer >= 1): ${user_id} (skipping)" >&2
    continue
   fi
 
@@ -417,6 +417,7 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
     LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
     LEFT JOIN dwh.dimension_experience_levels el ON dimu.experience_level_id = el.dimension_experience_id
     WHERE du.user_id IS NOT NULL
+      AND du.user_id >= 1
     ORDER BY du.history_whole_open DESC NULLS LAST, du.history_whole_closed DESC NULLS LAST
   ) t
 " > "${ATOMIC_TEMP_DIR}/indexes/users.json"; then
@@ -457,12 +458,19 @@ psql -d "${DBNAME_DWH}" -Atq << SQL_COUNTRIES | while IFS='|' read -r country_id
 SELECT country_id, country_name_en
 FROM dwh.datamartcountries
 WHERE country_id IS NOT NULL
+  AND country_id >= 1
   AND json_exported = FALSE
 ORDER BY country_id
 ${COUNTRY_EXPORT_LIMIT_LINE};
 SQL_COUNTRIES
 
  if [[ -n "${country_id}" ]]; then
+  # Only publish IDs that satisfy country-index JSON Schema (minimum 1).
+  if ! [[ "${country_id}" =~ ^[1-9][0-9]*$ ]]; then
+   echo "  ERROR: Invalid or non-publishable country_id (must be integer >= 1): ${country_id} (skipping)" >&2
+   continue
+  fi
+
   # Export each modified country to a separate JSON file
   # Use SELECT * to dynamically include all columns
   psql -d "${DBNAME_DWH}" -Atq -c "
@@ -526,6 +534,7 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
       notes_resolved_last_30_days
     FROM dwh.datamartcountries
     WHERE country_id IS NOT NULL
+      AND country_id >= 1
     ORDER BY history_whole_open DESC NULLS LAST, history_whole_closed DESC NULLS LAST
   ) t
 " > "${ATOMIC_TEMP_DIR}/indexes/countries.json"; then
