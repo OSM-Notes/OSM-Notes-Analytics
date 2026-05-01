@@ -671,11 +671,12 @@ WHERE main_category IS NOT NULL;
 ### Train a Model
 
 ```sql
--- This will take several minutes
+-- This will take several minutes. Use the narrow pgML relation (matches inference ARRAY columns).
+-- Training on dwh.v_note_ml_training_features can crash pgML (wide relation / buggy stats).
 SELECT * FROM pgml.train(
   project_name => 'note_classification_main_category',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_main_category',
   y_column_name => 'main_category',
   algorithm => 'xgboost'
 );

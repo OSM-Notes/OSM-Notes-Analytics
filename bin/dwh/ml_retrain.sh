@@ -8,7 +8,7 @@
 # - Models exist → retraining (if needed)
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-30
+# Version: 2026-05-02
 
 set -euo pipefail
 
@@ -70,6 +70,45 @@ check_pgml_extension() {
   __loge "Run: psql -d ${DWH_DB} -c 'CREATE EXTENSION IF NOT EXISTS pgml;'"
   return 1
  fi
+ return 0
+}
+
+# Narrow views expose 24 feature columns plus one label; must stay in sync with ml_01_setupPgML.sql.
+readonly _ML_NARROW_TRAIN_VIEW_COLUMNS=25
+
+validate_pgml_train_scripts_use_narrow_relations() {
+ local f
+ for f in "${ML_DIR}/ml_02_trainPgMLModels.sql" "${ML_DIR}/ml_05_retrainModels.sql"; do
+  if [[ ! -f "${f}" ]]; then
+   __loge "Missing training SQL: ${f}"
+   return 1
+  fi
+  if grep -Eq "relation_name[[:space:]]*=>[[:space:]]*'dwh\\.v_note_ml_training_features'" "${f}"; then
+   __loge "$(basename "${f}") uses wide relation_name 'dwh.v_note_ml_training_features' in pgml.train()."
+   __loge "That matches pgML Rust panics (\`Option::unwrap()\` on None) with ~29 columns (ids/dates)."
+   __loge "Update this repo copy: pgml.train must use dwh.v_note_ml_train_main_category (and sibling views)."
+   return 1
+  fi
+ done
+ return 0
+}
+
+validate_narrow_ml_train_views_deployed() {
+ local v cols
+ for v in v_note_ml_train_main_category v_note_ml_train_specific_type v_note_ml_train_action; do
+  cols=$("${PSQL_CMD}" -d "${DWH_DB}" -tAc "
+			SELECT COUNT(*)::TEXT
+			FROM information_schema.columns
+			WHERE table_schema = 'dwh'
+			  AND table_name = '${v}';
+		" 2> /dev/null | tr -d '[:space:]' || echo "0")
+
+  if [[ "${cols}" != "${_ML_NARROW_TRAIN_VIEW_COLUMNS}" ]]; then
+   __loge "dwh.${v} column count is ${cols}, expected ${_ML_NARROW_TRAIN_VIEW_COLUMNS} (wide/stale ML views?)."
+   __loge "Re-run ml_01_setupPgML.sql from the current repo, or git pull OSM-Notes-Analytics."
+   return 1
+  fi
+ done
  return 0
 }
 
@@ -282,21 +321,35 @@ main() {
   exit 1
  fi
 
- # Step 2: Ensure training view exists
+ # Step 2: Fail fast if this checkout still points pgml.train at the wide relation
+ # shellcheck disable=SC2310
+ if ! validate_pgml_train_scripts_use_narrow_relations; then
+  __loge "Fix training SQL scripts (or update the repo). Exiting."
+  exit 1
+ fi
+
+ # Step 3: Ensure training view exists
  # shellcheck disable=SC2310  # Function invocation in ! condition is intentional for error handling
  if ! ensure_training_view; then
   __loge "Failed to setup training views. Exiting."
   exit 1
  fi
 
- # Step 3: Check if we have enough data
+ # Step 4: Confirm narrow pgML relations exist after ml_01
+ # shellcheck disable=SC2310
+ if ! validate_narrow_ml_train_views_deployed; then
+  __loge "ML views do not match expected schema. Exiting."
+  exit 1
+ fi
+
+ # Step 5: Check if we have enough data
  # shellcheck disable=SC2310  # Function invocation in ! condition is intentional for error handling
  if ! check_core_tables; then
   # No data or insufficient data - exit silently (normal for early stages)
   exit 0
  fi
 
- # Step 4: Check current state and decide what to do
+ # Step 6: Check current state and decide what to do
  local has_datamarts=false
  local has_models=false
 

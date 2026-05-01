@@ -11,7 +11,7 @@
 -- Prerequisites
 -- ============================================================================
 -- 1. pgml extension must be installed and enabled
--- 2. Training data view must exist (dwh.v_note_ml_training_features)
+-- 2. Narrow training views from ml_01_setupPgML.sql (dwh.v_note_ml_train_*); wide v_note_ml_training_features is exploratory only.
 -- 3. Sufficient new training data (recommended: 10%+ new resolved notes since last training)
 
 -- ============================================================================
