@@ -23,7 +23,7 @@
 #   - Commits and pushes data/, schemas/, and countries README when there are changes
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-05-01
+# Version: 2026-05-02
 
 set -eu pipefail
 
@@ -87,6 +87,17 @@ print_error() {
 
 print_success() {
  echo -e "${GREEN}✓${NC} $1"
+}
+
+# Logs git push diagnostics to stderr on failure (auth, rejects, non-fast-forward, hooks).
+_git_push_origin_main() {
+ local _push_out _rc
+ _push_out="$(git push origin main 2>&1)"
+ _rc=$?
+ if [[ ${_rc} -ne 0 ]]; then
+  printf '%s\n' "${_push_out}" >&2
+ fi
+ return "${_rc}"
 }
 
 # Load database configuration and common functions
@@ -218,7 +229,7 @@ commit_and_push_json_changes() {
   return 0
  fi
 
- if ! git push origin main > /dev/null 2>&1; then
+ if ! _git_push_origin_main; then
   print_error "Failed to push JSON export to GitHub"
   return 1
  fi
@@ -292,7 +303,7 @@ ORDER BY country_id;
   git commit -m "Remove obsolete countries - ${ots}
 
 Removed countries that no longer exist in local database." > /dev/null 2>&1
-  git push origin main > /dev/null 2>&1 || print_warn "Failed to push removal of obsolete countries"
+  _git_push_origin_main || print_warn "Failed to push removal of obsolete countries"
   print_success "Removed ${obsolete_count} obsolete countries"
  else
   print_info "No obsolete countries to remove"
@@ -420,7 +431,7 @@ git fetch origin main 2> /dev/null || true
 local_ahead=$(git rev-list --count origin/main..HEAD 2> /dev/null || echo "0")
 if [[ "${local_ahead}" -gt 0 ]]; then
  print_info "Pushing ${local_ahead} pending commit(s) to origin..."
- git push origin main 2> /dev/null || print_warn "Failed to push pending commits, continuing anyway..."
+ _git_push_origin_main || print_warn "Failed to push pending commits, continuing anyway..."
 fi
 
 git_pull_data_repo_merge_csv_resolve
@@ -463,7 +474,7 @@ git add "data/countries/README.md" 2> /dev/null || true
 if ! git diff --cached --quiet; then
  ts_readme=$(date '+%Y-%m-%d %H:%M:%S')
  git commit -m "Update countries README - ${ts_readme}" > /dev/null 2>&1
- git push origin main > /dev/null 2>&1 || print_warn "Failed to push countries README"
+ _git_push_origin_main || print_warn "Failed to push countries README"
 fi
 
 print_success "Export pipeline completed."
