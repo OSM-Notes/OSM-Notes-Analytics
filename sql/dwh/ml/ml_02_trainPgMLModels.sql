@@ -11,7 +11,8 @@
 -- Prerequisites
 -- ============================================================================
 -- 1. pgml extension must be installed (see ml_01_setupPgML.sql)
--- 2. Training data view must exist (dwh.v_note_ml_training_features)
+-- 2. Narrow training relations and full feature view (see ml_01_setupPgML.sql):
+--    dwh.v_note_ml_train_main_category, v_note_ml_train_specific_type, v_note_ml_train_action
 -- 3. Sufficient training data (minimum 1000+ notes per class recommended)
 
 -- ============================================================================
@@ -22,7 +23,7 @@
 SELECT * FROM pgml.train(
   project_name => 'note_classification_main_category',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_main_category',
   y_column_name => 'main_category',
   algorithm => 'xgboost',  -- Gradient boosting for good performance
   hyperparams => '{
@@ -54,7 +55,7 @@ LIMIT 1;
 SELECT * FROM pgml.train(
   project_name => 'note_classification_specific_type',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_specific_type',
   y_column_name => 'specific_type',
   algorithm => 'xgboost',
   hyperparams => '{
@@ -87,7 +88,7 @@ LIMIT 1;
 SELECT * FROM pgml.train(
   project_name => 'note_classification_action',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_action',
   y_column_name => 'recommended_action',
   algorithm => 'xgboost',
   hyperparams => '{

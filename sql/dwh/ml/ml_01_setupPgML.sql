@@ -105,11 +105,8 @@ SELECT
   EXTRACT(HOUR FROM f.action_at::TIMESTAMP) AS hour_of_day,
   EXTRACT(MONTH FROM d.date_id) AS month,
 
-  -- Age features (from obsolete note analysis)
-  CASE
-    WHEN f.closed_dimension_id_date IS NULL
-    THEN (CURRENT_DATE - d.date_id)
-  END AS days_open,
+  -- Calendar days from open-date to close-date (training rows are always resolved here).
+  (d_close.date_id - d.date_id) AS days_open,
 
   -- Target variables (for training - based on historical outcomes)
   -- Level 1: Main Category
@@ -166,6 +163,7 @@ SELECT
 
 FROM dwh.facts f
 LEFT JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
+LEFT JOIN dwh.dimension_days d_close ON f.closed_dimension_id_date = d_close.dimension_day_id
 LEFT JOIN dwh.dimension_applications a ON f.dimension_application_creation = a.dimension_application_id
 LEFT JOIN dwh.datamartCountries dc ON f.dimension_id_country = dc.dimension_country_id
 LEFT JOIN dwh.datamartUsers du ON f.opened_dimension_id_user = du.dimension_user_id
@@ -238,6 +236,113 @@ WHERE f.action_comment = 'opened'
 
 COMMENT ON VIEW dwh.v_note_ml_prediction_features IS
   'Features for ML prediction on new notes. Same structure as training features but without target variables.';
+
+-- ============================================================================
+-- 5. pgml.training relations (feature matrix + single label column)
+-- ============================================================================
+-- PostgresML snapshots all relation columns except y_column_name into X. Wide views with
+-- id_note / dimension surrogates / sibling labels confused stats in some pgml builds
+-- (`Option::unwrap()` on None). Use these narrow views: feature column order MUST match
+-- ARRAY[...] in sql/dwh/ml/ml_03_predictWithPgML.sql.
+
+CREATE OR REPLACE VIEW dwh.v_note_ml_train_main_category AS
+SELECT
+  comment_length,
+  has_url_int,
+  has_mention_int,
+  hashtag_number,
+  total_comments_on_note,
+  hashtag_count,
+  has_fire_keyword,
+  has_air_keyword,
+  has_access_keyword,
+  has_campaign_keyword,
+  has_fix_keyword,
+  is_assisted_app,
+  is_mobile_app,
+  country_resolution_rate,
+  country_avg_resolution_days,
+  country_notes_health_score,
+  user_response_time,
+  user_total_notes,
+  user_experience_level,
+  user_contributor_type_id,
+  day_of_week,
+  hour_of_day,
+  month,
+  days_open,
+  main_category
+FROM dwh.v_note_ml_training_features
+WHERE main_category IS NOT NULL;
+
+COMMENT ON VIEW dwh.v_note_ml_train_main_category IS
+  'pgml.train relation for main_category label; features match inference ARRAY order.';
+
+CREATE OR REPLACE VIEW dwh.v_note_ml_train_specific_type AS
+SELECT
+  comment_length,
+  has_url_int,
+  has_mention_int,
+  hashtag_number,
+  total_comments_on_note,
+  hashtag_count,
+  has_fire_keyword,
+  has_air_keyword,
+  has_access_keyword,
+  has_campaign_keyword,
+  has_fix_keyword,
+  is_assisted_app,
+  is_mobile_app,
+  country_resolution_rate,
+  country_avg_resolution_days,
+  country_notes_health_score,
+  user_response_time,
+  user_total_notes,
+  user_experience_level,
+  user_contributor_type_id,
+  day_of_week,
+  hour_of_day,
+  month,
+  days_open,
+  specific_type
+FROM dwh.v_note_ml_training_features
+WHERE specific_type IS NOT NULL;
+
+COMMENT ON VIEW dwh.v_note_ml_train_specific_type IS
+  'pgml.train relation for specific_type label; features match inference ARRAY order.';
+
+CREATE OR REPLACE VIEW dwh.v_note_ml_train_action AS
+SELECT
+  comment_length,
+  has_url_int,
+  has_mention_int,
+  hashtag_number,
+  total_comments_on_note,
+  hashtag_count,
+  has_fire_keyword,
+  has_air_keyword,
+  has_access_keyword,
+  has_campaign_keyword,
+  has_fix_keyword,
+  is_assisted_app,
+  is_mobile_app,
+  country_resolution_rate,
+  country_avg_resolution_days,
+  country_notes_health_score,
+  user_response_time,
+  user_total_notes,
+  user_experience_level,
+  user_contributor_type_id,
+  day_of_week,
+  hour_of_day,
+  month,
+  days_open,
+  recommended_action
+FROM dwh.v_note_ml_training_features
+WHERE recommended_action IS NOT NULL;
+
+COMMENT ON VIEW dwh.v_note_ml_train_action IS
+  'pgml.train relation for recommended_action label; features match inference ARRAY order.';
 
 -- ============================================================================
 -- Usage Examples

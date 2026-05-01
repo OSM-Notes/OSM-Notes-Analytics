@@ -45,7 +45,7 @@ WHERE main_category IS NOT NULL;
 SELECT * FROM pgml.train(
   project_name => 'note_classification_main_category',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_main_category',
   y_column_name => 'main_category',
   algorithm => 'xgboost',
   hyperparams => '{
@@ -64,7 +64,7 @@ SELECT * FROM pgml.train(
 SELECT * FROM pgml.train(
   project_name => 'note_classification_specific_type',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_specific_type',
   y_column_name => 'specific_type',
   algorithm => 'xgboost',
   hyperparams => '{
@@ -84,7 +84,7 @@ SELECT * FROM pgml.train(
 SELECT * FROM pgml.train(
   project_name => 'note_classification_action',
   task => 'classification',
-  relation_name => 'dwh.v_note_ml_training_features',
+  relation_name => 'dwh.v_note_ml_train_action',
   y_column_name => 'recommended_action',
   algorithm => 'xgboost',
   hyperparams => '{

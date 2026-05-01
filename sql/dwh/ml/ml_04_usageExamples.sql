@@ -36,12 +36,13 @@ SELECT
       user_response_time,
       user_total_notes,
       user_experience_level,
+      user_contributor_type_id,
       day_of_week,
       hour_of_day,
       month,
       days_open
     ]
-  )::VARCHAR as predicted_category,
+  )::VARCHAR AS predicted_category,
   -- Level 2: Specific Type
   pgml.predict(
     'note_classification_specific_type',
@@ -52,10 +53,10 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as predicted_type,
+  )::VARCHAR AS predicted_type,
   -- Level 3: Action Recommendation
   pgml.predict(
     'note_classification_action',
@@ -66,10 +67,10 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as recommended_action
+  )::VARCHAR AS recommended_action
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note = 12345;  -- Replace with actual note ID
 
@@ -90,10 +91,10 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as predicted_category,
+  )::VARCHAR AS predicted_category,
   pgml.predict(
     'note_classification_specific_type',
     ARRAY[
@@ -103,10 +104,10 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as predicted_type,
+  )::VARCHAR AS predicted_type,
   pgml.predict(
     'note_classification_action',
     ARRAY[
@@ -116,13 +117,13 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as recommended_action
+  )::VARCHAR AS recommended_action
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note NOT IN (
-  SELECT id_note FROM dwh.note_type_classifications
+  SELECT ntc.id_note FROM dwh.note_type_classifications AS ntc
 )
 LIMIT 1000;
 
@@ -143,10 +144,10 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR as predicted_category,
+  )::VARCHAR AS predicted_category,
   -- Probabilities (returns JSON with all class probabilities)
   pgml.predict_proba(
     'note_classification_main_category',
@@ -157,26 +158,52 @@ SELECT
       has_fix_keyword, is_assisted_app, is_mobile_app,
       country_resolution_rate, country_avg_resolution_days,
       country_notes_health_score, user_response_time,
-      user_total_notes, user_experience_level,
+      user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  ) as category_probabilities
+  ) AS category_probabilities
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note = 12345;
 
--- Extract confidence from probabilities
+-- Extract confidence from probabilities (requires JSON keys to match predicted class labels)
+WITH scored AS (
+  SELECT
+    id_note,
+    pgml.predict(
+      'note_classification_main_category',
+      ARRAY[
+        comment_length, has_url_int, has_mention_int, hashtag_number,
+        total_comments_on_note, hashtag_count, has_fire_keyword,
+        has_air_keyword, has_access_keyword, has_campaign_keyword,
+        has_fix_keyword, is_assisted_app, is_mobile_app,
+        country_resolution_rate, country_avg_resolution_days,
+        country_notes_health_score, user_response_time,
+        user_total_notes, user_experience_level, user_contributor_type_id,
+        day_of_week, hour_of_day, month, days_open
+      ]
+    )::VARCHAR AS predicted_category,
+    pgml.predict_proba(
+      'note_classification_main_category',
+      ARRAY[
+        comment_length, has_url_int, has_mention_int, hashtag_number,
+        total_comments_on_note, hashtag_count, has_fire_keyword,
+        has_air_keyword, has_access_keyword, has_campaign_keyword,
+        has_fix_keyword, is_assisted_app, is_mobile_app,
+        country_resolution_rate, country_avg_resolution_days,
+        country_notes_health_score, user_response_time,
+        user_total_notes, user_experience_level, user_contributor_type_id,
+        day_of_week, hour_of_day, month, days_open
+      ]
+    ) AS category_probabilities
+  FROM dwh.v_note_ml_prediction_features
+  WHERE id_note = 12345
+)
+
 SELECT
   id_note,
   predicted_category,
-  (category_probabilities->>predicted_category)::numeric as confidence_score
-FROM (
-  SELECT
-    id_note,
-    pgml.predict(...)::VARCHAR as predicted_category,
-    pgml.predict_proba(...) as category_probabilities
-  FROM dwh.v_note_ml_prediction_features
-  WHERE id_note = 12345
-) subquery;
+  (category_probabilities ->> predicted_category)::NUMERIC AS confidence_score
+FROM scored;
 
 -- ============================================================================
 -- 4. Integration with Dashboards: High-Priority Notes
@@ -186,7 +213,7 @@ FROM (
 SELECT
   f.id_note,
   f.opened_dimension_id_date,
-  d.date_id as opened_date,
+  d.date_id AS opened_date,
   c.country_name_en,
   u.username,
   pgml.predict(
@@ -198,10 +225,10 @@ SELECT
       pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
       pf.country_resolution_rate, pf.country_avg_resolution_days,
       pf.country_notes_health_score, pf.user_response_time,
-      pf.user_total_notes, pf.user_experience_level,
+      pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
-  )::VARCHAR as predicted_category,
+  )::VARCHAR AS predicted_category,
   pgml.predict(
     'note_classification_action',
     ARRAY[
@@ -211,10 +238,10 @@ SELECT
       pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
       pf.country_resolution_rate, pf.country_avg_resolution_days,
       pf.country_notes_health_score, pf.user_response_time,
-      pf.user_total_notes, pf.user_experience_level,
+      pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
-  )::VARCHAR as recommended_action
+  )::VARCHAR AS recommended_action
 FROM dwh.facts f
 JOIN dwh.v_note_ml_prediction_features pf ON f.id_note = pf.id_note
 JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
@@ -230,7 +257,7 @@ WHERE f.action_comment = 'opened'
       pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
       pf.country_resolution_rate, pf.country_avg_resolution_days,
       pf.country_notes_health_score, pf.user_response_time,
-      pf.user_total_notes, pf.user_experience_level,
+      pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
   )::VARCHAR = 'contributes_with_change'
@@ -243,7 +270,7 @@ WHERE f.action_comment = 'opened'
       pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
       pf.country_resolution_rate, pf.country_avg_resolution_days,
       pf.country_notes_health_score, pf.user_response_time,
-      pf.user_total_notes, pf.user_experience_level,
+      pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
   )::VARCHAR = 'process'
@@ -258,7 +285,7 @@ LIMIT 50;
 CREATE OR REPLACE FUNCTION dwh.predict_note_category_pgml(
   p_note_id INTEGER
 )
-RETURNS TABLE(
+RETURNS TABLE (
   id_note INTEGER,
   predicted_category VARCHAR,
   predicted_type VARCHAR,
@@ -300,6 +327,7 @@ BEGIN
       v_features.country_resolution_rate, v_features.country_avg_resolution_days,
       v_features.country_notes_health_score, v_features.user_response_time,
       v_features.user_total_notes, v_features.user_experience_level,
+      v_features.user_contributor_type_id,
       v_features.day_of_week, v_features.hour_of_day,
       v_features.month, v_features.days_open
     ]
@@ -317,6 +345,7 @@ BEGIN
       v_features.country_resolution_rate, v_features.country_avg_resolution_days,
       v_features.country_notes_health_score, v_features.user_response_time,
       v_features.user_total_notes, v_features.user_experience_level,
+      v_features.user_contributor_type_id,
       v_features.day_of_week, v_features.hour_of_day,
       v_features.month, v_features.days_open
     ]
@@ -334,6 +363,7 @@ BEGIN
       v_features.country_resolution_rate, v_features.country_avg_resolution_days,
       v_features.country_notes_health_score, v_features.user_response_time,
       v_features.user_total_notes, v_features.user_experience_level,
+      v_features.user_contributor_type_id,
       v_features.day_of_week, v_features.hour_of_day,
       v_features.month, v_features.days_open
     ]
@@ -352,6 +382,7 @@ BEGIN
       v_features.country_resolution_rate, v_features.country_avg_resolution_days,
       v_features.country_notes_health_score, v_features.user_response_time,
       v_features.user_total_notes, v_features.user_experience_level,
+      v_features.user_contributor_type_id,
       v_features.day_of_week, v_features.hour_of_day,
       v_features.month, v_features.days_open
     ]
@@ -363,9 +394,9 @@ BEGIN
     v_category,
     v_type,
     v_action,
-    (v_category_proba->>v_category)::numeric as category_confidence,
-    (v_type_proba->>v_type)::numeric as type_confidence,
-    (v_action_proba->>v_action)::numeric as action_confidence;
+    (v_category_proba ->> v_category)::NUMERIC AS category_confidence,
+    (v_type_proba ->> v_type)::NUMERIC AS type_confidence,
+    (v_action_proba ->> v_action)::NUMERIC AS action_confidence;
 END;
 $$;
 
@@ -405,69 +436,84 @@ BEGIN
     classification_timestamp
   )
   SELECT
-    pf.id_note,
-    pgml.predict(
-      'note_classification_main_category',
-      ARRAY[
-        pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
-        pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
-        pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
-        pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
-        pf.country_resolution_rate, pf.country_avg_resolution_days,
-        pf.country_notes_health_score, pf.user_response_time,
-        pf.user_total_notes, pf.user_experience_level,
-        pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
-      ]
-    )::VARCHAR as main_category,
-    0.8 as category_confidence,  -- Can be enhanced with predict_proba
-    'ml_based' as category_method,
-    pgml.predict(
-      'note_classification_specific_type',
-      ARRAY[
-        pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
-        pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
-        pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
-        pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
-        pf.country_resolution_rate, pf.country_avg_resolution_days,
-        pf.country_notes_health_score, pf.user_response_time,
-        pf.user_total_notes, pf.user_experience_level,
-        pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
-      ]
-    )::VARCHAR as specific_type,
-    0.75 as type_confidence,
-    'ml_based' as type_method,
-    pgml.predict(
-      'note_classification_action',
-      ARRAY[
-        pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
-        pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
-        pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
-        pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
-        pf.country_resolution_rate, pf.country_avg_resolution_days,
-        pf.country_notes_health_score, pf.user_response_time,
-        pf.user_total_notes, pf.user_experience_level,
-        pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
-      ]
-    )::VARCHAR as recommended_action,
-    0.8 as action_confidence,
-    'ml_based' as action_method,
+    c.id_note,
+    c.main_category,
+    c.category_confidence,
+    c.category_method,
+    c.specific_type,
+    c.type_confidence,
+    c.type_method,
+    c.recommended_action,
+    c.action_confidence,
+    c.action_method,
     CASE
-      WHEN pgml.predict('note_classification_main_category', ...)::VARCHAR = 'contributes_with_change'
-           AND pgml.predict('note_classification_action', ...)::VARCHAR = 'process'
+      WHEN c.main_category = 'contributes_with_change'
+           AND c.recommended_action = 'process'
       THEN 9
-      WHEN pgml.predict('note_classification_action', ...)::VARCHAR = 'needs_more_data'
+      WHEN c.recommended_action = 'needs_more_data'
       THEN 6
-      WHEN pgml.predict('note_classification_action', ...)::VARCHAR = 'close'
+      WHEN c.recommended_action = 'close'
       THEN 3
       ELSE 5
-    END as priority_score,
-    'pgml_v1.0' as classification_version,
-    CURRENT_TIMESTAMP as classification_timestamp
-  FROM dwh.v_note_ml_prediction_features pf
-  WHERE pf.id_note NOT IN (
-    SELECT id_note FROM dwh.note_type_classifications
-  )
-  LIMIT p_batch_size;
+    END AS priority_score,
+    c.classification_version,
+    c.classification_timestamp
+  FROM (
+    SELECT
+      pf.id_note,
+      (pgml.predict(
+        'note_classification_main_category',
+        ARRAY[
+          pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
+          pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
+          pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
+          pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
+          pf.country_resolution_rate, pf.country_avg_resolution_days,
+          pf.country_notes_health_score, pf.user_response_time,
+          pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
+          pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
+        ]
+      ))::VARCHAR AS main_category,
+      0.8 AS category_confidence,
+      'ml_based' AS category_method,
+      (pgml.predict(
+        'note_classification_specific_type',
+        ARRAY[
+          pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
+          pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
+          pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
+          pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
+          pf.country_resolution_rate, pf.country_avg_resolution_days,
+          pf.country_notes_health_score, pf.user_response_time,
+          pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
+          pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
+        ]
+      ))::VARCHAR AS specific_type,
+      0.75 AS type_confidence,
+      'ml_based' AS type_method,
+      (pgml.predict(
+        'note_classification_action',
+        ARRAY[
+          pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
+          pf.total_comments_on_note, pf.hashtag_count, pf.has_fire_keyword,
+          pf.has_air_keyword, pf.has_access_keyword, pf.has_campaign_keyword,
+          pf.has_fix_keyword, pf.is_assisted_app, pf.is_mobile_app,
+          pf.country_resolution_rate, pf.country_avg_resolution_days,
+          pf.country_notes_health_score, pf.user_response_time,
+          pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
+          pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
+        ]
+      ))::VARCHAR AS recommended_action,
+      0.8 AS action_confidence,
+      'ml_based' AS action_method,
+      'pgml_v1.0' AS classification_version,
+      CURRENT_TIMESTAMP AS classification_timestamp
+    FROM dwh.v_note_ml_prediction_features pf
+    WHERE pf.id_note NOT IN (
+      SELECT ntc.id_note FROM dwh.note_type_classifications AS ntc
+    )
+    LIMIT p_batch_size
+  ) AS c;
 
   GET DIAGNOSTICS v_processed = ROW_COUNT;
 
@@ -480,4 +526,3 @@ COMMENT ON PROCEDURE dwh.classify_new_notes_pgml IS
 
 -- Usage:
 -- CALL dwh.classify_new_notes_pgml(1000);
-
