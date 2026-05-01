@@ -8,7 +8,7 @@
 # - Models exist → retraining (if needed)
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2025-12-28
+# Version: 2026-04-30
 
 set -euo pipefail
 
@@ -74,19 +74,19 @@ check_pgml_extension() {
 }
 
 ensure_training_view() {
- if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -c "SELECT 1 FROM information_schema.views WHERE table_schema = 'dwh' AND table_name = 'v_note_ml_training_features';" | grep -q 1; then
-  __logi "Creating training views..."
-  local setup_log
-  setup_log="$(mktemp)"
-  if ! "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
-   -f "${ML_DIR}/ml_01_setupPgML.sql" > "${setup_log}" 2>&1; then
-   __loge "Failed to create training views"
-   cat "${setup_log}" >&2
-   rm -f "${setup_log}"
-   return 1
-  fi
+ # Always apply ml_01: views are CREATE OR REPLACE; otherwise a stale DB keeps an old
+ # definition (e.g. after fixing SQL on disk) and training fails while the file looks correct.
+ __logi "Applying ML setup (views, ${ML_DIR}/ml_01_setupPgML.sql)..."
+ local setup_log
+ setup_log="$(mktemp)"
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
+  -f "${ML_DIR}/ml_01_setupPgML.sql" > "${setup_log}" 2>&1; then
+  __loge "Failed to apply ML setup / training views"
+  cat "${setup_log}" >&2
   rm -f "${setup_log}"
+  return 1
  fi
+ rm -f "${setup_log}"
  return 0
 }
 
