@@ -52,6 +52,9 @@ All notable changes to this project will be documented in this file.
   **GitHub’s 100 MB** hard limit. The export now writes a **minimal browse index** (`user_id`,
   `username`, `history_whole_open`, `history_whole_closed`); full metrics remain in per-user profile
   JSON under `data/users/...`.
+- **`exportAndPushJSONToGitHub.sh`**: Preflight exits if any commit in `origin/main..HEAD` still has
+  **`data/indexes/users.json` above 100 MiB** (avoids long export then push failure); GH001 push
+  failures also print **`git reset --hard origin/main`** instructions.
 
 ## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
 

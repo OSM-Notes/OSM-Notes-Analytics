@@ -23,7 +23,7 @@
 #   - Commits and pushes data/, schemas/, and countries README when there are changes
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-05-02
+# Version: 2026-05-03
 
 set -eu pipefail
 
@@ -96,6 +96,12 @@ _git_push_origin_main() {
  _rc=$?
  if [[ ${_rc} -ne 0 ]]; then
   printf '%s\n' "${_push_out}" >&2
+  if grep -E -q 'Large files detected|GH001' <<< "${_push_out}"; then
+   print_warn "Push rejected for file size: unpublished commits may still contain an old large"
+   print_warn "data/indexes/users.json. Git compares the whole commit range, not only the working tree."
+   print_warn "Fix: cd \"${DATA_REPO_DIR}\" && git fetch origin && git reset --hard origin/main"
+   print_warn "Then re-run this script (slim index export + one new commit)."
+  fi
  fi
  return "${_rc}"
 }
@@ -133,6 +139,32 @@ git_pull_data_repo_merge_csv_resolve() {
   git add csv/notes-by-country/*.csv csv/notes-by-country/README.md 2> /dev/null || true
   git commit --no-edit 2> /dev/null || git merge --abort 2> /dev/null || true
  fi
+}
+
+# GitHub rejects blobs > 100 MiB (GH001); an old large users index in unpublished history blocks every push.
+reject_unpushed_commits_with_oversized_users_index() {
+ local limit=$((100 * 1024 * 1024))
+ cd "${DATA_REPO_DIR}" || return 0
+ git fetch origin main 2> /dev/null || true
+ local rev b cleaned
+ while IFS= read -r rev; do
+  [[ -z "${rev}" ]] && continue
+  if ! git cat-file -e "${rev}:data/indexes/users.json" 2> /dev/null; then
+   continue
+  fi
+  b=$(git show "${rev}:data/indexes/users.json" 2> /dev/null | wc -c)
+  cleaned="${b//[[:space:]]/}"
+  if [[ -z "${cleaned}" ]] || ! [[ "${cleaned}" =~ ^[0-9]+$ ]]; then
+   continue
+  fi
+  if [[ "${cleaned}" -gt "${limit}" ]]; then
+   print_error "Unpublished commit ${rev:0:7} contains data/indexes/users.json (~${cleaned} bytes; GitHub limit ${limit})."
+   print_error "Fix (drops only local commits not on origin/main):"
+   print_error "  cd \"${DATA_REPO_DIR}\" && git fetch origin && git reset --hard origin/main"
+   print_error "Then re-run export (slim index lives in current exportDatamartsToJSON.sh)."
+   exit 1
+  fi
+ done < <(git rev-list origin/main..HEAD 2> /dev/null)
 }
 
 # Mark countries whose JSON is missing or older than MAX_AGE_DAYS so exportDatamartsToJSON picks them up.
@@ -428,6 +460,7 @@ if [[ -f "${DATA_REPO_DIR}/.git/MERGE_HEAD" ]]; then
 fi
 
 git fetch origin main 2> /dev/null || true
+reject_unpushed_commits_with_oversized_users_index
 local_ahead=$(git rev-list --count origin/main..HEAD 2> /dev/null || echo "0")
 if [[ "${local_ahead}" -gt 0 ]]; then
  print_info "Pushing ${local_ahead} pending commit(s) to origin..."
