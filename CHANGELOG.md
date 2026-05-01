@@ -48,6 +48,10 @@ All notable changes to this project will be documented in this file.
   global stats JSON**, with `--delete` only inside those subtrees (`rsync` is required).
   Broadcasting `rsync --delete` across all of `data/` would wrongly remove unrelated published assets
   (e.g. `*.geojson.gz`, zipped CSV bundles) that this script never regenerates.
+- **`indexes/users.json` size / GitHub GH001**: Rich per-user index rows pushed the file over
+  **GitHub’s 100 MB** hard limit. The export now writes a **minimal browse index** (`user_id`,
+  `username`, `history_whole_open`, `history_whole_closed`); full metrics remain in per-user profile
+  JSON under `data/users/...`.
 
 ## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
 

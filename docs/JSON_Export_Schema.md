@@ -143,13 +143,12 @@ user patterns, and hashtag metrics
 
 ### 3. User Index (`indexes/users.json`)
 
-**Purpose**: Quick lookup of all users with **key metrics only** (subset for performance)  
-**Schema**: `lib/osm-common/schemas/user-index.schema.json`  
-**Size**: ~100-500 KB (all users)  
+**Purpose**: Lean lookup for sorting and linking to profiles (fits GitHub’s **100 MB** blob limit per file)  
+**Schema**: `lib/osm-common/schemas/user-index.schema.json` (supports extra fields **if** expanded later).  
+Exported rows include **`user_id`**, **`username`**, **`history_whole_open`**, **`history_whole_closed`** only.  
+**Size**: Depends on contributor count — kept small intentionally (order of MiB).  
 **Update Frequency**: Every export (always regenerated)  
-**Export Method**: Uses explicit `SELECT` with 18 key fields (not all metrics)  
-**Note**: This is a **subset** of metrics optimized for browsing and search. For complete profile,
-load `users/{user_id}.json` instead.
+**Note**: Detailed contributor/breakdown/yearly metrics belong in **`users/{hex}/{hex}/{hex}/{user_id}.json`**; do not inflate the flat index toward profile size.
 
 ### 4. Country Index (`indexes/countries.json`)
 

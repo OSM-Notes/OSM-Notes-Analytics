@@ -4,7 +4,7 @@
 # This allows the web viewer to read precalculated data without direct database access.
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-05-02
+# Version: 2026-05-03
 # Cross-filesystem: publish scoped trees with rsync (users/countries/indexes + root *.json).
 # Broad rsync --delete on all of OUTPUT_DIR would remove unrelated assets under data/.
 # Note: This script now uses SELECT * to dynamically export all columns,
@@ -384,7 +384,7 @@ else
  echo "  No modified users to export"
 fi
 
-# Create user index file
+# Create user index file (minimal fields: GitHub blocks files >100MB; full metrics stay in profiles)
 # shellcheck disable=SC2312  # Command substitution in echo is intentional; date command is safe
 echo "$(date +%Y-%m-%d\ %H:%M:%S) - Creating user index..."
 if ! psql -d "${DBNAME_DWH}" -Atq -c "
@@ -393,31 +393,9 @@ if ! psql -d "${DBNAME_DWH}" -Atq -c "
     SELECT
       du.user_id,
       du.username,
-      du.id_contributor_type,
-      ct.contributor_type_name,
-      ct.contributor_type_name_en,
-      dimu.experience_level_id,
-      el.experience_level,
-      du.date_starting_creating_notes,
       du.history_whole_open,
-      du.history_whole_closed,
-      du.history_whole_commented,
-      du.history_year_open,
-      du.history_year_closed,
-      du.history_year_commented,
-      du.avg_days_to_resolution,
-      du.resolution_rate,
-      du.notes_resolved_count,
-      du.notes_still_open_count,
-      du.user_response_time,
-      du.days_since_last_action,
-      du.notes_created_last_30_days,
-      du.notes_resolved_last_30_days
+      du.history_whole_closed
     FROM dwh.datamartusers du
-    LEFT JOIN dwh.contributor_types ct
-      ON du.id_contributor_type = ct.contributor_type_id
-    LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
-    LEFT JOIN dwh.dimension_experience_levels el ON dimu.experience_level_id = el.dimension_experience_id
     WHERE du.user_id IS NOT NULL
       AND du.user_id >= 1
     ORDER BY du.history_whole_open DESC NULLS LAST, du.history_whole_closed DESC NULLS LAST
