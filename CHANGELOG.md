@@ -42,11 +42,12 @@ All notable changes to this project will be documented in this file.
   `days_to_resolution` and `days_to_resolution_from_reopen` for closed facts (idempotent: only
   `WHERE ... IS NULL`). Incremental inserts still rely on the trigger; existing databases that
   already loaded facts may apply the same `UPDATE` logic once outside this script if needed.
-- **`exportDatamartsToJSON.sh` publish across filesystems**: When the atomic temp dir (often under
-  `/tmp` tmpfs) and `JSON_OUTPUT_DIR` (e.g. `/home`) differ, `mv …/users …/users` fails with
-  *inter-device move* / *Directory not empty*. After validation, publish uses `rsync -a --delete`
-  across devices when `stat`-detected devices differ (same-device path keeps fast `mv`). `rsync` is
-  required on that deployment pattern.
+- **`exportDatamartsToJSON.sh` publish across filesystems**: `/tmp` tmpfs vs `JSON_OUTPUT_DIR`
+  on `/home` breaks naive `mv` of populated dirs (*inter-device* / *Directory not empty*).
+  Publication uses **`rsync` scoped to `users/`, `countries/`, `indexes/`, plus root metadata and
+  global stats JSON**, with `--delete` only inside those subtrees (`rsync` is required).
+  Broadcasting `rsync --delete` across all of `data/` would wrongly remove unrelated published assets
+  (e.g. `*.geojson.gz`, zipped CSV bundles) that this script never regenerates.
 
 ## [2026-02-27] - ETL Backfills, Datamart Improvements and Documentation Updates
 
