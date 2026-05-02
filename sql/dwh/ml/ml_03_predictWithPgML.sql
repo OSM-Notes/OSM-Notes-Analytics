@@ -4,6 +4,9 @@
 -- Author: OSM Notes Analytics Project
 -- Date: 2025-12-20
 -- Purpose: Predict note classifications using pgml models
+--
+-- Explicit TEXT and DOUBLE PRECISION[] casts resolve pgml.predict / predict_proba overload
+-- ambiguity (unknown literal + numeric[] vs REAL[] vs FLOAT8[]) on PostgreSQL/pgml 2.x.
 
 -- ============================================================================
 -- 1. Predict Main Category (Level 1)
@@ -13,7 +16,7 @@ SELECT
   id_note,
   opened_dimension_id_date,
   CASE ROUND(pgml.predict(
-    'note_classification_main_category',
+    'note_classification_main_category'::TEXT,
     ARRAY[
       comment_length,
       has_url_int,
@@ -39,7 +42,7 @@ SELECT
       hour_of_day,
       month,
       days_open
-    ]
+    ]::DOUBLE PRECISION[]
   )::NUMERIC)::INTEGER
     WHEN 1 THEN 'contributes_with_change'::VARCHAR
     ELSE 'doesnt_contribute'::VARCHAR
@@ -58,7 +61,7 @@ SELECT
   id_note,
   opened_dimension_id_date,
   pgml.predict(
-    'note_classification_specific_type',
+    'note_classification_specific_type'::TEXT,
     ARRAY[
       comment_length,
       has_url_int,
@@ -84,7 +87,7 @@ SELECT
       hour_of_day,
       month,
       days_open
-    ]
+    ]::DOUBLE PRECISION[]
   ) AS predicted_type
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note NOT IN (
@@ -100,7 +103,7 @@ SELECT
   id_note,
   opened_dimension_id_date,
   pgml.predict(
-    'note_classification_action',
+    'note_classification_action'::TEXT,
     ARRAY[
       comment_length,
       has_url_int,
@@ -126,7 +129,7 @@ SELECT
       hour_of_day,
       month,
       days_open
-    ]
+    ]::DOUBLE PRECISION[]
   ) AS recommended_action
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note NOT IN (
@@ -181,7 +184,7 @@ FROM (
   SELECT
     pf.id_note,
     CASE ROUND(pgml.predict(
-      'note_classification_main_category',
+      'note_classification_main_category'::TEXT,
       ARRAY[
         pf.comment_length,
         pf.has_url_int,
@@ -207,7 +210,7 @@ FROM (
         pf.hour_of_day,
         pf.month,
         pf.days_open
-      ]
+      ]::DOUBLE PRECISION[]
     )::NUMERIC)::INTEGER
       WHEN 1 THEN 'contributes_with_change'::VARCHAR
       ELSE 'doesnt_contribute'::VARCHAR
@@ -215,7 +218,7 @@ FROM (
     0.8 AS category_confidence,
     'ml_based' AS category_method,
     pgml.predict(
-      'note_classification_specific_type',
+      'note_classification_specific_type'::TEXT,
       ARRAY[
         pf.comment_length,
         pf.has_url_int,
@@ -241,12 +244,12 @@ FROM (
         pf.hour_of_day,
         pf.month,
         pf.days_open
-      ]
+      ]::DOUBLE PRECISION[]
     )::VARCHAR AS specific_type,
     0.75 AS type_confidence,
     'ml_based' AS type_method,
     pgml.predict(
-      'note_classification_action',
+      'note_classification_action'::TEXT,
       ARRAY[
         pf.comment_length,
         pf.has_url_int,
@@ -272,7 +275,7 @@ FROM (
         pf.hour_of_day,
         pf.month,
         pf.days_open
-      ]
+      ]::DOUBLE PRECISION[]
     )::VARCHAR AS recommended_action,
     0.8 AS action_confidence,
     'ml_based' AS action_method,
@@ -294,7 +297,7 @@ FROM (
 SELECT
   id_note,
   pgml.predict_proba(
-    'note_classification_main_category',
+    'note_classification_main_category'::TEXT,
     ARRAY[
       comment_length,
       has_url_int,
@@ -320,7 +323,7 @@ SELECT
       hour_of_day,
       month,
       days_open
-    ]
+    ]::DOUBLE PRECISION[]
   ) AS category_probabilities
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note = 12345;  -- Example note ID
@@ -392,7 +395,7 @@ BEGIN
     SELECT
       pf.id_note,
       CASE ROUND(pgml.predict(
-        'note_classification_main_category',
+        'note_classification_main_category'::TEXT,
         ARRAY[
           pf.comment_length,
           pf.has_url_int,
@@ -418,7 +421,7 @@ BEGIN
           pf.hour_of_day,
           pf.month,
           pf.days_open
-        ]
+        ]::DOUBLE PRECISION[]
       )::NUMERIC)::INTEGER
         WHEN 1 THEN 'contributes_with_change'::VARCHAR
         ELSE 'doesnt_contribute'::VARCHAR
@@ -426,7 +429,7 @@ BEGIN
       0.8 AS category_confidence,
       'ml_based' AS category_method,
       pgml.predict(
-        'note_classification_specific_type',
+        'note_classification_specific_type'::TEXT,
         ARRAY[
           pf.comment_length,
           pf.has_url_int,
@@ -452,12 +455,12 @@ BEGIN
           pf.hour_of_day,
           pf.month,
           pf.days_open
-        ]
+        ]::DOUBLE PRECISION[]
       )::VARCHAR AS specific_type,
       0.75 AS type_confidence,
       'ml_based' AS type_method,
       pgml.predict(
-        'note_classification_action',
+        'note_classification_action'::TEXT,
         ARRAY[
           pf.comment_length,
           pf.has_url_int,
@@ -483,7 +486,7 @@ BEGIN
           pf.hour_of_day,
           pf.month,
           pf.days_open
-        ]
+        ]::DOUBLE PRECISION[]
       )::VARCHAR AS recommended_action,
       0.8 AS action_confidence,
       'ml_based' AS action_method,
