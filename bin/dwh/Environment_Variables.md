@@ -395,7 +395,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 30 6 1 * * cd /home/notes/OSM-Notes-Analytics && OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true ./bin/dwh/exportAndPushJSONToGitHub.sh >>/var/log/osm-notes-json-export.log 2>&1
 ```
 
-Standalone squash-only (only if `/home/notes/OSM-Notes-Data` already matches what you intend to publish; prefers the combined monthly line above):
+Standalone squash-only (only if `/home/notes/OSM-Notes-Data` already matches what you intend to
+publish; prefers the combined monthly line above):
 
 ```cron
 0 7 1 * * cd /home/notes/OSM-Notes-Analytics && ./bin/dwh/squashOSMNotesDataGitHistory.sh --yes >>/var/log/osm-notes-data-squash.log 2>&1

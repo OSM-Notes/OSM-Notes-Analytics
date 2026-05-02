@@ -380,11 +380,12 @@ curl -sS https://osm-notes.github.io/OSM-Notes-Data/data/metadata.json | head
 
 ### 3. Scheduling and optional Git history squash
 
-- **Cron templates**: [`etc/cron.example`](../etc/cron.example), [`Cron_Setup.md`](Cron_Setup.md), and the
-  **Scheduling with Cron** section in the repo [`README.md`](../README.md).
+- **Cron templates**: [`etc/cron.example`](../etc/cron.example), [`Cron_Setup.md`](Cron_Setup.md),
+  and the **Scheduling with Cron** section in the repo [`README.md`](../README.md).
 - **Squash helper** (optional maintenance when the `.git` of OSM-Notes-Data grows; rewrites remote
-  history with `force-with-lease`): [`bin/dwh/squashOSMNotesDataGitHistory.sh`](../bin/dwh/squashOSMNotesDataGitHistory.sh)
-  and variable **`OSM_NOTES_DATA_SQUASH_AFTER_EXPORT`** — full detail and cron examples:
+  history with `force-with-lease`):
+  [`bin/dwh/squashOSMNotesDataGitHistory.sh`](../bin/dwh/squashOSMNotesDataGitHistory.sh) and
+  variable **`OSM_NOTES_DATA_SQUASH_AFTER_EXPORT`** — full detail and cron examples:
   **[`Environment_Variables.md`](../bin/dwh/Environment_Variables.md)** (Export Configuration).
 
 ---

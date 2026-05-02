@@ -32,22 +32,23 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- **`exportAndPushJSONToGitHub.sh` concurrent runs (cron overlap)**: Removed `rm -f` of the lock path
-  on `EXIT` (unlink while another process can still hold flock on the orphaned inode allowed a second
-  instance to create a new file and pass `flock -n`). Lock file is kept; open with append, refresh
-  contents via the locked fd after `truncate` (or `/proc/self/fd/7`). `cleanup` only closes fd **7**.
+- **`exportAndPushJSONToGitHub.sh` concurrent runs (cron overlap)**: Removed `rm -f` of the lock
+  path on `EXIT` (unlink while another process can still hold flock on the orphaned inode allowed a
+  second instance to create a new file and pass `flock -n`). Lock file is kept; open with append,
+  refresh contents via the locked fd after `truncate` (or `/proc/self/fd/7`). `cleanup` only closes
+  fd **7**.
 - **Initial DWH load / `days_to_resolution`**: Bulk fact load runs before `ETL_40` creates the
   `update_days_to_resolution` trigger, so closed rows stayed with NULL resolution metrics. After
   creating the trigger, `sql/dwh/ETL_40_addConstraintsIndexesTriggers.sql` now backfills
   `days_to_resolution` and `days_to_resolution_from_reopen` for closed facts (idempotent: only
   `WHERE ... IS NULL`). Incremental inserts still rely on the trigger; existing databases that
   already loaded facts may apply the same `UPDATE` logic once outside this script if needed.
-- **`exportDatamartsToJSON.sh` publish across filesystems**: `/tmp` tmpfs vs `JSON_OUTPUT_DIR`
-  on `/home` breaks naive `mv` of populated dirs (*inter-device* / *Directory not empty*).
-  Publication uses **`rsync` scoped to `users/`, `countries/`, `indexes/`, plus root metadata and
-  global stats JSON**, with `--delete` only inside those subtrees (`rsync` is required).
-  Broadcasting `rsync --delete` across all of `data/` would wrongly remove unrelated published assets
-  (e.g. `*.geojson.gz`, zipped CSV bundles) that this script never regenerates.
+- **`exportDatamartsToJSON.sh` publish across filesystems**: `/tmp` tmpfs vs `JSON_OUTPUT_DIR` on
+  `/home` breaks naive `mv` of populated dirs (_inter-device_ / _Directory not empty_). Publication
+  uses **`rsync` scoped to `users/`, `countries/`, `indexes/`, plus root metadata and global stats
+  JSON**, with `--delete` only inside those subtrees (`rsync` is required). Broadcasting
+  `rsync --delete` across all of `data/` would wrongly remove unrelated published assets (e.g.
+  `*.geojson.gz`, zipped CSV bundles) that this script never regenerates.
 - **`indexes/users.json` size / GitHub GH001**: Rich per-user index rows pushed the file over
   **GitHub’s 100 MB** hard limit. The export now writes a **minimal browse index** (`user_id`,
   `username`, `history_whole_open`, `history_whole_closed`); full metrics remain in per-user profile

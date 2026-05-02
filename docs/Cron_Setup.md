@@ -398,8 +398,9 @@ Chain JSON export after ETL when you publish to **OSM-Notes-Data** (see
 [Installation_Dependencies.md](Installation_Dependencies.md#optional-publish-json-to-osm-notes-data)).
 Template lines: `etc/cron.example`. If the Data repo’s Git history grows too large and you only care
 about the **current** tree, optionally use `OSM_NOTES_DATA_SQUASH_AFTER_EXPORT=true` or
-`bin/dwh/squashOSMNotesDataGitHistory.sh` — **[`bin/dwh/Environment_Variables.md`](../bin/dwh/Environment_Variables.md)**
-(Export Configuration) documents risks (`force-with-lease`, branch protection) and cron examples.
+`bin/dwh/squashOSMNotesDataGitHistory.sh` —
+**[`bin/dwh/Environment_Variables.md`](../bin/dwh/Environment_Variables.md)** (Export Configuration)
+documents risks (`force-with-lease`, branch protection) and cron examples.
 
 ```cron
 # Example: monthly export + single-commit squash (commented in etc/cron.example)
