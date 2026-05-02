@@ -12,7 +12,7 @@
 SELECT
   id_note,
   opened_dimension_id_date,
-  pgml.predict(
+  CASE ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       comment_length,
@@ -40,7 +40,10 @@ SELECT
       month,
       days_open
     ]
-  ) AS predicted_category
+  )::NUMERIC)::INTEGER
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note NOT IN (
   SELECT id_note FROM dwh.note_type_classifications
@@ -177,7 +180,7 @@ SELECT
 FROM (
   SELECT
     pf.id_note,
-    pgml.predict(
+    CASE ROUND(pgml.predict(
       'note_classification_main_category',
       ARRAY[
         pf.comment_length,
@@ -205,7 +208,10 @@ FROM (
         pf.month,
         pf.days_open
       ]
-    )::VARCHAR AS main_category,
+    )::NUMERIC)::INTEGER
+      WHEN 1 THEN 'contributes_with_change'::VARCHAR
+      ELSE 'doesnt_contribute'::VARCHAR
+    END AS main_category,
     0.8 AS category_confidence,
     'ml_based' AS category_method,
     pgml.predict(
@@ -282,7 +288,8 @@ FROM (
 -- ============================================================================
 -- 5. Get Prediction Probabilities (for confidence scores)
 -- ============================================================================
--- Note: pgml.predict_proba() returns probabilities for all classes
+-- Note: pgml.predict_proba() probabilities use string keys aligned with INTEGER class labels,
+-- typically "0" and "1" for the narrow main-category training view.
 
 SELECT
   id_note,
@@ -384,7 +391,7 @@ BEGIN
   FROM (
     SELECT
       pf.id_note,
-      pgml.predict(
+      CASE ROUND(pgml.predict(
         'note_classification_main_category',
         ARRAY[
           pf.comment_length,
@@ -412,7 +419,10 @@ BEGIN
           pf.month,
           pf.days_open
         ]
-      )::VARCHAR AS main_category,
+      )::NUMERIC)::INTEGER
+        WHEN 1 THEN 'contributes_with_change'::VARCHAR
+        ELSE 'doesnt_contribute'::VARCHAR
+      END AS main_category,
       0.8 AS category_confidence,
       'ml_based' AS category_method,
       pgml.predict(

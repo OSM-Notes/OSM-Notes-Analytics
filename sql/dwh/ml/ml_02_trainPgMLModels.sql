@@ -18,33 +18,36 @@
 -- ============================================================================
 -- 1. Train Level 1 Model: Main Category (2 classes)
 -- ============================================================================
--- Predicts: contributes_with_change vs doesnt_contribute
+-- Predicts (after decode in SQL): contributes_with_change vs doesnt_contribute (targets INTEGER {0,1})
 
 SELECT * FROM pgml.train(
   project_name => 'note_classification_main_category',
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_main_category',
   y_column_name => 'main_category',
-  algorithm => 'xgboost',  -- Gradient boosting for good performance
+  -- lightgbm: some pgml builds panic (Rust unwrap) during xgboost snapshot on multi-M row sets
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 100,
-    "max_depth": 6,
-    "learning_rate": 0.1
+    "num_leaves": 63,
+    "learning_rate": 0.1,
+    "verbosity": -1
   }'::jsonb,
   test_size => 0.2,  -- 20% for testing
   test_sampling => 'random'
 );
 
--- Check training results
+-- Check training results (pgml.deployed_models in 2.x has no metrics; use models + projects)
 SELECT
-  project_name,
-  algorithm,
-  status,
-  created_at,
-  metrics
-FROM pgml.deployed_models
-WHERE project_name = 'note_classification_main_category'
-ORDER BY created_at DESC
+  p.name AS project_name,
+  m.algorithm,
+  m.status,
+  m.created_at,
+  m.metrics
+FROM pgml.models m
+JOIN pgml.projects p ON p.id = m.project_id
+WHERE p.name = 'note_classification_main_category'
+ORDER BY m.created_at DESC
 LIMIT 1;
 
 -- ============================================================================
@@ -70,14 +73,15 @@ SELECT * FROM pgml.train(
 
 -- Check training results
 SELECT
-  project_name,
-  algorithm,
-  status,
-  created_at,
-  metrics
-FROM pgml.deployed_models
-WHERE project_name = 'note_classification_specific_type'
-ORDER BY created_at DESC
+  p.name AS project_name,
+  m.algorithm,
+  m.status,
+  m.created_at,
+  m.metrics
+FROM pgml.models m
+JOIN pgml.projects p ON p.id = m.project_id
+WHERE p.name = 'note_classification_specific_type'
+ORDER BY m.created_at DESC
 LIMIT 1;
 
 -- ============================================================================
@@ -102,14 +106,15 @@ SELECT * FROM pgml.train(
 
 -- Check training results
 SELECT
-  project_name,
-  algorithm,
-  status,
-  created_at,
-  metrics
-FROM pgml.deployed_models
-WHERE project_name = 'note_classification_action'
-ORDER BY created_at DESC
+  p.name AS project_name,
+  m.algorithm,
+  m.status,
+  m.created_at,
+  m.metrics
+FROM pgml.models m
+JOIN pgml.projects p ON p.id = m.project_id
+WHERE p.name = 'note_classification_action'
+ORDER BY m.created_at DESC
 LIMIT 1;
 
 -- ============================================================================
@@ -117,17 +122,18 @@ LIMIT 1;
 -- ============================================================================
 
 SELECT
-  project_name,
-  algorithm,
-  status,
-  created_at,
-  metrics ->> 'accuracy' AS accuracy,
-  metrics ->> 'f1' AS f1_score,
-  metrics ->> 'precision' AS precision,
-  metrics ->> 'recall' AS recall
-FROM pgml.deployed_models
-WHERE project_name LIKE 'note_classification%'
-ORDER BY created_at DESC;
+  p.name AS project_name,
+  m.algorithm,
+  m.status,
+  m.created_at,
+  m.metrics ->> 'accuracy' AS accuracy,
+  m.metrics ->> 'f1' AS f1_score,
+  m.metrics ->> 'precision' AS precision,
+  m.metrics ->> 'recall' AS recall
+FROM pgml.models m
+JOIN pgml.projects p ON p.id = m.project_id
+WHERE p.name LIKE 'note_classification%'
+ORDER BY m.created_at DESC;
 
 -- ============================================================================
 -- 5. Compare Model Performance
@@ -135,15 +141,16 @@ ORDER BY created_at DESC;
 
 WITH model_metrics AS (
   SELECT
-    project_name,
-    algorithm,
-    created_at,
-    metrics ->> 'accuracy' AS accuracy,
-    metrics ->> 'f1' AS f1_score,
-    metrics ->> 'precision' AS precision,
-    metrics ->> 'recall' AS recall
-  FROM pgml.deployed_models
-  WHERE project_name LIKE 'note_classification%'
+    p.name AS project_name,
+    m.algorithm,
+    m.created_at,
+    m.metrics ->> 'accuracy' AS accuracy,
+    m.metrics ->> 'f1' AS f1_score,
+    m.metrics ->> 'precision' AS precision,
+    m.metrics ->> 'recall' AS recall
+  FROM pgml.models m
+  JOIN pgml.projects p ON p.id = m.project_id
+  WHERE p.name LIKE 'note_classification%'
 )
 
 SELECT

@@ -13,8 +13,8 @@
 SELECT
   id_note,
   opened_dimension_id_date,
-  -- Level 1: Main Category
-  pgml.predict(
+  -- Level 1: Main Category (trained as INTEGER target 0/1; decoded here)
+  CASE ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       comment_length,
@@ -42,7 +42,10 @@ SELECT
       month,
       days_open
     ]
-  )::VARCHAR AS predicted_category,
+  )::NUMERIC)::INTEGER
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category,
   -- Level 2: Specific Type
   pgml.predict(
     'note_classification_specific_type',
@@ -82,7 +85,7 @@ WHERE id_note = 12345;  -- Replace with actual note ID
 SELECT
   id_note,
   opened_dimension_id_date,
-  pgml.predict(
+  CASE ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       comment_length, has_url_int, has_mention_int, hashtag_number,
@@ -94,7 +97,10 @@ SELECT
       user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR AS predicted_category,
+  )::NUMERIC)::INTEGER
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category,
   pgml.predict(
     'note_classification_specific_type',
     ARRAY[
@@ -135,7 +141,7 @@ LIMIT 1000;
 SELECT
   id_note,
   -- Prediction
-  pgml.predict(
+  CASE ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       comment_length, has_url_int, has_mention_int, hashtag_number,
@@ -147,8 +153,11 @@ SELECT
       user_total_notes, user_experience_level, user_contributor_type_id,
       day_of_week, hour_of_day, month, days_open
     ]
-  )::VARCHAR AS predicted_category,
-  -- Probabilities (returns JSON with all class probabilities)
+  )::NUMERIC)::INTEGER
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category,
+  -- Probabilities (JSON keys typically "0"/"1" for INTEGER class labels)
   pgml.predict_proba(
     'note_classification_main_category',
     ARRAY[
@@ -165,11 +174,11 @@ SELECT
 FROM dwh.v_note_ml_prediction_features
 WHERE id_note = 12345;
 
--- Extract confidence from probabilities (requires JSON keys to match predicted class labels)
+-- Extract confidence from probabilities (ROUND(predict)::INTEGER aligns with JSON keys "0"/"1")
 WITH scored AS (
   SELECT
     id_note,
-    pgml.predict(
+    ROUND(pgml.predict(
       'note_classification_main_category',
       ARRAY[
         comment_length, has_url_int, has_mention_int, hashtag_number,
@@ -181,7 +190,7 @@ WITH scored AS (
         user_total_notes, user_experience_level, user_contributor_type_id,
         day_of_week, hour_of_day, month, days_open
       ]
-    )::VARCHAR AS predicted_category,
+    )::NUMERIC)::INTEGER AS cat_lbl,
     pgml.predict_proba(
       'note_classification_main_category',
       ARRAY[
@@ -201,8 +210,11 @@ WITH scored AS (
 
 SELECT
   id_note,
-  predicted_category,
-  (category_probabilities ->> predicted_category)::NUMERIC AS confidence_score
+  CASE cat_lbl
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category,
+  (category_probabilities ->> cat_lbl::TEXT)::NUMERIC AS confidence_score
 FROM scored;
 
 -- ============================================================================
@@ -216,7 +228,7 @@ SELECT
   d.date_id AS opened_date,
   c.country_name_en,
   u.username,
-  pgml.predict(
+  CASE ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
@@ -228,7 +240,10 @@ SELECT
       pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
-  )::VARCHAR AS predicted_category,
+  )::NUMERIC)::INTEGER
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END AS predicted_category,
   pgml.predict(
     'note_classification_action',
     ARRAY[
@@ -248,7 +263,7 @@ JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
 JOIN dwh.dimension_countries c ON f.dimension_id_country = c.dimension_country_id
 JOIN dwh.dimension_users u ON f.opened_dimension_id_user = u.dimension_user_id
 WHERE f.action_comment = 'opened'
-  AND pgml.predict(
+  AND ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
@@ -260,7 +275,7 @@ WHERE f.action_comment = 'opened'
       pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
       pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
     ]
-  )::VARCHAR = 'contributes_with_change'
+  )::NUMERIC)::INTEGER = 1
   AND pgml.predict(
     'note_classification_action',
     ARRAY[
@@ -298,6 +313,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   v_features RECORD;
+  v_category_lbl INTEGER;
   v_category VARCHAR;
   v_type VARCHAR;
   v_action VARCHAR;
@@ -314,8 +330,8 @@ BEGIN
     RAISE EXCEPTION 'Note % not found in prediction features', p_note_id;
   END IF;
 
-  -- Make predictions
-  v_category := pgml.predict(
+  -- Make predictions (main-category model INTEGER 0/1; decode / proba keys "0"/"1")
+  v_category_lbl := ROUND(pgml.predict(
     'note_classification_main_category',
     ARRAY[
       v_features.comment_length, v_features.has_url_int, v_features.has_mention_int,
@@ -331,7 +347,12 @@ BEGIN
       v_features.day_of_week, v_features.hour_of_day,
       v_features.month, v_features.days_open
     ]
-  )::VARCHAR;
+  )::NUMERIC)::INTEGER;
+
+  v_category := CASE v_category_lbl
+    WHEN 1 THEN 'contributes_with_change'::VARCHAR
+    ELSE 'doesnt_contribute'::VARCHAR
+  END;
 
   v_type := pgml.predict(
     'note_classification_specific_type',
@@ -394,7 +415,7 @@ BEGIN
     v_category,
     v_type,
     v_action,
-    (v_category_proba ->> v_category)::NUMERIC AS category_confidence,
+    (v_category_proba ->> v_category_lbl::TEXT)::NUMERIC AS category_confidence,
     (v_type_proba ->> v_type)::NUMERIC AS type_confidence,
     (v_action_proba ->> v_action)::NUMERIC AS action_confidence;
 END;
@@ -461,7 +482,7 @@ BEGIN
   FROM (
     SELECT
       pf.id_note,
-      (pgml.predict(
+      CASE ROUND((pgml.predict(
         'note_classification_main_category',
         ARRAY[
           pf.comment_length, pf.has_url_int, pf.has_mention_int, pf.hashtag_number,
@@ -473,7 +494,10 @@ BEGIN
           pf.user_total_notes, pf.user_experience_level, pf.user_contributor_type_id,
           pf.day_of_week, pf.hour_of_day, pf.month, pf.days_open
         ]
-      ))::VARCHAR AS main_category,
+      ))::NUMERIC)::INTEGER
+        WHEN 1 THEN 'contributes_with_change'::VARCHAR
+        ELSE 'doesnt_contribute'::VARCHAR
+      END AS main_category,
       0.8 AS category_confidence,
       'ml_based' AS category_method,
       (pgml.predict(

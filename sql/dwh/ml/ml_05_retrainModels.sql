@@ -18,22 +18,24 @@
 -- Check Training Data Freshness
 -- ============================================================================
 
--- Check when models were last trained
+-- Check when models were last trained (pgml 2.x: timestamps live on pgml.models)
 SELECT
-  project_name,
-  MAX(created_at) AS last_trained_at,
-  NOW() - MAX(created_at) AS age
-FROM pgml.deployed_models
-WHERE project_name LIKE 'note_classification%'
-GROUP BY project_name;
+  p.name AS project_name,
+  MAX(m.created_at) AS last_trained_at,
+  NOW() - MAX(m.created_at) AS age
+FROM pgml.models m
+JOIN pgml.projects p ON p.id = m.project_id
+WHERE p.name LIKE 'note_classification%'
+GROUP BY p.name;
 
 -- Check how many new training samples are available
 SELECT
   COUNT(*) AS total_training_samples,
   COUNT(*) FILTER (WHERE opened_dimension_id_date > (
-    SELECT MAX(created_at) - INTERVAL '30 days'
-    FROM pgml.deployed_models
-    WHERE project_name = 'note_classification_main_category'
+    SELECT MAX(m.created_at) - INTERVAL '30 days'
+    FROM pgml.models m
+    JOIN pgml.projects p ON p.id = m.project_id
+    WHERE p.name = 'note_classification_main_category'
   )) AS new_samples_last_30_days
 FROM dwh.v_note_ml_training_features
 WHERE main_category IS NOT NULL;
@@ -47,11 +49,12 @@ SELECT * FROM pgml.train(
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_main_category',
   y_column_name => 'main_category',
-  algorithm => 'xgboost',
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 100,
-    "max_depth": 6,
-    "learning_rate": 0.1
+    "num_leaves": 63,
+    "learning_rate": 0.1,
+    "verbosity": -1
   }'::JSONB,
   test_size => 0.2,
   test_sampling => 'random'
@@ -102,13 +105,14 @@ SELECT * FROM pgml.train(
 
 WITH model_comparison AS (
   SELECT
-    project_name,
-    created_at,
-    metrics ->> 'accuracy' AS accuracy,
-    metrics ->> 'f1' AS f1_score,
-    ROW_NUMBER() OVER (PARTITION BY project_name ORDER BY created_at DESC) AS rn
-  FROM pgml.deployed_models
-  WHERE project_name LIKE 'note_classification%'
+    p.name AS project_name,
+    m.created_at,
+    m.metrics ->> 'accuracy' AS accuracy,
+    m.metrics ->> 'f1' AS f1_score,
+    ROW_NUMBER() OVER (PARTITION BY p.name ORDER BY m.created_at DESC) AS rn
+  FROM pgml.models m
+  JOIN pgml.projects p ON p.id = m.project_id
+  WHERE p.name LIKE 'note_classification%'
 )
 
 SELECT

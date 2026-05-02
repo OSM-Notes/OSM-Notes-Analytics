@@ -244,39 +244,56 @@ COMMENT ON VIEW dwh.v_note_ml_prediction_features IS
 -- id_note / dimension surrogates / sibling labels confused stats in some pgml builds
 -- (`Option::unwrap()` on None). Use these narrow views: feature column order MUST match
 -- ARRAY[...] in sql/dwh/ml/ml_03_predictWithPgML.sql.
+--
+-- PostgresML 2.x (Rust snapshot) computes column stats after dropping NaNs; if every value is
+-- NULL/NaN in the Rust binding that column becomes empty and `analyze()` hits
+-- `data.first().unwrap()` -> ERROR: Option::unwrap() on None. Coalesce finite numbers and clamp
+-- large counts so bindings never synthesize all-NaN feature columns.
 
-CREATE OR REPLACE VIEW dwh.v_note_ml_train_main_category AS
+DROP VIEW IF EXISTS dwh.v_note_ml_train_main_category CASCADE;
+CREATE VIEW dwh.v_note_ml_train_main_category AS
 SELECT
-  comment_length,
-  has_url_int,
-  has_mention_int,
-  hashtag_number,
-  total_comments_on_note,
-  hashtag_count,
-  has_fire_keyword,
-  has_air_keyword,
-  has_access_keyword,
-  has_campaign_keyword,
-  has_fix_keyword,
-  is_assisted_app,
-  is_mobile_app,
-  country_resolution_rate,
-  country_avg_resolution_days,
-  country_notes_health_score,
-  user_response_time,
-  user_total_notes,
-  user_experience_level,
-  user_contributor_type_id,
-  day_of_week,
-  hour_of_day,
-  month,
-  days_open,
-  main_category
-FROM dwh.v_note_ml_training_features
-WHERE main_category IS NOT NULL;
+  LEAST(GREATEST(COALESCE(pf.comment_length, 0), 0), 524288)::DOUBLE PRECISION AS comment_length,
+  LEAST(GREATEST(COALESCE(pf.has_url_int, 0), 0), 1)::DOUBLE PRECISION AS has_url_int,
+  LEAST(GREATEST(COALESCE(pf.has_mention_int, 0), 0), 1)::DOUBLE PRECISION AS has_mention_int,
+  LEAST(GREATEST(COALESCE(pf.hashtag_number, 0), 0), 100000)::DOUBLE PRECISION AS hashtag_number,
+  LEAST(GREATEST(COALESCE(pf.total_comments_on_note, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS total_comments_on_note,
+  LEAST(GREATEST(COALESCE(pf.hashtag_count, 0), 0), 2147483647)::DOUBLE PRECISION AS hashtag_count,
+  LEAST(GREATEST(COALESCE(pf.has_fire_keyword, 0), 0), 1)::DOUBLE PRECISION AS has_fire_keyword,
+  LEAST(GREATEST(COALESCE(pf.has_air_keyword, 0), 0), 1)::DOUBLE PRECISION AS has_air_keyword,
+  LEAST(GREATEST(COALESCE(pf.has_access_keyword, 0), 0), 1)::DOUBLE PRECISION AS has_access_keyword,
+  LEAST(GREATEST(COALESCE(pf.has_campaign_keyword, 0), 0), 1)::DOUBLE PRECISION AS has_campaign_keyword,
+  LEAST(GREATEST(COALESCE(pf.has_fix_keyword, 0), 0), 1)::DOUBLE PRECISION AS has_fix_keyword,
+  LEAST(GREATEST(COALESCE(pf.is_assisted_app, 0), 0), 1)::DOUBLE PRECISION AS is_assisted_app,
+  LEAST(GREATEST(COALESCE(pf.is_mobile_app, 0), 0), 1)::DOUBLE PRECISION AS is_mobile_app,
+  LEAST(GREATEST(COALESCE(pf.country_resolution_rate, 0)::NUMERIC, 0), 1)::DOUBLE PRECISION
+    AS country_resolution_rate,
+  LEAST(GREATEST(COALESCE(pf.country_avg_resolution_days, 0), 0), 100000)::DOUBLE PRECISION
+    AS country_avg_resolution_days,
+  LEAST(GREATEST(COALESCE(pf.country_notes_health_score, 0)::NUMERIC, 0), 1)::DOUBLE PRECISION
+    AS country_notes_health_score,
+  LEAST(GREATEST(COALESCE(pf.user_response_time, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS user_response_time,
+  LEAST(GREATEST(COALESCE(pf.user_total_notes, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS user_total_notes,
+  LEAST(GREATEST(COALESCE(pf.user_experience_level, 0), 0), 32767)::DOUBLE PRECISION
+    AS user_experience_level,
+  LEAST(GREATEST(COALESCE(pf.user_contributor_type_id, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS user_contributor_type_id,
+  LEAST(GREATEST(COALESCE(pf.day_of_week, 0), 0), 6)::DOUBLE PRECISION AS day_of_week,
+  LEAST(GREATEST(COALESCE(pf.hour_of_day, 0), 0), 23)::DOUBLE PRECISION AS hour_of_day,
+  LEAST(GREATEST(COALESCE(pf.month, 0), 0), 12)::DOUBLE PRECISION AS month,
+  LEAST(GREATEST(COALESCE(pf.days_open, 0), 0), 100000)::DOUBLE PRECISION AS days_open,
+  CASE pf.main_category
+    WHEN 'doesnt_contribute' THEN 0::INTEGER
+    WHEN 'contributes_with_change' THEN 1::INTEGER
+  END AS main_category
+FROM dwh.v_note_ml_training_features pf
+WHERE pf.main_category IS NOT NULL;
 
 COMMENT ON VIEW dwh.v_note_ml_train_main_category IS
-  'pgml.train relation for main_category label; features match inference ARRAY order.';
+  'pgml.train: finite DOUBLE PRECISION features (coerced/clamped); main_category INTEGER 0/1.';
 
 CREATE OR REPLACE VIEW dwh.v_note_ml_train_specific_type AS
 SELECT

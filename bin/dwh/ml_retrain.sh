@@ -185,10 +185,11 @@ check_models_exist() {
  # Check if any models are already trained
  local model_count
  model_count=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
-		SELECT COUNT(*)
-		FROM pgml.deployed_models
-		WHERE project_name LIKE 'note_classification%';
-	" 2> /dev/null | tr -d ' ' || echo "0")
+		SELECT COUNT(*)::TEXT
+		FROM pgml.models m
+		JOIN pgml.projects p ON p.id = m.project_id
+		WHERE p.name LIKE 'note_classification%';
+	" 2> /dev/null | tr -d '[:space:]' || echo "0")
 
  if [[ ${model_count} -gt 0 ]]; then
   return 0
@@ -205,10 +206,11 @@ check_retraining_needed() {
  local new_percentage
 
  days_since_training=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
-		SELECT COALESCE(EXTRACT(DAY FROM NOW() - MAX(created_at))::INTEGER, 999)
-		FROM pgml.deployed_models
-		WHERE project_name LIKE 'note_classification%';
-	" 2> /dev/null | tr -d ' ' || echo "999")
+		SELECT COALESCE(EXTRACT(DAY FROM NOW() - MAX(m.created_at))::INTEGER, 999)
+		FROM pgml.models m
+		JOIN pgml.projects p ON p.id = m.project_id
+		WHERE p.name LIKE 'note_classification%';
+	" 2> /dev/null | tr -d '[:space:]' || echo "999")
 
  if [[ ${days_since_training} -ge 30 ]]; then
   return 0
@@ -220,9 +222,10 @@ check_retraining_needed() {
 		FROM dwh.v_note_ml_training_features
 		WHERE main_category IS NOT NULL
 		  AND opened_dimension_id_date > (
-		    SELECT MAX(created_at) - INTERVAL '30 days'
-		    FROM pgml.deployed_models
-		    WHERE project_name = 'note_classification_main_category'
+		    SELECT MAX(m.created_at) - INTERVAL '30 days'
+		    FROM pgml.models m
+		    JOIN pgml.projects p ON p.id = m.project_id
+		    WHERE p.name = 'note_classification_main_category'
 		  );
 	" 2> /dev/null | tr -d ' ' || echo "0")
 
@@ -272,13 +275,14 @@ train_models() {
   __logi "Model metrics:"
   "${PSQL_CMD}" -d "${DWH_DB}" -c "
 			SELECT
-				project_name,
-				ROUND((metrics->>'accuracy')::numeric * 100, 2) as accuracy_pct,
-				ROUND((metrics->>'f1')::numeric * 100, 2) as f1_pct,
-				created_at
-			FROM pgml.deployed_models
-			WHERE project_name LIKE 'note_classification%'
-			ORDER BY created_at DESC
+				p.name AS project_name,
+				ROUND((m.metrics ->> 'accuracy')::numeric * 100, 2) AS accuracy_pct,
+				ROUND((m.metrics ->> 'f1')::numeric * 100, 2) AS f1_pct,
+				m.created_at
+			FROM pgml.models m
+			JOIN pgml.projects p ON p.id = m.project_id
+			WHERE p.name LIKE 'note_classification%'
+			ORDER BY m.created_at DESC
 			LIMIT 3;
 		" 2> /dev/null || true
 
