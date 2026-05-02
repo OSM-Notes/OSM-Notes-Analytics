@@ -3,7 +3,8 @@
 # Batch note classification using trained pgml models (dwh.predict_note_classification_pgml).
 # Run after ETL/datamarts and training; safe to schedule from cron.
 #
-# Prerequisites: PostgreSQL 14+, pgml extension, models trained, and ml_03_predictWithPgML.sql applied.
+# Prerequisites: PostgreSQL 14+, pgml extension, models trained. If dwh.predict_note_classification_pgml
+# is missing, this script applies sql/dwh/ml/ml_03_predictWithPgML.sql once (DDL on DWH DB).
 # See: sql/dwh/ml/README.md and README.md Quick Start Step 9.
 #
 # Usage:
@@ -11,12 +12,13 @@
 #   ML_BATCH_SIZE=1000 ./bin/dwh/ml_batch_classify.sh
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-22
+# Version: 2026-05-02
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ML_DIR="${PROJECT_ROOT}/sql/dwh/ml"
 
 if [[ -f "${PROJECT_ROOT}/etc/properties.sh" ]]; then
  # shellcheck disable=SC1091
@@ -55,15 +57,32 @@ if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "SELECT 1 FROM pg_extension WHERE extn
  exit 1
 fi
 
-if ! "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "
+_prediction_function_installed() {
+ "${PSQL_CMD}" -d "${DWH_DB}" -t -Aqc "
 SELECT 1 FROM pg_proc p
 JOIN pg_namespace n ON p.pronamespace = n.oid
 WHERE n.nspname = 'dwh' AND p.proname = 'predict_note_classification_pgml'
 LIMIT 1;
-" 2> /dev/null | grep -qx 1; then
- __loge "Function dwh.predict_note_classification_pgml is not in ${DWH_DB}. Apply the prediction SQL first:"
- __loge "  ${PSQL_CMD} -d ${DWH_DB} -v ON_ERROR_STOP=1 -f ${PROJECT_ROOT}/sql/dwh/ml/ml_03_predictWithPgML.sql"
- __loge "See sql/dwh/ml/README.md (ml_01 setup and trained models required before batch classify)."
+" 2> /dev/null | grep -qx 1
+}
+
+if ! _prediction_function_installed; then
+ __logi "Applying prediction routine (${ML_DIR}/ml_03_predictWithPgML.sql)..."
+ ml03_log="$(mktemp)"
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
+  -f "${ML_DIR}/ml_03_predictWithPgML.sql" > "${ml03_log}" 2>&1; then
+  __loge "Failed to apply ml_03_predictWithPgML.sql"
+  cat "${ml03_log}" >&2
+  rm -f "${ml03_log}"
+  exit 1
+ fi
+ rm -f "${ml03_log}"
+fi
+
+if ! _prediction_function_installed; then
+ __loge "Function dwh.predict_note_classification_pgml is still missing after ml_03. Manual apply:"
+ __loge "  ${PSQL_CMD} -d ${DWH_DB} -v ON_ERROR_STOP=1 -f ${ML_DIR}/ml_03_predictWithPgML.sql"
+ __loge "See sql/dwh/ml/README.md (ml_01, trained models, and compatible pgml)."
  exit 1
 fi
 

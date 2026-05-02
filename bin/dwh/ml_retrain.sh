@@ -8,7 +8,7 @@
 # - Models exist → retraining (if needed)
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-05-02
+# Version: 2026-04-30
 
 set -euo pipefail
 
@@ -126,6 +126,23 @@ ensure_training_view() {
   return 1
  fi
  rm -f "${setup_log}"
+ return 0
+}
+
+# Deploy / refresh dwh.predict_note_classification_pgml (CREATE OR REPLACE) and demos in ml_03 file.
+apply_ml03_prediction_sql() {
+ __logi "Applying prediction routine (${ML_DIR}/ml_03_predictWithPgML.sql)..."
+ local ml03_log
+ ml03_log="$(mktemp)"
+ if ! "${PSQL_CMD}" -d "${DWH_DB}" -v ON_ERROR_STOP=1 \
+  -f "${ML_DIR}/ml_03_predictWithPgML.sql" > "${ml03_log}" 2>&1; then
+  __loge "Failed to apply ml_03_predictWithPgML.sql"
+  cat "${ml03_log}" >&2
+  rm -f "${ml03_log}"
+  return 1
+ fi
+ rm -f "${ml03_log}"
+ __logi "Prediction SQL (ml_03) applied"
  return 0
 }
 
@@ -377,6 +394,10 @@ main() {
    __logi "Retraining needed - starting retraining..."
    # shellcheck disable=SC2310  # Function invocation in condition is intentional for error handling
    if train_models "${ML_DIR}/ml_05_retrainModels.sql" "Model retraining"; then
+    if ! apply_ml03_prediction_sql; then
+     __loge "Retraining stored models but ml_03 failed — fix SQL or permissions."
+     exit 1
+    fi
     __logi "✅ Retraining completed successfully"
     exit 0
    else
@@ -385,6 +406,10 @@ main() {
    fi
   else
    __logi "Models are up to date - no retraining needed"
+   if ! apply_ml03_prediction_sql; then
+    __loge "Keeping models but ml_03 failed — fix SQL or permissions."
+    exit 1
+   fi
    exit 0
   fi
  elif [[ "${has_datamarts}" == true ]]; then
@@ -392,6 +417,10 @@ main() {
   __logi "Datamarts ready - starting full initial training..."
   # shellcheck disable=SC2310  # Function invocation in condition is intentional for error handling
   if train_models "${ML_DIR}/ml_02_trainPgMLModels.sql" "Full initial training"; then
+   if ! apply_ml03_prediction_sql; then
+    __loge "Training succeeded but ml_03 failed — fix SQL or permissions."
+    exit 1
+   fi
    __logi "✅ Full training completed successfully"
    exit 0
   else
@@ -404,6 +433,10 @@ main() {
   __logw "Note: Training with basic features. Re-train later when datamarts are populated for better accuracy."
   # shellcheck disable=SC2310  # Function invocation in condition is intentional for error handling
   if train_models "${ML_DIR}/ml_02_trainPgMLModels.sql" "Basic initial training"; then
+   if ! apply_ml03_prediction_sql; then
+    __loge "Training succeeded but ml_03 failed — fix SQL or permissions."
+    exit 1
+   fi
    __logi "✅ Basic training completed successfully"
    exit 0
   else
