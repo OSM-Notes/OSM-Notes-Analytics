@@ -315,19 +315,17 @@ COUNTRY_LIST_START=$(date +%s)
 # Export notes for each country
 COUNTRY_LIST=$(mktemp)
 __psql_with_appname -d "${DBNAME_DWH}" -Atq << 'EOF' > "${COUNTRY_LIST}"
-SELECT DISTINCT
+SELECT
   dc.country_id,
-  COALESCE(c.country_name, 'Unknown') AS country_name,
-  COALESCE(dc.country_name_en, c.country_name_en, c.country_name, 'Unknown') AS country_name_en,
+  COALESCE(dc.country_name, dc.country_name_en, 'Unknown') AS country_name,
+  COALESCE(dc.country_name_en, dc.country_name, 'Unknown') AS country_name_en,
   MAX(f.action_at)::TEXT AS last_close_date
 FROM dwh.facts f
   JOIN dwh.dimension_countries dc
     ON f.dimension_id_country = dc.dimension_country_id
-  LEFT JOIN countries c
-    ON dc.country_id = c.country_id
 WHERE f.action_comment = 'closed'
-GROUP BY dc.country_id, COALESCE(c.country_name, 'Unknown'), COALESCE(dc.country_name_en, c.country_name_en, c.country_name, 'Unknown')
-ORDER BY COALESCE(dc.country_name_en, c.country_name_en, c.country_name, 'Unknown');
+GROUP BY dc.country_id, dc.country_name, dc.country_name_en
+ORDER BY COALESCE(dc.country_name_en, dc.country_name, 'Unknown');
 EOF
 
 COUNTRY_LIST_END=$(date +%s)
@@ -408,12 +406,11 @@ EOF
   __psql_with_appname -d "${DBNAME_DWH}" -Atq << EOF > "${db_results_file}"
 SELECT
   dc.country_id,
-  COALESCE(dc.country_name_en, c.country_name_en, c.country_name, dc.country_name, 'Unknown') AS country_name_en,
-  COALESCE(c.country_name, dc.country_name, 'Unknown') AS country_name_local
+  COALESCE(dc.country_name_en, dc.country_name, 'Unknown') AS country_name_en,
+  COALESCE(dc.country_name, dc.country_name_en, 'Unknown') AS country_name_local
 FROM dwh.dimension_countries dc
-  LEFT JOIN countries c ON dc.country_id = c.country_id
 WHERE dc.country_id IN (${country_ids})
-ORDER BY COALESCE(dc.country_name_en, c.country_name_en, c.country_name, dc.country_name, 'Unknown');
+ORDER BY COALESCE(dc.country_name_en, dc.country_name, 'Unknown');
 EOF
 
   # Process database results
