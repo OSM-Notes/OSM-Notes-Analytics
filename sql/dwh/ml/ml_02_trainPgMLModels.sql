@@ -60,12 +60,14 @@ SELECT * FROM pgml.train(
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_specific_type',
   y_column_name => 'specific_type',
-  algorithm => 'xgboost',
+  -- lightgbm: matches main-category training; avoids xgboost/pgml toolchain gaps on some servers
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 200,
-    "max_depth": 8,
+    "num_leaves": 127,
     "learning_rate": 0.05,
-    "class_weight": "balanced"  -- Handle class imbalance
+    "verbosity": -1,
+    "class_weight": "balanced"
   }'::jsonb,
   test_size => 0.2,
   test_sampling => 'random'
@@ -94,11 +96,12 @@ SELECT * FROM pgml.train(
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_action',
   y_column_name => 'recommended_action',
-  algorithm => 'xgboost',
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 150,
-    "max_depth": 7,
-    "learning_rate": 0.1
+    "num_leaves": 63,
+    "learning_rate": 0.1,
+    "verbosity": -1
   }'::jsonb,
   test_size => 0.2,
   test_sampling => 'random'

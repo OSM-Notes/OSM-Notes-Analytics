@@ -4,6 +4,7 @@
 -- Author: OSM Notes Analytics Project
 -- Date: 2025-12-20
 -- Purpose: Enable ML classification directly in PostgreSQL
+-- \ir includes resolve relative to this file's directory (sql/dwh/ml/).
 
 -- ============================================================================
 -- 1. Install pgml Extension
@@ -17,6 +18,8 @@ CREATE EXTENSION IF NOT EXISTS pgml;
 SELECT extname, extversion
 FROM pg_extension
 WHERE extname = 'pgml';
+
+\ir ml_00_note_type_classifications.sql
 
 -- ============================================================================
 -- 2. Hashtag features view (dependency for ML feature joins)
@@ -50,6 +53,22 @@ GROUP BY f.id_note, f.opened_dimension_id_date;
 COMMENT ON VIEW dwh.v_note_hashtag_features IS
   'Hashtag-based features for ML classification. Includes hashtag count, names, and category indicators.';
 
+-- --------------------------------------------------------------------------
+-- Aggregate comment count per note (full lifecycle; excludes only 'opened').
+-- facts.total_comments_on_note on action_comment='opened' is UP TO open time only
+-- (trigger: count where fact_id < opened row → always 0), which degenerates ML features
+-- and can trigger PostgresML snapshot panics (`Option::unwrap()` on empty stats).
+CREATE OR REPLACE VIEW dwh.v_note_ml_comment_counts AS
+SELECT
+  id_note,
+  COUNT(*) FILTER (WHERE action_comment = 'commented')::INTEGER AS comments_on_note
+FROM dwh.facts
+GROUP BY id_note;
+
+COMMENT ON VIEW dwh.v_note_ml_comment_counts IS
+  'Per-note count of commented actions (all time). Used for ML features/target rules instead '
+  'of facts.total_comments_on_note on opened rows (always zero at insertion).';
+
 -- ============================================================================
 -- 3. Create Training Data View
 -- ============================================================================
@@ -67,7 +86,7 @@ SELECT
   f.has_url::INTEGER AS has_url_int,  -- Convert boolean to int for ML
   f.has_mention::INTEGER AS has_mention_int,
   f.hashtag_number,
-  f.total_comments_on_note,
+  COALESCE(ncc.comments_on_note, 0) AS total_comments_on_note,
 
   -- Hashtag features (from hashtag analysis)
   COALESCE(nhf.hashtag_count, 0) AS hashtag_count,
@@ -131,7 +150,7 @@ SELECT
   -- Level 2: Specific Type (simplified - can be enhanced with text analysis)
   CASE
     WHEN f.comment_length < 10 THEN 'empty'
-    WHEN f.comment_length < 50 AND f.total_comments_on_note > 2 THEN 'lack_of_precision'
+    WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2 THEN 'lack_of_precision'
     WHEN f.comment_length > 200 AND f.has_url = TRUE THEN 'advertising'
     WHEN f.closed_dimension_id_date IS NULL
          AND (CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
@@ -157,7 +176,7 @@ SELECT
     THEN 'process'
     WHEN f.closed_dimension_id_date IS NOT NULL
     THEN 'close'
-    WHEN f.comment_length < 50 AND f.total_comments_on_note > 2
+    WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2
     THEN 'needs_more_data'
   END AS recommended_action
 
@@ -169,6 +188,7 @@ LEFT JOIN dwh.datamartCountries dc ON f.dimension_id_country = dc.dimension_coun
 LEFT JOIN dwh.datamartUsers du ON f.opened_dimension_id_user = du.dimension_user_id
 LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
 LEFT JOIN dwh.v_note_hashtag_features nhf ON f.id_note = nhf.id_note
+LEFT JOIN dwh.v_note_ml_comment_counts ncc ON ncc.id_note = f.id_note
 WHERE f.action_comment = 'opened'
   AND f.closed_dimension_id_date IS NOT NULL  -- Only resolved notes for training
   AND f.comment_length > 0;  -- Only notes with content
@@ -179,50 +199,61 @@ COMMENT ON VIEW dwh.v_note_ml_training_features IS
 -- ============================================================================
 -- 4. Create Prediction Features View (for new notes)
 -- ============================================================================
--- Same features as training, but without target variables
+-- CREATE OR REPLACE cannot change existing column types (e.g. INTEGER -> DOUBLE PRECISION).
+-- CASCADE may drop dependents such as dwh.predict_note_classification_pgml; restore via
+-- sql/dwh/ml/ml_03_predictWithPgML.sql (ml_retrain.sh does this after training).
 
-CREATE OR REPLACE VIEW dwh.v_note_ml_prediction_features AS
+DROP VIEW IF EXISTS dwh.v_note_ml_prediction_features CASCADE;
+
+CREATE VIEW dwh.v_note_ml_prediction_features AS
 SELECT
   f.id_note,
   f.opened_dimension_id_date,
 
-  -- Same features as training view (without target variables)
-  f.comment_length,
-  f.has_url::INTEGER AS has_url_int,
-  f.has_mention::INTEGER AS has_mention_int,
-  f.hashtag_number,
-  f.total_comments_on_note,
+  -- Finite DOUBLE PRECISION features (same clamps as v_note_ml_train_*); avoids NULL entries
+  -- in ARRAY[...]::DOUBLE PRECISION[] for pgml.predict (ERROR: array contains NULL).
+  LEAST(GREATEST(COALESCE(f.comment_length, 0), 0), 524288)::DOUBLE PRECISION AS comment_length,
+  LEAST(GREATEST(COALESCE(f.has_url::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_url_int,
+  LEAST(GREATEST(COALESCE(f.has_mention::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_mention_int,
+  LEAST(GREATEST(COALESCE(f.hashtag_number, 0), 0), 100000)::DOUBLE PRECISION AS hashtag_number,
+  LEAST(GREATEST(COALESCE(ncc.comments_on_note, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS total_comments_on_note,
+  LEAST(GREATEST(COALESCE(nhf.hashtag_count, 0), 0), 2147483647)::DOUBLE PRECISION AS hashtag_count,
+  LEAST(GREATEST(COALESCE(nhf.has_fire_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_fire_keyword,
+  LEAST(GREATEST(COALESCE(nhf.has_air_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_air_keyword,
+  LEAST(GREATEST(COALESCE(nhf.has_access_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION
+    AS has_access_keyword,
+  LEAST(GREATEST(COALESCE(nhf.has_campaign_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION
+    AS has_campaign_keyword,
+  LEAST(GREATEST(COALESCE(nhf.has_fix_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_fix_keyword,
 
-  COALESCE(nhf.hashtag_count, 0) AS hashtag_count,
-  COALESCE(nhf.has_fire_keyword::INTEGER, 0) AS has_fire_keyword,
-  COALESCE(nhf.has_air_keyword::INTEGER, 0) AS has_air_keyword,
-  COALESCE(nhf.has_access_keyword::INTEGER, 0) AS has_access_keyword,
-  COALESCE(nhf.has_campaign_keyword::INTEGER, 0) AS has_campaign_keyword,
-  COALESCE(nhf.has_fix_keyword::INTEGER, 0) AS has_fix_keyword,
+  LEAST(GREATEST(COALESCE(
+    CASE
+      WHEN a.application_name IN ('Maps.me', 'StreetComplete', 'OrganicMaps', 'OnOSM.org')
+      THEN 1 ELSE 0
+    END, 0), 0), 1)::DOUBLE PRECISION AS is_assisted_app,
+  LEAST(GREATEST(COALESCE(
+    CASE
+      WHEN a.application_name LIKE '%mobile%' OR a.application_name LIKE '%app%'
+      THEN 1 ELSE 0
+    END, 0), 0), 1)::DOUBLE PRECISION AS is_mobile_app,
 
-  CASE
-    WHEN a.application_name IN ('Maps.me', 'StreetComplete', 'OrganicMaps', 'OnOSM.org')
-    THEN 1 ELSE 0
-  END AS is_assisted_app,
-  CASE
-    WHEN a.application_name LIKE '%mobile%' OR a.application_name LIKE '%app%'
-    THEN 1 ELSE 0
-  END AS is_mobile_app,
+  LEAST(GREATEST(COALESCE(dc.resolution_rate, 0.0)::NUMERIC, 0), 1)::DOUBLE PRECISION AS country_resolution_rate,
+  LEAST(GREATEST(COALESCE(dc.avg_days_to_resolution, 0), 0), 100000)::DOUBLE PRECISION
+    AS country_avg_resolution_days,
+  LEAST(GREATEST(COALESCE(dc.notes_health_score, 0.0)::NUMERIC, 0), 1)::DOUBLE PRECISION
+    AS country_notes_health_score,
 
-  COALESCE(dc.resolution_rate, 0.0) AS country_resolution_rate,
-  COALESCE(dc.avg_days_to_resolution, 0) AS country_avg_resolution_days,
-  COALESCE(dc.notes_health_score, 0.0) AS country_notes_health_score,
+  LEAST(GREATEST(COALESCE(du.user_response_time, 0), 0), 2147483647)::DOUBLE PRECISION AS user_response_time,
+  LEAST(GREATEST(COALESCE(du.history_whole_open, 0), 0), 2147483647)::DOUBLE PRECISION AS user_total_notes,
+  LEAST(GREATEST(COALESCE(dimu.experience_level_id, 0), 0), 32767)::DOUBLE PRECISION AS user_experience_level,
+  LEAST(GREATEST(COALESCE(du.id_contributor_type, 0), 0), 2147483647)::DOUBLE PRECISION
+    AS user_contributor_type_id,
 
-  COALESCE(du.user_response_time, 0) AS user_response_time,
-  COALESCE(du.history_whole_open, 0) AS user_total_notes,
-  COALESCE(dimu.experience_level_id, 0) AS user_experience_level,
-  COALESCE(du.id_contributor_type, 0) AS user_contributor_type_id,
-
-  EXTRACT(DOW FROM d.date_id) AS day_of_week,
-  EXTRACT(HOUR FROM f.action_at::TIMESTAMP) AS hour_of_day,
-  EXTRACT(MONTH FROM d.date_id) AS month,
-
-  (CURRENT_DATE - d.date_id) AS days_open
+  LEAST(GREATEST(COALESCE(EXTRACT(DOW FROM d.date_id), 0), 0), 6)::DOUBLE PRECISION AS day_of_week,
+  LEAST(GREATEST(COALESCE(EXTRACT(HOUR FROM f.action_at::TIMESTAMP), 0), 0), 23)::DOUBLE PRECISION AS hour_of_day,
+  LEAST(GREATEST(COALESCE(EXTRACT(MONTH FROM d.date_id), 0), 0), 12)::DOUBLE PRECISION AS month,
+  LEAST(GREATEST(COALESCE((CURRENT_DATE - d.date_id), 0), 0), 100000)::DOUBLE PRECISION AS days_open
 
 FROM dwh.facts f
 LEFT JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
@@ -231,11 +262,15 @@ LEFT JOIN dwh.datamartCountries dc ON f.dimension_id_country = dc.dimension_coun
 LEFT JOIN dwh.datamartUsers du ON f.opened_dimension_id_user = du.dimension_user_id
 LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
 LEFT JOIN dwh.v_note_hashtag_features nhf ON f.id_note = nhf.id_note
+LEFT JOIN dwh.v_note_ml_comment_counts ncc ON ncc.id_note = f.id_note
 WHERE f.action_comment = 'opened'
   AND f.comment_length > 0;
 
 COMMENT ON VIEW dwh.v_note_ml_prediction_features IS
-  'Features for ML prediction on new notes. Same structure as training features but without target variables.';
+  'Features for ML prediction on notes (no targets). DOUBLE PRECISION columns with COALESCE/clamps '
+  'match v_note_ml_train_* inference order; avoids NULL elements in pgml.predict feature arrays.';
+
+\ir ml_00_note_ml_feature_vector.sql
 
 -- ============================================================================
 -- 5. pgml.training relations (feature matrix + single label column)

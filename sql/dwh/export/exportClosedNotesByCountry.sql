@@ -174,7 +174,7 @@ comments_data AS (
 SELECT
     -- 1. Basic identification and location
     lc.id_note AS note_id,
-    COALESCE(c.country_name, 'Unknown') AS country_name,
+    COALESCE(dc.country_name, dc.country_name_en, 'Unknown') AS country_name,
     n.latitude,
     n.longitude,
     -- 2. Timeline
@@ -204,8 +204,6 @@ FROM limited_closes lc
     -- Get country information
     JOIN dwh.dimension_countries dc
         ON lc.dimension_id_country = dc.dimension_country_id
-    LEFT JOIN public.countries c
-        ON dc.country_id = c.country_id
     -- Get note coordinates
     LEFT JOIN public.notes n
         ON lc.id_note = n.note_id
@@ -223,7 +221,7 @@ FROM limited_closes lc
     LEFT JOIN public.users u_closed
         ON du_closed.user_id = u_closed.user_id
 ORDER BY
-    COALESCE(c.country_name, 'Unknown'),
+    COALESCE(dc.country_name, dc.country_name_en, 'Unknown'),
     lc.action_at DESC;
 
 -- Note: The helper function dwh.clean_comment_for_csv() is kept for reuse

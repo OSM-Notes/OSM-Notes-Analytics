@@ -28,17 +28,18 @@ JOIN pgml.projects p ON p.id = m.project_id
 WHERE p.name LIKE 'note_classification%'
 GROUP BY p.name;
 
--- Check how many new training samples are available
+-- Check how many new training samples are available (open date via dwh.dimension_days.date_id).
 SELECT
   COUNT(*) AS total_training_samples,
-  COUNT(*) FILTER (WHERE opened_dimension_id_date > (
-    SELECT MAX(m.created_at) - INTERVAL '30 days'
+  COUNT(*) FILTER (WHERE dd.date_id > (
+    SELECT (MAX(m.created_at) - INTERVAL '30 days')::DATE
     FROM pgml.models m
     JOIN pgml.projects p ON p.id = m.project_id
     WHERE p.name = 'note_classification_main_category'
   )) AS new_samples_last_30_days
-FROM dwh.v_note_ml_training_features
-WHERE main_category IS NOT NULL;
+FROM dwh.v_note_ml_training_features v
+JOIN dwh.dimension_days dd ON dd.dimension_day_id = v.opened_dimension_id_date
+WHERE v.main_category IS NOT NULL;
 
 -- ============================================================================
 -- Retrain Level 1 Model: Main Category (2 classes)
@@ -69,11 +70,12 @@ SELECT * FROM pgml.train(
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_specific_type',
   y_column_name => 'specific_type',
-  algorithm => 'xgboost',
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 200,
-    "max_depth": 8,
+    "num_leaves": 127,
     "learning_rate": 0.05,
+    "verbosity": -1,
     "class_weight": "balanced"
   }'::JSONB,
   test_size => 0.2,
@@ -89,11 +91,12 @@ SELECT * FROM pgml.train(
   task => 'classification',
   relation_name => 'dwh.v_note_ml_train_action',
   y_column_name => 'recommended_action',
-  algorithm => 'xgboost',
+  algorithm => 'lightgbm',
   hyperparams => '{
     "n_estimators": 150,
-    "max_depth": 7,
-    "learning_rate": 0.1
+    "num_leaves": 63,
+    "learning_rate": 0.1,
+    "verbosity": -1
   }'::JSONB,
   test_size => 0.2,
   test_sampling => 'random'

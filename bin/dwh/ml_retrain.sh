@@ -8,7 +8,7 @@
 # - Models exist → retraining (if needed)
 #
 # Author: Andres Gomez (AngocA)
-# Version: 2026-04-30
+# Version: 2026-05-03
 
 set -euo pipefail
 
@@ -198,6 +198,23 @@ check_datamarts_populated() {
  return 1
 }
 
+# Must align with ml_batch_classify.sh: batch predict requires three deployments in pgml 2.x.
+count_note_classification_deployments() {
+ "${PSQL_CMD}" -d "${DWH_DB}" -tAc "
+SELECT COUNT(*)::INTEGER
+FROM (
+  SELECT DISTINCT p.name
+  FROM pgml.projects p
+  INNER JOIN pgml.deployments d ON d.project_id = p.id
+  WHERE p.name IN (
+    'note_classification_main_category',
+    'note_classification_specific_type',
+    'note_classification_action'
+  )
+) s;
+" 2> /dev/null | tr -d '[:space:]'
+}
+
 check_models_exist() {
  # Check if any models are already trained
  local model_count
@@ -236,10 +253,11 @@ check_retraining_needed() {
  # Check for new training data
  new_samples=$("${PSQL_CMD}" -d "${DWH_DB}" -t -c "
 		SELECT COUNT(*)
-		FROM dwh.v_note_ml_training_features
-		WHERE main_category IS NOT NULL
-		  AND opened_dimension_id_date > (
-		    SELECT MAX(m.created_at) - INTERVAL '30 days'
+		FROM dwh.v_note_ml_training_features v
+		JOIN dwh.dimension_days dd ON dd.dimension_day_id = v.opened_dimension_id_date
+		WHERE v.main_category IS NOT NULL
+		  AND dd.date_id > (
+		    SELECT (MAX(m.created_at) - INTERVAL '30 days')::DATE
 		    FROM pgml.models m
 		    JOIN pgml.projects p ON p.id = m.project_id
 		    WHERE p.name = 'note_classification_main_category'
@@ -388,11 +406,26 @@ main() {
 
  # Decision tree:
  if [[ "${has_models}" == true ]]; then
-  # Models exist - check if retraining is needed
-  # shellcheck disable=SC2310  # Function invocation in condition is intentional for error handling
-  if check_retraining_needed; then
-   __logi "Retraining needed - starting retraining..."
-   # shellcheck disable=SC2310  # Function invocation in condition is intentional for error handling
+  # Models exist: retrain when schedule/data says so OR when deployments are incomplete for batch predict.
+  local _dc
+  _dc="$(count_note_classification_deployments 2> /dev/null || printf '%s' '0')"
+  if ! [[ "${_dc}" =~ ^[0-9]+$ ]]; then
+   _dc=0
+  fi
+  local _need_deployments=false
+  if [[ "${_dc}" -lt 3 ]]; then
+   _need_deployments=true
+   __logw "Only ${_dc}/3 note_classification pgml.deployments — batch classify needs main_category, specific_type, and action."
+  fi
+
+  # shellcheck disable=SC2310
+  if [[ "${_need_deployments}" == true ]] || check_retraining_needed; then
+   if [[ "${_need_deployments}" == true ]]; then
+    __logi "Running full retrain pipeline to populate missing deployments..."
+   else
+    __logi "Retraining needed - starting retraining..."
+   fi
+   # shellcheck disable=SC2310
    if train_models "${ML_DIR}/ml_05_retrainModels.sql" "Model retraining"; then
     if ! apply_ml03_prediction_sql; then
      __loge "Retraining stored models but ml_03 failed — fix SQL or permissions."
