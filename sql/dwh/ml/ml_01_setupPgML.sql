@@ -66,8 +66,9 @@ FROM dwh.facts
 GROUP BY id_note;
 
 COMMENT ON VIEW dwh.v_note_ml_comment_counts IS
-  'Per-note count of commented actions (all time). Used for ML features/target rules instead '
-  'of facts.total_comments_on_note on opened rows (always zero at insertion).';
+  'Per-note count of commented actions (all time). Fallback when metrics on the first close row '
+  'are missing. Opened rows always have facts.total_comments_on_note = 0; training/prediction '
+  'prefer total_comments_on_note from the first close after that open (trigger-accumulated).';
 
 -- ============================================================================
 -- 3. Create Training Data View
@@ -86,7 +87,8 @@ SELECT
   f.has_url::INTEGER AS has_url_int,  -- Convert boolean to int for ML
   f.has_mention::INTEGER AS has_mention_int,
   f.hashtag_number,
-  COALESCE(ncc.comments_on_note, 0) AS total_comments_on_note,
+  COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0)::INTEGER
+    AS total_comments_on_note,
 
   -- Hashtag features (from hashtag analysis)
   COALESCE(nhf.hashtag_count, 0) AS hashtag_count,
@@ -150,7 +152,9 @@ SELECT
   -- Level 2: Specific Type (simplified - can be enhanced with text analysis)
   CASE
     WHEN f.comment_length < 10 THEN 'empty'
-    WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2 THEN 'lack_of_precision'
+    WHEN f.comment_length < 50
+         AND COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0) > 2
+    THEN 'lack_of_precision'
     WHEN f.comment_length > 200 AND f.has_url = TRUE THEN 'advertising'
     WHEN f.closed_dimension_id_date IS NULL
          AND (CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
@@ -176,7 +180,8 @@ SELECT
     THEN 'process'
     WHEN f.closed_dimension_id_date IS NOT NULL
     THEN 'close'
-    WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2
+    WHEN f.comment_length < 50
+         AND COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0) > 2
     THEN 'needs_more_data'
   END AS recommended_action
 
@@ -188,6 +193,15 @@ LEFT JOIN dwh.datamartCountries dc ON f.dimension_id_country = dc.dimension_coun
 LEFT JOIN dwh.datamartUsers du ON f.opened_dimension_id_user = du.dimension_user_id
 LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
 LEFT JOIN dwh.v_note_hashtag_features nhf ON f.id_note = nhf.id_note
+LEFT JOIN LATERAL (
+  SELECT fc.total_comments_on_note
+  FROM dwh.facts fc
+  WHERE fc.id_note = f.id_note
+    AND fc.action_comment = 'closed'
+    AND fc.action_at > f.action_at
+  ORDER BY fc.action_at ASC
+  LIMIT 1
+) fc_first_close ON TRUE
 LEFT JOIN dwh.v_note_ml_comment_counts ncc ON ncc.id_note = f.id_note
 WHERE f.action_comment = 'opened'
   AND f.closed_dimension_id_date IS NOT NULL  -- Only resolved notes for training
@@ -216,7 +230,8 @@ SELECT
   LEAST(GREATEST(COALESCE(f.has_url::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_url_int,
   LEAST(GREATEST(COALESCE(f.has_mention::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_mention_int,
   LEAST(GREATEST(COALESCE(f.hashtag_number, 0), 0), 100000)::DOUBLE PRECISION AS hashtag_number,
-  LEAST(GREATEST(COALESCE(ncc.comments_on_note, 0), 0), 2147483647)::DOUBLE PRECISION
+  LEAST(GREATEST(
+    COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0), 0), 2147483647)::DOUBLE PRECISION
     AS total_comments_on_note,
   LEAST(GREATEST(COALESCE(nhf.hashtag_count, 0), 0), 2147483647)::DOUBLE PRECISION AS hashtag_count,
   LEAST(GREATEST(COALESCE(nhf.has_fire_keyword::INTEGER, 0), 0), 1)::DOUBLE PRECISION AS has_fire_keyword,
@@ -262,6 +277,15 @@ LEFT JOIN dwh.datamartCountries dc ON f.dimension_id_country = dc.dimension_coun
 LEFT JOIN dwh.datamartUsers du ON f.opened_dimension_id_user = du.dimension_user_id
 LEFT JOIN dwh.dimension_users dimu ON du.dimension_user_id = dimu.dimension_user_id
 LEFT JOIN dwh.v_note_hashtag_features nhf ON f.id_note = nhf.id_note
+LEFT JOIN LATERAL (
+  SELECT fc.total_comments_on_note
+  FROM dwh.facts fc
+  WHERE fc.id_note = f.id_note
+    AND fc.action_comment = 'closed'
+    AND fc.action_at > f.action_at
+  ORDER BY fc.action_at ASC
+  LIMIT 1
+) fc_first_close ON TRUE
 LEFT JOIN dwh.v_note_ml_comment_counts ncc ON ncc.id_note = f.id_note
 WHERE f.action_comment = 'opened'
   AND f.comment_length > 0;

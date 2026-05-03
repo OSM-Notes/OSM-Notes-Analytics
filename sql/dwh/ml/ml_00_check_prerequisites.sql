@@ -145,7 +145,9 @@ FROM (
     -- Level 2: Specific Type (simplified)
     CASE
       WHEN f.comment_length < 10 THEN 'empty'
-      WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2 THEN 'lack_of_precision'
+      WHEN f.comment_length < 50
+           AND COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0) > 2
+      THEN 'lack_of_precision'
       WHEN f.comment_length > 200 AND f.has_url = TRUE THEN 'advertising'
       WHEN f.closed_dimension_id_date IS NULL
            AND (CURRENT_DATE - d.date_id) > 180 THEN 'obsolete'
@@ -170,12 +172,22 @@ FROM (
       THEN 'process'
       WHEN f.closed_dimension_id_date IS NOT NULL
       THEN 'close'
-      WHEN f.comment_length < 50 AND COALESCE(ncc.comments_on_note, 0) > 2
+      WHEN f.comment_length < 50
+           AND COALESCE(fc_first_close.total_comments_on_note, ncc.comments_on_note, 0) > 2
       THEN 'needs_more_data'
     END AS recommended_action
   FROM dwh.facts f
   LEFT JOIN dwh.dimension_days d ON f.opened_dimension_id_date = d.dimension_day_id
   LEFT JOIN dwh.dimension_applications a ON f.dimension_application_creation = a.dimension_application_id
+  LEFT JOIN LATERAL (
+    SELECT fc.total_comments_on_note
+    FROM dwh.facts fc
+    WHERE fc.id_note = f.id_note
+      AND fc.action_comment = 'closed'
+      AND fc.action_at > f.action_at
+    ORDER BY fc.action_at ASC
+    LIMIT 1
+  ) fc_first_close ON TRUE
   LEFT JOIN (
     SELECT
       id_note,
