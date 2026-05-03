@@ -186,14 +186,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: "npm"
 
-      - name: Install Prettier
-        run: npm install -g prettier
+      - name: Install dependencies (Prettier from package-lock.json)
+        run: npm ci
 
       - name: Check formatting with Prettier
         run: |
           echo "Checking code formatting with Prettier..."
-          prettier --check "**/*.{md,json,yaml,yml,css,html}" --ignore-path .prettierignore || {
+          npx prettier --check "**/*.{md,json,yaml,yml,css,html}" --ignore-path .prettierignore || {
             echo "⚠️  Prettier formatting issues found"
             exit 1
           }
